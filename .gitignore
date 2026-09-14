@@ -1,0 +1,76 @@
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Environment & Secrets (Zero-Tolerance Policy)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.cert
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Node / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+out/
+.next/
+
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker / Local Runtime data
+data/
+*.sqlite
+*.sqlite3
+*.db
