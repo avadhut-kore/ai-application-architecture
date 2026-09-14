@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "template-platform-component",
+  "tier": 3,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": null,
+  "application_domains": [],
+  "intelligence_patterns": [],
+  "architecture_patterns": []
+}

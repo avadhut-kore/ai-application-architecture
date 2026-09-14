@@ -109,5 +109,5 @@ Consult the authoritative standards in `docs/architecture/`:
 ## 6. Current Phase Status
 
 > [!IMPORTANT]
-> **Current Phase: Phase 2 — Repository Foundation & Minimum Core Contracts**  
-> In accordance with Phase 2 scope, this repository establishes the physical monorepo foundation, dependency boundaries, cross-platform validation tooling, and bounded capability contracts required prior to foundational AI implementations. Consult [ROADMAP.md](ROADMAP.md) for complete phase schedules.
+> **Current Phase: Phase 3 — Tiered Reference Implementation Templates**  
+> In accordance with Phase 3 scope, this repository establishes the canonical reference artifact templates (`templates/`), machine-readable architectural manifests (`artifact.json`), automated tier validation tooling, and quality gate applicability matrix. Consult [ROADMAP.md](ROADMAP.md) for complete phase schedules.

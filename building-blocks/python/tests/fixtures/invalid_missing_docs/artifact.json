@@ -1,0 +1,10 @@
+{
+  "name": "fixture-missing-docs",
+  "tier": 1,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": "B",
+  "application_domains": [],
+  "intelligence_patterns": [],
+  "architecture_patterns": []
+}

@@ -1,0 +1,10 @@
+{
+  "name": "fixture-valid-tier1",
+  "tier": 1,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": "B",
+  "application_domains": ["horizontal-enterprise"],
+  "intelligence_patterns": ["structured-generation"],
+  "architecture_patterns": ["hexagonal"]
+}

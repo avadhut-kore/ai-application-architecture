@@ -63,7 +63,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 2: Repository Foundation & Minimum Core Contracts (COMPLETED — READY FOR REVIEW)
+## Phase 2: Repository Foundation & Minimum Core Contracts (COMPLETED)
 * **Objective**: Establish monorepo structure, dependency boundaries, and minimal viable architectural contracts.
 * **Scope**:
   * Modular monorepo dependency boundaries and folder layouts (`apps/`, `building-blocks/`, `platform/`).
@@ -81,14 +81,19 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 3: Tiered Reference Implementation Templates
-* **Objective**: Build reusable, unpopulated scaffolding archetypes for each reference tier.
+## Phase 3: Tiered Reference Implementation Templates (COMPLETED — READY FOR REVIEW)
+* **Objective**: Build reusable, unpopulated scaffolding archetypes for each reference tier and establish an evidence-driven governance system.
 * **Scope**:
-  * **Tier 1 Template**: Comprehensive Reference Application skeleton (`apps/_template/reference-app`).
-  * **Tier 2 Template**: Focused Pattern Example skeleton (`apps/_template/pattern-example`).
-  * **Tier 3 Template**: Platform Component skeleton (`building-blocks/_template`).
+  * **Canonical Templates Directory**: Four lean reference archetypes in `templates/`:
+    * Tier 1 Reference Application (`templates/reference-application/`) with consolidated documentation (`requirements.md`, `architecture.md`, `quality.md`).
+    * Tier 2 Pattern Example (`templates/pattern-example/`) with self-contained architecture and run guide.
+    * Tier 3 Platform Component (`templates/platform-component/`) with contract, failure mode, and integration guide.
+    * Tier 4 Template Artifact (`templates/template-artifact/`) with archetype guide and non-production notice.
+  * **Reference Artifact Manifest (`artifact.json`)**: Machine-readable schema declaring tier, status, language, mode, and Phase 0 taxonomy references.
+  * **Automated Tier Validation**: Automated structural and manifest validation integrated into `scripts/validate.py`.
+  * **Quality Gate Applicability Matrix**: Explicit mapping from Gate A through Gate J across the four tiers.
 * **Dependencies**: Phase 2.
-* **Exit Criteria**: Templates validate against linters; quick-start scaffolding scripts functional.
+* **Exit Criteria**: All four tier templates created; manifest validation enforced; automated validator tests passing; documentation links verified.
 
 ---
 

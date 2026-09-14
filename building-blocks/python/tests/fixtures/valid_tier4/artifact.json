@@ -1,0 +1,10 @@
+{
+  "name": "fixture-valid-tier4",
+  "tier": 4,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": null,
+  "application_domains": [],
+  "intelligence_patterns": [],
+  "architecture_patterns": []
+}

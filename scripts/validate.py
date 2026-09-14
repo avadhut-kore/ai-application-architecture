@@ -23,7 +23,13 @@ import unittest
 from pathlib import Path
 from typing import List, Tuple
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPTS_DIR.parent
+
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from artifact_validator import validate_all_templates, validate_artifact
 
 # Mandatory governance files
 REQUIRED_GOVERNANCE_FILES = [
@@ -44,6 +50,7 @@ REQUIRED_DIRECTORIES = [
     "docs",
     "scripts",
     "adr",
+    "templates",
 ]
 
 # Prohibited speculative framework directories
@@ -175,7 +182,29 @@ def run_contract_tests() -> Tuple[bool, List[str]]:
             errors.append(f"ERROR: {error[0]}: {error[1]}")
         return False, errors
 
-    return True, [f"Ran {result.testsRun} contract tests successfully."]
+    return True, [f"Ran {result.testsRun} unit tests successfully."]
+
+
+def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:
+    """Validate canonical templates and any declared reference artifacts in apps/."""
+    errors: List[str] = []
+
+    # 1. Validate canonical templates in templates/
+    templates_root = REPO_ROOT / "templates"
+    t_ok, t_errors = validate_all_templates(templates_root)
+    if not t_ok:
+        errors.extend(t_errors)
+
+    # 2. Validate any declared reference artifacts in apps/
+    apps_root = REPO_ROOT / "apps"
+    if apps_root.is_dir():
+        for item in apps_root.iterdir():
+            if item.is_dir() and (item / "artifact.json").exists():
+                a_ok, a_errors = validate_artifact(item)
+                if not a_ok:
+                    errors.extend(a_errors)
+
+    return len(errors) == 0, errors
 
 
 def main() -> int:
@@ -219,25 +248,36 @@ def main() -> int:
             print(f"      - {err}")
         overall_success = False
 
-    # 4. Automated Contract Tests
-    print("\n4. Executing contract unit test suite...")
+    # 4. Reference Artifact Templates & Manifests
+    print("\n4. Validating reference artifact templates & manifests...")
+    templates_ok, template_errors = run_template_and_artifact_validation()
+    if templates_ok:
+        print("   PASS — Templates & artifact manifests")
+    else:
+        print("   FAIL — Templates & artifact manifests:")
+        for err in template_errors:
+            print(f"      - {err}")
+        overall_success = False
+
+    # 5. Automated Unit Tests (Contract & Template tests)
+    print("\n5. Executing automated unit test suite...")
     tests_ok, test_msgs = run_contract_tests()
     if tests_ok:
-        print("   PASS — Foundation unit tests")
+        print("   PASS — Automated unit tests")
     else:
-        print("   FAIL — Foundation unit tests:")
+        print("   FAIL — Automated unit tests:")
         for err in test_msgs:
             print(f"      - {err}")
         overall_success = False
 
     print("\n" + "=" * 60)
     if overall_success:
-        print("RESULT: REPOSITORY FOUNDATION VALIDATION PASSED")
-        print("Verified: repository structure, import boundaries, doc links, foundation unit tests")
+        print("RESULT: REPOSITORY VALIDATION PASSED")
+        print("Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests")
         print("=" * 60)
         return 0
     else:
-        print("RESULT: REPOSITORY FOUNDATION VALIDATION FAILED")
+        print("RESULT: REPOSITORY VALIDATION FAILED")
         print("=" * 60)
         return 1
 

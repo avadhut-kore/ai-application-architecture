@@ -1,0 +1,10 @@
+{
+  "name": "fixture-invalid-status",
+  "tier": 2,
+  "status": "production-ready",
+  "languages": ["python"],
+  "local_first_mode": "B",
+  "application_domains": [],
+  "intelligence_patterns": [],
+  "architecture_patterns": []
+}
