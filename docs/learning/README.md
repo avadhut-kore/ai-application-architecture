@@ -62,8 +62,9 @@ Phase 4: AI Foundations [FROZEN & VERIFIED]
   "How does an application safely communicate with an LLM?"
   → [Phase 04 Learning Guide](phase-04-ai-foundations.md)
         ↓
-Phase 5: Knowledge Intelligence & RAG [PLANNED — GUIDE NOT YET AVAILABLE]
+Phase 5: Knowledge Intelligence & RAG [ACCEPTED & FREEZE-READY]
   "How will the LLM securely ground reasoning in private enterprise knowledge?"
+  → [Phase 05 Learning Guide](phase-05-knowledge-intelligence-rag.md)
         ↓
 Phase 6: Agentic Task Execution [PLANNED — GUIDE NOT YET AVAILABLE]
   "How will AI safely invoke enterprise tools and execute stateful actions?"
@@ -86,7 +87,7 @@ Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE
 | **02** | **Repository Foundation** | Monorepo Structure, Core Contracts (`models.py`, `ports.py`, `errors.py`) | `FROZEN` | [Phase 02 Guide](phase-02-repository-foundation.md) |
 | **03** | **Reference Templates** | Four Reference Tiers, Manifests, Taxonomy Validation, Governance | `FROZEN` | [Phase 03 Guide](phase-03-reference-templates.md) |
 | **04** | **AI Foundations** | Provider-Neutral Ports, `OllamaAdapter`, Structured Generation, Gate D Eval | `FROZEN` | [Phase 04 Guide](phase-04-ai-foundations.md) |
-| **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Hybrid Retrieval, Re-ranking, Context Windows | `PLANNED` | *Available after Phase 5 freeze* |
+| **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `ACCEPTED` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
 | **06** | **Agentic Task Execution** | Tool Calling, ReAct Loops, Policy Enforcement, Rollback Hooks | `PLANNED` | *Available after Phase 6 freeze* |
 | **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `PLANNED` | *Available after Phase 7 freeze* |
 | **08–14** | **Enterprise AI Systems** | Multi-Agent, Gateways, Telemetry, Multimodal, Edge & Reference Apps | `PLANNED` | *Available after respective phase freeze* |
