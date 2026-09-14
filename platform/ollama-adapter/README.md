@@ -105,15 +105,20 @@ All exceptions are mapped into the domain `AiError` taxonomy (`building-blocks/p
 
 ---
 
-## 6. Testing Strategy
+## 6. Testing Strategy & Local Environment Setup
 
-* **Unit Tests**: Hermetic in-memory test suite using mocked HTTP responses testing payload serialization, response mapping, status code translation, retry logic, and health checking.
-* **Verification Command**:
+* **Offline Hermetic Testing**: Hermetic in-memory test suite using mocked HTTP responses testing payload serialization, response mapping, status code translation, retry logic, and health checking. No Ollama daemon or network connectivity is required for CI or monorepo validation.
+* **Local Developer Setup (Mode A / Mode B)**:
+  * Running live inference against Ollama is required **only** for real runtime execution and live verification; it is **not** required for deterministic repository validation or CI.
+  * Installing and managing Ollama is a developer responsibility. Verify installation via `ollama --version`.
+  * Start the local daemon: `ollama serve` (default endpoint: `http://localhost:11434`).
+  * Models must be manually installed by the developer (e.g. `ollama pull llama3.2:3b` or `ollama pull llama3.2`). No test, script, or CI workflow executes `ollama pull`. Check installed models via `ollama list`.
+* **Verification Commands**:
 ```bash
-# Offline hermetic unit tests
+# 1. Offline hermetic unit tests (runnable anywhere without Ollama)
 python3 -m unittest discover -s platform/ollama-adapter/tests -t platform/ollama-adapter -v
 
-# Live Ollama runtime verification (if Ollama installed locally)
+# 2. Live Ollama runtime verification (requires local Ollama daemon and installed model)
 python3 platform/ollama-adapter/verify.py
 ```
 
@@ -122,7 +127,7 @@ python3 platform/ollama-adapter/verify.py
 ## 7. Quality Gate Checklist (Scaled for Tier 3)
 
 Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, F, and H:
-- [x] **Gate A — Architectural Alignment**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
+- [x] **Gate A — Architecture & Structural Boundaries**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
 - [ ] **Gate B — Code Quality & Type Safety**: Strictly typed with standard Python type annotations; formal external linters (`mypy`, `ruff`) not installed/run in CI (*Partially Verified*).
 - [ ] **Gate C — Software Testing**: 15 hermetic unit tests verifying request/response mapping, error translation, timeout classification, and retries; statement coverage measurement: *Not Verified* (coverage tooling not installed).
 - [ ] **Gate F — Observability & Telemetry**: Minimal metadata extraction implemented (`latency_ms`, token `UsageMetrics`, model name); distributed OpenTelemetry trace exporter and span emission: *Deferred*.

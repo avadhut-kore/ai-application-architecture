@@ -4,7 +4,7 @@
 Meets Gate D requirements:
 - Executes versioned dataset (30 scenarios across normal, boundary, ambiguous, adversarial).
 - Measures schema adherence rate, enum classification accuracy, and latency.
-- Bounded threshold evaluation (e.g. >= 85% schema adherence).
+- Assesses live model evaluation against authoritative Gate D thresholds defined in QUALITY-GATES.md (>= 98.0% schema adherence).
 - Supports offline deterministic evaluation (--mode fake) and live model evaluation (--mode live).
 """
 
@@ -17,7 +17,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Ensure repository paths are importable
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent

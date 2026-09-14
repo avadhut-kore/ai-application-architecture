@@ -8,6 +8,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Ensure building-blocks and adapter paths are in sys.path
 SCRIPT_DIR = Path(__file__).resolve().parent

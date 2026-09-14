@@ -125,7 +125,7 @@ How should the repository structure and implement its first concrete AI model ex
 
 ## 7. Compliance with Quality Gates
 
-* **Gate A — Architectural Alignment**: Inward dependency direction strictly enforced. Applications depend only on contracts; zero Ollama imports in application or domain layers.
+* **Gate A — Architecture & Structural Boundaries**: Inward dependency direction strictly enforced. Applications depend only on contracts; zero Ollama imports in application or domain layers.
 * **Gate B — Code Quality & Type Safety**: Pure Python typing with standard library dataclasses, enums, and protocols; external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
 * **Gate C — Software Testing**: 63 hermetic unit tests cover request formatting, response parsing, error mapping, bounded retry, and schema validation using in-memory test doubles; statement coverage measurement: *Not Verified*.
 * **Gate D — AI Evaluation**: Versioned 30-scenario dataset (`eval_dataset.jsonl`) and automated evaluation runner measuring authoritative schema adherence ($\ge 0.98$) and adversarial handling.
