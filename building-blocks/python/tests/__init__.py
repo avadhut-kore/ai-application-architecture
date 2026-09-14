@@ -1,0 +1,9 @@
+"""Contract tests for building-blocks Python package."""
+
+import sys
+from pathlib import Path
+
+# Ensure package directory is in sys.path for direct test runs
+_pkg_root = Path(__file__).resolve().parent.parent
+if str(_pkg_root) not in sys.path:
+    sys.path.insert(0, str(_pkg_root))

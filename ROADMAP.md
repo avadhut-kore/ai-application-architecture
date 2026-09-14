@@ -41,25 +41,29 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 1: Engineering Standards & Governance (COMPLETED — READY FOR REVIEW)
+## Phase 1: Engineering Standards & Governance (COMPLETED)
 * **Objective**: Establish the repository's engineering constitution covering coding, testing, AI evaluation, security, reliability, observability, data, APIs, documentation, Git workflows, and Definition of Done.
 * **Scope**:
   * General engineering standards and the Architecture Complexity Rule.
   * Primary language standards: Python (`mypy --strict`, `ruff`, `pytest`), .NET 8 LTS / modern C# (`dotnet format`, analyzers, nullable references), and TypeScript (`tsc --strict`, `eslint`, `vitest`).
   * Secondary enterprise language standard: Java 21 LTS / Spring Boot (conventions, JPA/transactions, JUnit 5).
   * Testing standards (risk-based portfolio, deterministic vs. probabilistic eval separation, test doubles policy, mature coverage policy).
-  * AI evaluation standards (metrics, `eval_dataset.jsonl` schema, golden benchmarks, regression gating).
-  * Security engineering standards (OWASP Top 10 for LLMs mitigations, untrusted boundaries, least privilege, secrets policy).
-  * Reliability and observability standards (conditional retries, circuit breaking, OpenTelemetry GenAI semantic conventions, correlation).
-  * API design, data persistence principles, and AI-generated data provenance rules.
-  * Tier-aware Definition of Done, evidence record standards, and Git/PR workflows.
-  * Executable documentation quality and link validation baseline (`scripts/validate-docs.py`).
+  * AI evaluation standards (eval sets, metrics, regression prevention, synthetic data governance).
+  * Security standards (AI security, prompt injection defense, data privacy, dependency management).
+  * Reliability, resilience, and rate-limiting standards.
+  * Observability & telemetry standards (OpenTelemetry GenAI semantic conventions, logging, metrics).
+  * Data management, vector store, and persistence standards.
+  * Configuration and secrets management standards.
+  * API design standards (REST, streaming/SSE, MCP).
+  * Documentation and diagramming standards (Mermaid C4, ADRs).
+  * Definition of Done (DoD) checklist.
+  * Git workflows, branching, and commit conventions.
 * **Dependencies**: Phase 0.
 * **Exit Criteria**: Authoritative engineering standards documented in `docs/engineering/`; executable documentation validation script operational with passing verification.
 
 ---
 
-## Phase 2: Repository Foundation & Minimum Core Contracts
+## Phase 2: Repository Foundation & Minimum Core Contracts (COMPLETED — READY FOR REVIEW)
 * **Objective**: Establish monorepo structure, dependency boundaries, and minimal viable architectural contracts.
 * **Scope**:
   * Modular monorepo dependency boundaries and folder layouts (`apps/`, `building-blocks/`, `platform/`).

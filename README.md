@@ -109,5 +109,5 @@ Consult the authoritative standards in `docs/architecture/`:
 ## 6. Current Phase Status
 
 > [!IMPORTANT]
-> **Current Phase: Phase 1 — Engineering Standards & Governance (Completed — Ready for Independent Review)**  
-> In accordance with Phase 0 and Phase 1 constraints, **no application code or speculative infrastructure is currently implemented**. This repository establishes the governance foundation, architectural principles, taxonomies, quality gates, and enforceable engineering standards required to support future reference implementations. Consult [ROADMAP.md](ROADMAP.md) for future phase schedules.
+> **Current Phase: Phase 2 — Repository Foundation & Minimum Core Contracts**  
+> In accordance with Phase 2 scope, this repository establishes the physical monorepo foundation, dependency boundaries, cross-platform validation tooling, and bounded capability contracts required prior to foundational AI implementations. Consult [ROADMAP.md](ROADMAP.md) for complete phase schedules.

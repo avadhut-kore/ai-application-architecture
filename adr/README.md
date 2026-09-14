@@ -81,4 +81,4 @@ Every ADR must include:
 | ADR Number | Title | Status | Date |
 | :--- | :--- | :--- | :--- |
 | *Template* | [ADR Standard Template](template.md) | Standard | 2026-09-14 |
-| *Note* | *Phase 0 establishes governance. Phase 1 & 2 ADRs will be indexed here as architectural foundations are formalized.* | — | — |
+| **[ADR-0001](0001-minimum-core-contracts-and-repository-foundation.md)** | [Minimum Core Contracts & Repository Foundation](0001-minimum-core-contracts-and-repository-foundation.md) | Accepted | 2026-09-14 |
