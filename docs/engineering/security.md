@@ -4,7 +4,7 @@ This document establishes the threat modeling principles, security architecture,
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Security controls defined here satisfy Gate G5 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In AI systems, software boundaries and probabilistic boundaries must both be hardened. Model outputs must be treated as untrusted user input.
+> Security controls defined here satisfy [`Gate E (Security & Safety)`](../../QUALITY-GATES.md#gate-e--security--safety) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In AI systems, software boundaries and probabilistic boundaries must both be hardened. Model outputs must be treated as untrusted user input.
 
 ---
 
@@ -54,7 +54,7 @@ All reference architectures must address the OWASP Top 10 for LLM Applications:
 | **LLM06: Excessive Agency** | Agent possesses open-ended tool access or executes destructive actions autonomously. | Principle of Least Privilege, human-in-the-loop (HITL) gates for state mutations, and fine-grained tool authorization. |
 | **LLM07: System Prompt Leakage** | Attackers extract internal system architecture, prompts, and business logic. | Architecture designed assuming prompts are accessible; no proprietary trade secrets stored inside prompts. |
 | **LLM08: Vector & Embedding Weaknesses** | Exploitation of vector similarity search to bypass access control or inject adversarial embeddings. | Tenant isolation in vector indices, row-level security (RLS) on document metadata, and embedding dimension validation. |
-| **LLM09: Misinformation & Hallucination** | System presents fabricated facts as authoritative enterprise truth. | Grounded RAG architecture with citation enforcement, hallucination metric gating (Faithfulness ≥ 0.90), and clear confidence disclaimers. |
+| **LLM09: Misinformation & Hallucination** | System presents fabricated facts as authoritative enterprise truth. | Grounded RAG architecture with citation enforcement, hallucination metric gating (Gate D Faithfulness ≥ 0.85, recommended target ≥ 0.90), and clear confidence disclaimers. |
 | **LLM10: Unbounded Consumption** | Resource exhaustion, token denial-of-service, or cost spikes from looping queries. | Hard token limits per request, request rate limiting, maximum loop counters in agents, and streaming timeouts. |
 
 ---

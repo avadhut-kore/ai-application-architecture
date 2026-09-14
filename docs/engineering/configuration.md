@@ -4,7 +4,7 @@ This document establishes the configuration hierarchy, environment management, a
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Configuration standards in this document satisfy Gate G6 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). All reference applications must strictly separate code, configuration, secrets, and prompts.
+> Configuration standards in this document satisfy [`Gate B (Code Quality & Type Safety)`](../../QUALITY-GATES.md#gate-b--code-quality--type-safety) and [`Gate J (Production Readiness & Resilience)`](../../QUALITY-GATES.md#gate-j--production-readiness--resilience) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). All reference applications must strictly separate code, configuration, secrets, and prompts.
 
 ---
 
@@ -135,8 +135,10 @@ Every reference application and runnable component must provide a documented `.e
 # Environment Mode: development | staging | production
 APP_ENV=development
 
-# AI Inference Execution Mode: mode-a (local ollama) | mode-b (mock) | cloud
-AI_EXECUTION_MODE=mode-a
+# Local-First Execution Mode per docs/architecture/local-first.md:
+# mode-a (Offline Local) | mode-b (Local-First, default) | mode-c (Cloud-Comparable)
+# Note: In-memory test doubles belong to automated unit tests, not runtime execution modes.
+AI_EXECUTION_MODE=mode-b
 
 # Local Ollama Configuration (Mode A)
 OLLAMA_ENDPOINT=http://localhost:11434

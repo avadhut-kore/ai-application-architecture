@@ -72,7 +72,7 @@ All verification reports must classify evidence into one of three explicit types
   * **Schema Adherence**: $\ge 0.98$ (valid output parsing without syntax errors).
   * **Adversarial Handling**: Explicit test cases where the model abstains or flags unanswerable queries.
 * **Applicability**: Tier 1 (Reference Applications).
-* **Verification Method**: Execution of the application's evaluation runner script (`python eval/eval_runner.py`).
+* **Verification Method**: Execution of the application's evaluation runner or test suite (e.g., `python eval/eval_runner.py`, `dotnet test`, or `npm run test:eval` appropriate to the application ecosystem).
 * **Evidence Expected**: Generated evaluation report (`eval/results/eval_report_<timestamp>.json`) containing quantitative metric scores meeting or exceeding required thresholds.
 
 ---

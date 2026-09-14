@@ -4,7 +4,7 @@ This document establishes the documentation standards, tier-graduated requiremen
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Documentation standards defined in this document satisfy Gate G1, Gate G2, and Gate G7 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In an enterprise architecture repository, documentation is an executable engineering artifact, not an afterthought.
+> Documentation standards defined in this document satisfy [`Gate H (Documentation & Architectural Integrity)`](../../QUALITY-GATES.md#gate-h--documentation--architectural-integrity) and [`Gate A (Architecture & Structural Boundaries)`](../../QUALITY-GATES.md#gate-a--architecture--structural-boundaries) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In an enterprise architecture repository, documentation is an executable engineering artifact, not an afterthought.
 
 ---
 

@@ -3,8 +3,8 @@
 This document defines mandatory engineering standards, idiom guidelines, and operational constraints for Java implementations in the `ai-application-architecture` repository.
 
 > [!IMPORTANT]
-> **Secondary Enterprise Language Status**  
-> As established in [`docs/architecture/language-strategy.md`](../architecture/language-strategy.md), Java is an **approved secondary enterprise language**. Java implementations are created **only where JVM enterprise architectural value is demonstrated** (such as Spring Boot enterprise service integrations, event-driven streaming with Kafka, or legacy enterprise core modernisation). Universal translation of all reference applications into Java is deliberately avoided to prevent maintenance bloat.
+> **Secondary Enterprise Language Status & Applicability**  
+> Apply these standards when Java is selected for a concrete implementation. As established in [`docs/architecture/language-strategy.md`](../architecture/language-strategy.md), Java is an **approved secondary enterprise language**. Java implementations are created **only where JVM enterprise architectural value is demonstrated** (such as Spring Boot enterprise service integrations, event-driven streaming with Kafka, or legacy enterprise core modernisation). Universal translation of all reference applications into Java is deliberately avoided to prevent maintenance bloat.
 
 ---
 

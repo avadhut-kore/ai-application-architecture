@@ -50,6 +50,25 @@ All contributors and AI coding agents operate under a strict governance hierarch
 > **More specific standards may refine general standards, but they must never silently violate higher-level architecture principles.**  
 > When a specific implementation requires a justified deviation from an architectural standard, that deviation must be explicitly authorized and recorded in an approved Architecture Decision Record in [`adr/`](../../adr/README.md).
 
+### Normative Governance & Authoritative Ownership
+
+To prevent competing requirements and documentation divergence, each concern in this repository has exactly one authoritative source:
+
+| Concern | Authoritative Source | Normative Role & Ownership |
+| :--- | :--- | :--- |
+| **Architecture Principles** | [`docs/architecture/*`](../architecture/principles.md) | Foundational architectural tenets, taxonomies, local-first policies, reference tiers, and anti-patterns. |
+| **Quality Gates & Acceptance Criteria** | [`QUALITY-GATES.md`](../../QUALITY-GATES.md) | Mandatory repository release gates (Gates A through J), minimum thresholds, and PASS/FAIL criteria. |
+| **Engineering Standards** | [`docs/engineering/*`](README.md) | Concrete implementation standards, language idioms, security controls, telemetry schemas, and testing guidelines. |
+| **Definition of Done** | [`definition-of-done.md`](definition-of-done.md) | Implementation and readiness checklists derived from and mapped directly to the authoritative Quality Gates. |
+| **AI Evaluation Methodology** | [`ai-evaluation.md`](ai-evaluation.md) | Statistical evaluation architecture, metric scoring guidelines, dataset design, and regression testing methods. |
+| **Roadmap & Phase Sequencing** | [`ROADMAP.md`](../../ROADMAP.md) | Phase scope boundaries, entry/exit criteria, and roadmap milestones. |
+| **Agent Behavior & Protocol** | [`AGENTS.md`](../../AGENTS.md) | Operational rules, mandatory workflow steps, verification mandates, and self-assessment policies for AI coding agents. |
+| **Architecture Decisions** | [`adr/*`](../../adr/README.md) | Immutable records of architectural choices, trade-offs, evaluated alternatives, and consequences. |
+
+> [!CRITICAL]
+> **Normative Authority Rule**  
+> [`QUALITY-GATES.md`](../../QUALITY-GATES.md) is the **sole authoritative source** for Quality Gates A through J, acceptance criteria, gate thresholds, and PASS/FAIL conditions. A specialized engineering standard may explain how to satisfy a gate or recommend stronger engineering practices, but it must **never** silently redefine, rename, or compete with an authoritative quality gate.
+
 ---
 
 ## 3. Engineering Standards Catalog
@@ -80,7 +99,7 @@ All contributors and AI coding agents operate under a strict governance hierarch
 
 Engineering standards must be applied proportionally to the artifact's [Reference Implementation Tier](../architecture/reference-standard.md):
 
-* **Tier 1 (Reference Application)**: Full production rigor across all standards (architecture, tests, evals, security, telemetry, full documentation).
-* **Tier 2 (Pattern Example)**: Focused standards (clean code, deterministic tests, lightweight documentation; evals only if demonstrating an AI pattern).
-* **Tier 3 (Platform Component)**: Contract rigor, hermetic test doubles, failure recovery, and integration guidelines.
-* **Tier 4 (Template)**: Scaffolding integrity and configuration templates.
+* **Tier 1 (Reference Application)**: Subject to **all** Quality Gates (Gates A–J). Full production rigor across architecture, types, tests, evals, security, telemetry, performance, documentation, local demo, and resilience.
+* **Tier 2 (Pattern Example)**: Subject to Gates B, C, H, and I. Focused standards: clean types, deterministic unit/boundary tests, clean documentation, and local execution demo.
+* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, F, and H. Strict architectural boundary isolation, type safety, hermetic test doubles, OpenTelemetry spans, and contract documentation.
+* **Tier 4 (Enterprise Template)**: Subject to Gates B and H. Validated scaffolding baseline, strict type safety, and scaffold usage documentation.

@@ -4,7 +4,7 @@ This document establishes the persistence boundaries, schema evolution rules, mu
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Data standards defined in this document satisfy Gate G1, Gate G5, and Gate G6 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In enterprise AI, preserving data integrity, auditability, and provenance is critical when mixing human-authored data with probabilistic model generations.
+> Data standards defined in this document satisfy [`Gate A (Architecture & Structural Boundaries)`](../../QUALITY-GATES.md#gate-a--architecture--structural-boundaries) and [`Gate E (Security & Safety)`](../../QUALITY-GATES.md#gate-e--security--safety) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In enterprise AI, preserving data integrity, auditability, and provenance is critical when mixing human-authored data with probabilistic model generations.
 
 ---
 

@@ -4,7 +4,7 @@ This document establishes the branching model, Conventional Commits specificatio
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Source control standards in this document satisfy Gate G7 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). Clean commit history, traceable changes, and verified pull requests are prerequisites for production readiness.
+> Source control standards in this document satisfy [`Gate H (Documentation & Architectural Integrity)`](../../QUALITY-GATES.md#gate-h--documentation--architectural-integrity) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). Clean commit history, traceable changes, and verified pull requests are prerequisites for production readiness.
 
 ---
 
@@ -91,6 +91,6 @@ Every Pull Request must include verifiable evidence corresponding to the tier of
 
 Reviewers (human or automated governance checks) must verify:
 1. **Phase Boundary Integrity**: Does this PR introduce future-phase speculative code?
-2. **Local-First Compliance**: Does the code execute in Mode A (Ollama) or Mode B (in-memory test doubles) without requiring paid API keys?
+2. **Local-First Compliance**: Does the code execute in Mode A (Offline Local) or Mode B (Local-First) without requiring paid API keys?
 3. **No Fake Delays**: Are there any hardcoded `time.sleep()` calls mimicking AI behavior?
 4. **Separation of Assessment from Acceptance**: The author or agent must never declare their own work independently certified.

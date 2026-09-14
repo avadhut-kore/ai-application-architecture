@@ -4,7 +4,7 @@ This document establishes the error taxonomy, retry policies, circuit breaking m
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Reliability standards in this document satisfy Gate G6 and Gate G1 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). AI inference endpoints are inherently prone to latency variance, rate limiting, and output non-determinism. Applications must be architected for resilience from the ground up.
+> Reliability standards in this document satisfy [`Gate J (Production Readiness & Resilience)`](../../QUALITY-GATES.md#gate-j--production-readiness--resilience) and [`Gate A (Architecture & Structural Boundaries)`](../../QUALITY-GATES.md#gate-a--architecture--structural-boundaries) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). AI inference endpoints are inherently prone to latency variance, rate limiting, and output non-determinism. Applications must be architected for resilience from the ground up.
 
 ---
 

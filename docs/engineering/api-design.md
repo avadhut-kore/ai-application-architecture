@@ -4,7 +4,7 @@ This document establishes the RESTful conventions, streaming protocols, error sc
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> API standards defined in this document satisfy Gate G1 and Gate G6 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). All external and inter-service interfaces must be explicitly documented, strongly typed, and resilient against client desynchronization.
+> API standards defined in this document satisfy [`Gate A (Architecture & Structural Boundaries)`](../../QUALITY-GATES.md#gate-a--architecture--structural-boundaries) and [`Gate J (Production Readiness & Resilience)`](../../QUALITY-GATES.md#gate-j--production-readiness--resilience) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). All external and inter-service interfaces must be explicitly documented, strongly typed, and resilient against client desynchronization.
 
 ---
 

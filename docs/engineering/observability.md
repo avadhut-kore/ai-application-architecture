@@ -4,7 +4,7 @@ This document establishes the distributed tracing, structured logging, performan
 
 > [!IMPORTANT]
 > **Authoritative Baseline**  
-> Telemetry controls in this document satisfy Gate G6 and Gate G5 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In AI workloads, observability must encompass not only system health (CPU, RAM, latency) but also AI-specific operational metrics (token counts, prompt lengths, model identifiers, and finish reasons).
+> Telemetry controls in this document satisfy [`Gate F (Observability & Telemetry)`](../../QUALITY-GATES.md#gate-f--observability--telemetry) and [`Gate E (Security & Safety)`](../../QUALITY-GATES.md#gate-e--security--safety) in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). In AI workloads, observability must encompass not only system health (CPU, RAM, latency) but also AI-specific operational metrics (token counts, prompt lengths, model identifiers, and finish reasons).
 
 ---
 

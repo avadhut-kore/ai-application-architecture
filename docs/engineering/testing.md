@@ -69,14 +69,14 @@ Over-mocking produces brittle tests that pass while systems fail in production. 
 > **Coverage Philosophy**  
 > High test coverage does not guarantee correctness, but low coverage guarantees unverified risk. Coverage metrics serve as a defect-prevention baseline, not an architectural vanity metric.
 
-In accordance with [`QUALITY-GATES.md`](../../QUALITY-GATES.md) (Gate G3), minimum coverage thresholds are graduated by reference implementation tier:
+In accordance with [`QUALITY-GATES.md`](../../QUALITY-GATES.md) (**Gate C — Software Testing**), deterministic domain logic, workflow state machines, and data mappers must achieve a minimum of **85% statement coverage** using hermetic unit tests. Across the overall codebase (including application services and infrastructure adapters), minimum coverage targets are graduated by reference implementation tier:
 
-| Reference Implementation Tier | Line Coverage | Branch Coverage | Enforcement Mechanism |
+| Reference Implementation Tier | Overall Line Coverage | Overall Branch Coverage | Domain Module Coverage (Gate C) |
 | :--- | :--- | :--- | :--- |
-| **Tier 1: Enterprise Reference App** | ≥ 80% | ≥ 75% | Automated CI gate (`pytest-cov`, `coverlet`, `jacoco`). |
-| **Tier 2: Pattern Example** | ≥ 70% | ≥ 65% | Automated CI gate. |
-| **Tier 3: Platform Component** | ≥ 85% | ≥ 80% | Automated CI gate (strictly audited). |
-| **Tier 4: Enterprise Template** | ≥ 60% | ≥ 50% | Automated CI gate on scaffolded baseline. |
+| **Tier 1: Enterprise Reference App** | ≥ 80% | ≥ 75% | **≥ 85% statement (Mandatory Gate C)** |
+| **Tier 2: Pattern Example** | ≥ 70% | ≥ 65% | **≥ 85% statement (Mandatory Gate C)** |
+| **Tier 3: Platform Component** | ≥ 85% | ≥ 80% | **≥ 85% statement (Mandatory Gate C)** |
+| **Tier 4: Enterprise Template** | ≥ 60% | ≥ 50% | Scaffolding test baseline |
 
 ### Exclusion Rules
 Coverage exclusions must be minimal and justified in writing:

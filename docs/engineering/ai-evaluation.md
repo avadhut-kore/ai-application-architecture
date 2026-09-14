@@ -1,10 +1,14 @@
-# AI Behavioral Evaluation Standards
+# AI Behavioral Evaluation Standards & Methodology
 
-This document establishes the evaluation architecture, dataset standards, metric definitions, and regression gating for generative AI workloads across the `ai-application-architecture` repository.
+This document establishes the evaluation architecture, dataset design conventions, metric scoring methodology, and regression gating for generative AI workloads across the `ai-application-architecture` repository.
 
 > [!IMPORTANT]
-> **Authoritative Baseline**  
-> AI evaluation provides objective verification for Gate G4 in [`QUALITY-GATES.md`](../../QUALITY-GATES.md). No AI reference application may be certified as production-ready without passing automated evaluation against an authoritative golden dataset.
+> **Normative Authority Rule**  
+> In accordance with [`docs/engineering/README.md`](README.md):
+> * **[`QUALITY-GATES.md`](../../QUALITY-GATES.md) (Gate D)** is the **sole authoritative source** for acceptance criteria, mandatory minimums ($\ge 30$ scenarios, Faithfulness $\ge 0.85$, Context Relevance $\ge 0.80$, Schema Adherence $\ge 0.98$), and PASS/FAIL conditions.
+> * **This document (`ai-evaluation.md`)** is the authoritative source for **evaluation methodology, dataset schema conventions, evaluator strategy, regression testing, and implementation guidance**.
+>
+> Numerical targets in this document higher than `QUALITY-GATES.md` represent recommended engineering goals, not competing release gates.
 
 ---
 
@@ -36,9 +40,15 @@ Unlike deterministic software assertions that compare actual against expected va
 
 ---
 
-## 2. Evaluation Dataset Specification (`eval_dataset.jsonl`)
+## 2. Evaluation Dataset Conventions (`eval_dataset.jsonl`)
 
-Every reference application implementing generative features must provide a versioned evaluation dataset in JSON Lines format located at `tests/eval/eval_dataset.jsonl`.
+Every reference application implementing probabilistic capabilities must provide a versioned evaluation dataset in JSON Lines format.
+
+### Dataset Location Conventions
+To accommodate a polyglot repository (.NET, Python, TypeScript, Java), dataset locations follow standard directory conventions appropriate to the project structure:
+* In Python / Node projects: `tests/eval/eval_dataset.jsonl` or `eval/eval_dataset.jsonl`.
+* In .NET projects: `tests/<Project>.EvalTests/eval_dataset.jsonl` or `eval/eval_dataset.jsonl`.
+* In Java projects: `src/test/resources/eval/eval_dataset.jsonl`.
 
 ### Standard JSON Schema
 Each line in `eval_dataset.jsonl` must be a self-contained JSON object conforming to the following structure:
@@ -65,56 +75,62 @@ Each line in `eval_dataset.jsonl` must be a self-contained JSON object conformin
 ```
 
 ### Dataset Composition Rules
-* **Minimum Size**: Tier 1 reference applications must maintain a minimum of 50 curated golden evaluation samples; Tier 2 applications require at least 20 samples.
-* **Golden Quality**: Ground truth values must be human-curated or mathematically verifiable. Never generate synthetic ground truth without manual architectural review.
-* **Adversarial & Edge Cases**: At least 15% of the evaluation dataset must include adversarial inputs: prompt injections, out-of-domain queries, malformed contexts, and ambiguity edge cases.
+* **Mandatory Minimum Size**: The authoritative minimum is **$\ge 30$ representative scenarios** as mandated by Gate D in [`QUALITY-GATES.md`](../../QUALITY-GATES.md).
+* **Recommended Target**: For complex or high-risk Tier 1 applications, maintaining 50+ curated scenarios is strongly recommended to capture statistical variance. For Tier 2 pattern examples, $\ge 20$ curated scenarios is recommended where probabilistic features are demonstrated.
+* **Golden Quality**: Ground truth values must be human-curated or domain-verified. Never commit synthetic ground truth without architectural review.
+* **Adversarial & Edge Cases**: At least 15% of scenarios must test boundary cases: unanswerable questions (abstention), prompt injection attempts, out-of-domain queries, and malformed inputs.
 
 ---
 
-## 3. Evaluation Metric Portfolio
+## 3. Evaluation Metric Portfolio & Thresholds
 
-Reference applications must evaluate performance across seven core dimensions:
+Evaluation metrics combine mandatory gate criteria from Gate D with recommended engineering targets:
 
-| Metric | Target Boundary | Evaluation Method | Primary Failure Mode |
+| Metric | Authoritative Acceptance Gate ([Gate D](../../QUALITY-GATES.md#gate-d--ai-evaluation)) | Recommended Engineering Target | Evaluation Method & Description |
 | :--- | :--- | :--- | :--- |
-| **Faithfulness / Grounding** | ≥ 0.90 (0 to 1.0) | Claim verification against retrieved context using local LLM judge or deterministic citation matching. | Hallucination, unsupported claims. |
-| **Context Relevance** | ≥ 0.85 (0 to 1.0) | Sentence relevance of retrieved chunks to input query. | Noise in context, irrelevant retrieval. |
-| **Answer Relevance** | ≥ 0.85 (0 to 1.0) | Semantic similarity of generated answer to the original intent. | Vagueness, evasion, topic drifting. |
-| **Deterministic Constraints** | 100% Pass | RegEx, string boundary checks, and schema validation (`must_contain`, `must_not_contain`). | Formatting breaches, leaked instructions. |
-| **Safety & Refusal Rate** | 100% Refusal on Adversarial | Evaluates proper refusal on prompt injection, jailbreak attempts, or data exfiltration prompts. | System prompt leaking, safety bypass. |
-| **Latency SLA (P95)** | ≤ 3,500 ms (local) | Measured execution time per sample from request dispatch to complete generation. | Inefficient retrieval, unoptimized prompts. |
-| **Token Efficiency** | Under defined budget | Total input + output tokens consumed per evaluation run. | Verbose system prompts, duplicate context. |
+| **Groundedness / Faithfulness** | **$\ge 0.85$** (Mandatory Gate) | $\ge 0.90$ (Stronger Target) | Factual claims supported by retrieved context. Scored via local LLM judge or citation overlap. |
+| **Context Relevance** | **$\ge 0.80$** (Mandatory Gate) | $\ge 0.85$ (Stronger Target) | Pertinence of retrieved chunks to input query. Filters retrieval noise. |
+| **Schema Adherence** | **$\ge 0.98$** (Mandatory Gate) | $1.00$ (Zero parse errors) | Structured output parsing into validated schemas (Pydantic / Zod / C# records). |
+| **Adversarial Handling** | **Explicit Abstention** (Mandatory Gate) | 100% Refusal on Jailbreaks | Model properly abstains, flags unanswerable queries, and refuses prompt injections. |
+| **Answer Relevance** | N/A (Methodology Target) | $\ge 0.85$ (Recommended Target)| Semantic alignment of generated answer to query intent. |
+| **Latency SLA (P95)** | Documented in Gate G | $\le 3,500\text{ ms}$ (Local 8B) | Request dispatch to complete generation time on local workstation. |
+| **Token Efficiency** | Monitored in Gate F | Within defined budget | Prompt tokens + completion tokens consumed per evaluation run. |
 
 ---
 
-## 4. Local-First Evaluation Runner
+## 4. Local-First Evaluation Runner & Polyglot Execution
 
 In compliance with [`docs/architecture/local-first.md`](../architecture/local-first.md), evaluation harnesses must execute locally without requiring paid third-party API subscriptions:
 
-1. **Local Judge Execution (Mode A / Mode B)**:
-   * Evaluation runners must support local models (e.g., `llama3.2:3b` or `phi3:mini` via Ollama) or deterministic Python/C# heuristics (cosine similarity via local ONNX embeddings, BLEU/ROUGE, token overlap).
-2. **Deterministic Fallback Scoring**:
-   * For continuous integration (CI) environments without GPU acceleration, the evaluation suite must provide a deterministic heuristic scoring mode (testing structural constraints, keywords, and exact matches) that executes in under 60 seconds.
-3. **Reproducibility**:
-   * Evaluation runs must log model temperature (`temperature = 0.0`), top_p, seed, model tag, and execution timestamp into an evaluation report (`tests/eval/latest_results.json`).
+### Gate Requirement vs. Implementation Tooling
+* **Gate Requirement**: AI evaluation must be automated, executable by a single command, and produce verifiable structured evidence (e.g., JSON report).
+* **Polyglot Tooling**: Teams use runner tooling appropriate to the application's ecosystem:
+  * In Python: `python eval/eval_runner.py` or `pytest tests/eval`.
+  * In .NET: `dotnet test tests/<Project>.EvalTests`.
+  * In TypeScript: `npm run test:eval` or `vitest run tests/eval`.
+  * In Java: `./gradlew test --tests "*EvalTest*"`.
+
+### Local Execution Modes
+* **Mode A (Offline Local)**: The evaluation runner executes against a fully local model runtime (e.g., Ollama with `llama3.2:3b` or `phi3:mini`) with zero external network connectivity.
+* **Mode B (Local-First)**: The runner executes against local models while allowing designated external APIs (e.g. web search or enterprise fixtures) where part of the architecture under test.
+* **Deterministic Fallback Scoring**: For CI environments without GPU acceleration, the evaluation runner must support a deterministic heuristic scoring mode (testing string constraints, regex patterns, and exact schema parsing) that completes in under 60 seconds.
 
 ---
 
 ## 5. Continuous Integration & Regression Gating
 
-AI evaluation must run as an automated step in the validation pipeline:
+AI evaluation must run as an automated verification step in the pipeline:
 
 * **Zero Regression Rule**:
-  * A pull request or change must not decrease the overall faithfulness score or answer relevance score by more than 2% compared to the main baseline.
-  * Deterministic constraints and safety refusal tests must have zero regressions (100% pass rate).
-* **Automated Evidence Generation**:
-  * The evaluation runner must generate a human-readable and machine-verifiable summary markdown table:
+  * A pull request must not decrease the overall faithfulness score or context relevance score below the authoritative Gate D thresholds ($\ge 0.85$ and $\ge 0.80$ respectively), nor decrease them by more than 2% compared to the main baseline.
+  * Schema adherence and safety refusal tests must maintain 100% pass on deterministic constraints.
+* **Automated Evidence Output**:
+  * The evaluation runner must generate a machine-readable JSON report (`eval_report_<timestamp>.json`) and a summary table for verification:
     ```markdown
-    | Metric | Baseline | Current Run | Delta | Status |
-    | :--- | :--- | :--- | :--- | :--- |
-    | Faithfulness | 0.932 | 0.935 | +0.003 | PASS |
-    | Context Relevance | 0.880 | 0.884 | +0.004 | PASS |
-    | Answer Relevance | 0.895 | 0.891 | -0.004 | PASS |
-    | Safety Refusals | 100% | 100% | 0.000 | PASS |
-    | P95 Latency | 2,120 ms | 2,050 ms | -70 ms | PASS |
+    | Metric | Gate D Requirement | Baseline | Current Run | Delta | Status |
+    | :--- | :--- | :--- | :--- | :--- | :--- |
+    | Faithfulness | ≥ 0.85 | 0.912 | 0.918 | +0.006 | PASS |
+    | Context Relevance | ≥ 0.80 | 0.840 | 0.844 | +0.004 | PASS |
+    | Schema Adherence | ≥ 0.98 | 1.000 | 1.000 | 0.000 | PASS |
+    | Adversarial Refusal | Explicit Abstention | 100% | 100% | 0.000 | PASS |
     ```

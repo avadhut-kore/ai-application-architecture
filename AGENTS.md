@@ -2,7 +2,7 @@
 
 > [!CRITICAL]
 > **MANDATORY PRE-IMPLEMENTATION GOVERNANCE RULE**  
-> **An AI coding agent must not implement a new reference application until it has read the repository governance, relevant requirements, architecture documents, applicable quality gates, and local-first policy.**  
+> **An AI coding agent must not implement a new reference application until it has read the repository governance, relevant requirements, architecture documents, applicable engineering standards, applicable quality gates, and local-first policy.**  
 > Any implementation begun without completing this architectural inspection violates repository governance and will be rejected.
 
 ---
@@ -28,8 +28,8 @@ Inspect and understand [`README.md`](README.md), [`VISION.md`](VISION.md), [`SCO
 ### 3. Read Relevant Requirements
 Before modifying an application or component, read its problem statement, functional requirements (FRs), and non-functional requirements (NFRs).
 
-### 4. Read Relevant Architecture
-Review [`docs/architecture/principles.md`](docs/architecture/principles.md), [`docs/architecture/taxonomy.md`](docs/architecture/taxonomy.md), [`docs/architecture/local-first.md`](docs/architecture/local-first.md), and application-specific architecture documents and ADRs.
+### 4. Read Relevant Architecture & Engineering Standards
+Review [`docs/architecture/principles.md`](docs/architecture/principles.md), [`docs/architecture/taxonomy.md`](docs/architecture/taxonomy.md), [`docs/architecture/local-first.md`](docs/architecture/local-first.md), and application-specific architecture documents and ADRs. Before implementation, read all repository governance plus the architecture and engineering standards in [`docs/engineering/`](docs/engineering/README.md) applicable to the current scope (e.g., testing standards for test suites, language standards for language-specific work, security standards for boundary design). Do not read every engineering document for trivial changes; apply relevance-based discipline.
 
 ### 5. Respect Phase Boundaries
 Do not implement capabilities, services, or applications assigned to future roadmap phases. If assigned to Phase 0, do not implement Phase 1 tooling or Phase 4 models.
@@ -37,8 +37,8 @@ Do not implement capabilities, services, or applications assigned to future road
 ### 6. Avoid Speculative Implementation
 Do not create empty placeholder files, speculative interface hierarchies (`IAgentLoop`, `IMemoryStore`), or unneeded infrastructure before a concrete application requires them.
 
-### 7. Avoid Duplicate Documentation
-Maintain one authoritative source per topic. Do not duplicate principles, taxonomy descriptions, or standards across multiple markdown files. Use cross-references.
+### 7. Avoid Duplicate Documentation & Follow Authoritative Sources
+Maintain one authoritative source per topic. Do not duplicate principles, taxonomy descriptions, or standards across multiple markdown files. Use cross-references. Agents must follow the authoritative-source hierarchy and must not resolve conflicting normative documents by choosing whichever requirement is easier. If a conflict is detected: report it, identify authoritative ownership, and remediate deliberately.
 
 ### 8. Avoid Fake Data & Fake AI Behavior
 Never commit fake sleep loops (e.g., `time.sleep(2)`) or hardcoded static strings in production execution paths to mimic AI inference. Real local models (Ollama) or live adapters must execute. Test doubles belong strictly in automated unit tests (`tests/unit/`).
@@ -53,7 +53,7 @@ Every claim in your completion report must be accompanied by verifiable evidence
 Do not state "tests passed" or "quality gates satisfied" unless you actually ran the corresponding command and received exit code 0 with passing assertions.
 
 ### 12. Never Claim Production Readiness Without Satisfying Applicable Gates
-Do not label an implementation as "production-ready" unless it has been objectively verified against all applicable criteria in [QUALITY-GATES.md](QUALITY-GATES.md).
+Do not label an implementation as "production-ready" unless it has been objectively verified against all applicable criteria in [QUALITY-GATES.md](QUALITY-GATES.md) (Gates A–J).
 
 ### 13. Identify Verification Method and Evidence for Every Claim
 > **No verification claim may be made without identifying the verification method and evidence.**  
@@ -67,7 +67,7 @@ When assigned an engineering task, follow this exact linear sequence:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ 1. ARCHITECTURAL RESEARCH                              │
+│ 1. ARCHITECTURAL & ENGINEERING RESEARCH                │
 │    Inspect AGENTS.md, ROADMAP.md, and docs/            │
 └───────────────────────────┬────────────────────────────┘
                             │
@@ -106,8 +106,8 @@ Upon completing any task, produce a structured completion report covering:
 2. **Files Created & Modified**: Explicit list of files with relative paths.
 3. **Architecture Decisions**: Key patterns adopted and ADR references.
 4. **Decisions Deliberately Deferred**: Explicit statement of what was not built and why.
-5. **Quality Gate Verification**: Line-by-line verification against applicable gates in [QUALITY-GATES.md](QUALITY-GATES.md), distinguishing Automated Evidence, Manual Evidence, and Not Verified items.
-6. **Local Execution Verification**: Proof that the system runs under Mode A or Mode B without paid API keys.
+5. **Quality Gate Verification**: Line-by-line verification against applicable gates in [QUALITY-GATES.md](QUALITY-GATES.md) (Gates A–J), distinguishing Automated Evidence, Manual Evidence, and Not Verified items.
+6. **Local Execution Verification**: Proof that the system runs under Mode A (Offline Local) or Mode B (Local-First) without paid API keys.
 7. **Known Risks & Limitations**: Objective documentation of technical trade-offs.
 8. **Remaining Issues & Next Steps**: What remains for subsequent roadmap phases.
 
