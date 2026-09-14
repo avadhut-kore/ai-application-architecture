@@ -94,3 +94,11 @@ Reviewers (human or automated governance checks) must verify:
 2. **Local-First Compliance**: Does the code execute in Mode A (Offline Local) or Mode B (Local-First) without requiring paid API keys?
 3. **No Fake Delays**: Are there any hardcoded `time.sleep()` calls mimicking AI behavior?
 4. **Separation of Assessment from Acceptance**: The author or agent must never declare their own work independently certified.
+
+---
+
+## 5. Phase-Wise Learning Guide Maintenance Rule
+
+To preserve the repository's educational value alongside its architectural rigor:
+* **Post-Freeze Learning Rule**: After a roadmap phase receives independent final acceptance and is frozen, create or update its corresponding learning guide in [`docs/learning/`](../learning/README.md) from the accepted repository implementation before beginning or completing the subsequent phase.
+* **Traceable Documentation**: Learning material must derive strictly from frozen implementation, tests, and ADRs—never from speculative or unapproved designs.
