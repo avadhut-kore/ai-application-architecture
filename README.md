@@ -1,24 +1,24 @@
 # AI Application Architecture
 
-[![Architecture First](https://img.shields.io/badge/Architecture-First-blue.svg)](#architecture-philosophy)
-[![Local First](https://img.shields.io/badge/Local--First-Ollama-purple.svg)](docs/architecture/local-first-ai.md)
-[![Provider Agnostic](https://img.shields.io/badge/Design-Provider--Agnostic-green.svg)](docs/architecture/architecture-principles.md)
+[![Architecture First](https://img.shields.io/badge/Architecture-First-blue.svg)](docs/architecture/principles.md)
+[![Local First](https://img.shields.io/badge/Policy-Local--First-purple.svg)](docs/architecture/local-first.md)
 [![Quality Gates](https://img.shields.io/badge/Quality--Gates-A--J-red.svg)](QUALITY-GATES.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-An enterprise-grade reference architecture, architectural taxonomy, and production implementation repository for modern Artificial Intelligence applications.
+An architectural reference standard, taxonomy, and implementation repository for Artificial Intelligence applications.
 
 ---
 
-## 1. Executive Mission
+## 1. Purpose & Mission
 
-The mission of **`ai-application-architecture`** is to establish a rigorous, production-grade architectural reference standard for designing, engineering, testing, securing, evaluating, observing, and operating AI applications in modern enterprise environments.
+The purpose of **`ai-application-architecture`** is to establish an architectural foundation for designing, building, evaluating, securing, observing, and operating AI applications in enterprise software environments.
 
-Modern AI engineering suffers from pervasive architectural anti-patterns: toy chat interfaces marketed as autonomous agents, brittle prompt chains mistaken for deterministic workflows, hardcoded vendor SDKs creating deep lock-in, unobservable LLM calls, and a total absence of formal evaluation harnesses. 
+Modern AI engineering frequently suffers from structural anti-patterns: simple prompt scripts marketed as autonomous agents, brittle prompt chains mistaken for deterministic workflows, hardcoded vendor SDKs creating deep lock-in, unobservable model calls, and an absence of formal evaluation harnesses. 
 
-This repository exists to replace ad-hoc AI scripting with **disciplined enterprise software architecture**.
+This repository exists to replace ad-hoc AI scripting with **disciplined software architecture**.
 
 ```
-                           Enterprise AI Application Topology
+                           AI Application System Topology
                            
  ┌────────────────────────────────────────────────────────────────────────┐
  │                      Client & Consumption Layer                        │
@@ -28,7 +28,7 @@ This repository exists to replace ad-hoc AI scripting with **disciplined enterpr
  ┌───────────────────────────────────▼────────────────────────────────────┐
  │                     Application & Workflow Boundary                     │
  │   ┌───────────────────────────────┴────────────────────────────────┐   │
- │   │               Deterministic Orchestration Engine               │   │
+ │   │               Deterministic Orchestration Layer                │   │
  │   │  State Machines │ Saga Coordinators │ Business Rules │ Security │   │
  │   └───────────────┬────────────────────────────────┬───────────────┘   │
  │                   │                                │                   │
@@ -39,38 +39,41 @@ This repository exists to replace ad-hoc AI scripting with **disciplined enterpr
  └───────────────────┼────────────────────────────────┼───────────────────┘
                      │                                │
  ┌───────────────────▼────────────────────────────────▼───────────────────┐
- │                   Model Gateway & Abstraction Layer                    │
- │    Auth & Tenancy │ Prompt Guardrails │ Caching │ Fallback Routing     │
+ │               Architectural Port (ILlmClient / Gateway)                │
+ │    Direct Port Interface OR Conditional Model Gateway (Routing/Quotas) │
  └───────────────────┬────────────────────────────────────────────────────┘
                      │
  ┌───────────────────▼────────────────────────────────────────────────────┐
  │                       Provider Execution Layer                         │
- │   Local Runtime (Ollama / vLLM)  │  Cloud Adapters (OpenAI, Azure, GCP)│
+ │   Local Runtime (Ollama / vLLM)  │  Cloud Adapters (Azure, OpenAI, GCP)│
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Target Audience
+## 2. Core Architectural Principles
 
-This repository is engineered specifically for:
+All implementations in this repository adhere to non-negotiable principles defined in [`docs/architecture/principles.md`](docs/architecture/principles.md):
 
-* **Solution Architects & Enterprise Architects**: Defining organizational AI blueprints, technology selection criteria, and integration boundaries.
-* **AI Architects & Technical Architects**: Designing scalable retrieval pipelines, multi-agent coordination protocols, and context memory topologies.
-* **Senior Software Engineers & AI Engineers**: Implementing robust, testable, type-safe, and evaluated AI subsystems without vendor lock-in.
-* **Engineering Leaders & CTOs**: Assessing the maturity, operational cost, and risk profile of AI application patterns.
+1. **Model Output Is Untrusted**: All model outputs must be parsed, schema-validated, and sanitized before ingestion.
+2. **Deterministic Business Rules Remain Deterministic**: Core business logic and calculations must not depend on probabilistic models.
+3. **Provider Decoupling**: Domain logic interfaces with architectural ports, not vendor SDKs.
+4. **Model Gateway Is Conditional**: Centralized gateways are introduced only when multi-provider routing, rate limiting, or shared quotas justify them; small apps use direct port adapters.
+5. **RAG, Memory, Tools, Agents, and Workflows Are Distinct**: Strict conceptual separation across intelligence and orchestration mechanisms.
+6. **Agent Autonomy Must Be Bounded**: Hard caps on iterations, timeouts, token budgets, and tool execution boundaries.
+7. **Local-First AI Execution**: Designed for local development and testing under three defined execution modes (Offline Local, Local-First, Cloud-Comparable).
+8. **Evaluation Is Mandatory for Probabilistic Behavior**: Automated evaluation harnesses scoring groundedness, relevance, and schema adherence against versioned datasets.
 
 ---
 
-## 3. Core Architectural Pillars
+## 3. Four Reference Implementation Tiers
 
-All implementations within this repository adhere strictly to five foundational pillars:
+To avoid forcing a single monolithic standard across disparate components, this repository defines four distinct tiers in [`docs/architecture/reference-standard.md`](docs/architecture/reference-standard.md):
 
-1. **Architecture First**: No implementation precedes formal requirements, domain modeling, architecture diagrams, and Architecture Decision Records (ADRs).
-2. **Local-First AI**: Every reference system must be fully runnable locally without commercial API keys using **Ollama** or compatible local runtimes, while maintaining zero application-level rewrites when deployed to cloud providers.
-3. **Provider-Agnostic Core**: Business logic and intelligence patterns depend exclusively on internal architectural abstractions—never directly on vendor SDKs (`openai`, `anthropic`, `google-generativeai`).
-4. **Deterministic Boundaries**: Deterministic business logic remains deterministic. Probabilistic model output is treated as untrusted external data subject to strict schema validation and guardrails.
-5. **Continuous Evaluation & Observability**: No AI capability is complete without reproducible evaluation datasets, automated scoring (groundedness, relevance, hallucination resistance), OpenTelemetry tracing, and token economics tracking.
+* **Tier 1 — Reference Application**: Comprehensive end-to-end production architecture with complete specifications, unit tests, evals, threat models, observability, and local docker execution.
+* **Tier 2 — Pattern Example**: Focused, runnable demonstration of a single intelligence or architecture pattern without extraneous enterprise plumbing.
+* **Tier 3 — Platform Component**: Reusable building block, adapter, or infrastructure capability (e.g., evaluation runner, model routing, guardrail middleware).
+* **Tier 4 — Template**: Canonical scaffolding archetypes accelerating development.
 
 ---
 
@@ -78,31 +81,28 @@ All implementations within this repository adhere strictly to five foundational 
 
 | Document / Directory | Focus Area | Description |
 | :--- | :--- | :--- |
-| **[VISION.md](VISION.md)** | Strategic Vision | Long-term roadmap, architectural charter, and enterprise differentiation. |
-| **[SCOPE.md](SCOPE.md)** | Operational Scope | Clear delineation of what is in-scope vs. out-of-scope for the repository. |
-| **[ROADMAP.md](ROADMAP.md)** | Phased Roadmap | 15-phase delivery plan from Governance (Phase 0) to v1.0 Reference Release. |
-| **[AGENTS.md](AGENTS.md)** | Agent Constitution | Operating instructions, coding standards, and quality gates for AI coding agents. |
-| **[QUALITY-GATES.md](QUALITY-GATES.md)** | Quality Gates | Gates A through J establishing objective release criteria for all deliverables. |
-| **[docs/architecture/](docs/architecture/)** | Architecture Core | Deep architectural specifications, standards, classification models, and principles. |
-| **[adr/](adr/)** | Decision Records | Formal Architecture Decision Records (ADRs) and standardized templates. |
-| **[docs/](docs/)** | Specialized Domains | Deep-dive domain documentation for AI, Security, Testing, Evaluation, and Observability. |
+| **[`VISION.md`](VISION.md)** | Strategic Vision | Long-term roadmap, architectural charter, and enterprise differentiation. |
+| **[`SCOPE.md`](SCOPE.md)** | Operational Scope | Clear delineation of what is in-scope vs. out-of-scope for the repository. |
+| **[`ROADMAP.md`](ROADMAP.md)** | Phased Roadmap | 15-phase delivery plan from Governance (Phase 0) to v1.0 Reference Release. |
+| **[`AGENTS.md`](AGENTS.md)** | Agent Constitution | Operating instructions, coding standards, and quality gates for AI coding agents. |
+| **[`QUALITY-GATES.md`](QUALITY-GATES.md)** | Quality Gates | Gates A through J establishing objective release criteria for all deliverables. |
+| **[`docs/architecture/`](docs/architecture/)** | Architecture Core | Lean, authoritative architectural standards, principles, taxonomy, and policies. |
+| **[`adr/`](adr/)** | Decision Records | Formal Architecture Decision Records (ADRs) and standardized templates. |
 
 ---
 
 ## 5. Architectural Standards Index
 
-Before contributing or inspecting implementations, consult the authoritative architecture standards:
+Consult the authoritative standards in `docs/architecture/`:
 
-* **[Architecture Principles](docs/architecture/architecture-principles.md)**: The 17 mandatory engineering principles governing all AI implementations.
-* **[Repository Structure Standard](docs/architecture/repository-structure.md)**: Directory layout, monorepo boundaries, and code isolation rules.
-* **[Four-Dimension Architecture Model](docs/architecture/four-dimension-model.md)**: Taxonomy separating Application Type, Intelligence Pattern, Architecture Pattern, and Production Capability.
-* **[Application Taxonomy](docs/architecture/application-taxonomy.md)**: Formal taxonomy across 18 specialized enterprise AI application domains.
-* **[Technology Governance](docs/architecture/technology-governance.md)**: Required abstractions, evaluation matrices, and lifecycle statuses (Adopt, Trial, Assess, Hold).
-* **[Reference Implementation Contract](docs/architecture/reference-implementation-standard.md)**: Mandatory vs. conditional deliverables for every reference application.
-* **[Local-First AI Strategy](docs/architecture/local-first-ai.md)**: Architectural pattern for local execution with Ollama and zero-cloud development.
-* **[Cloud & Production Strategy](docs/architecture/cloud-production-strategy.md)**: Local-to-cloud parity, model gateways, and enterprise scaling.
-* **[Language Strategy](docs/architecture/language-strategy.md)**: Role boundaries for Python, .NET, TypeScript, and Java across the enterprise landscape.
-* **[Architectural Anti-Patterns](docs/architecture/anti-patterns.md)**: 22 critical anti-patterns prohibited across this repository.
+* **[Architecture Principles](docs/architecture/principles.md)**: The 14 non-negotiable engineering principles governing all implementations.
+* **[Application Taxonomy](docs/architecture/taxonomy.md)**: The 15 application domains, intelligence patterns, architecture patterns, and classification dimensions.
+* **[Repository Structure](docs/architecture/repository-structure.md)**: Modular Monorepo layout, zone responsibilities, and dependency rules.
+* **[Reference Standards & Tiers](docs/architecture/reference-standard.md)**: Four reference implementation tiers and deliverables matrix.
+* **[Local-First AI Policy](docs/architecture/local-first.md)**: The three execution modes (Mode A, B, C) and Ollama runtime governance.
+* **[Technology Governance](docs/architecture/technology-governance.md)**: Technology evaluation criteria and Just-in-Time Abstraction Policy.
+* **[Programming Language Strategy](docs/architecture/language-strategy.md)**: Role boundaries for Python, .NET, TypeScript, and Java.
+* **[Prohibited Anti-Patterns](docs/architecture/anti-patterns.md)**: Catalog of 19 prohibited architectural and AI anti-patterns.
 
 ---
 
@@ -110,12 +110,4 @@ Before contributing or inspecting implementations, consult the authoritative arc
 
 > [!IMPORTANT]
 > **Current Phase: Phase 0 — Vision, Scope & Architecture Governance**  
-> In accordance with Phase 0 constraints, **no application code or infrastructure is currently implemented**. This repository is establishing the governance foundation, architectural principles, taxonomies, and quality gates required to support future reference implementations. Consult [ROADMAP.md](ROADMAP.md) for future phase schedules.
-
----
-
-## 7. Governance & Contribution Rule
-
-All human contributors and AI coding agents must comply with [AGENTS.md](AGENTS.md) and pass all checks defined in [QUALITY-GATES.md](QUALITY-GATES.md). 
-
-**Rule Zero**: No implementation may begin until its requirements, architecture specification, and ADR have been reviewed and approved.
+> In accordance with Phase 0 constraints, **no application code or infrastructure is currently implemented**. This repository establishes the governance foundation, architectural principles, taxonomies, and quality gates required to support future reference implementations. Consult [ROADMAP.md](ROADMAP.md) for future phase schedules.

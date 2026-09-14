@@ -1,117 +1,131 @@
 # Enterprise Quality Gates (Gates A through J)
 
-To ensure that every contribution and reference implementation meets enterprise production standards, all deliverables must pass the ten objective **Quality Gates** defined in this document. 
+To ensure that contributions and reference implementations meet objective engineering standards, all repository deliverables must satisfy the criteria defined in these ten **Quality Gates**.
 
-No application, pull request, or architecture phase may be considered complete or marked as "Ready" if any mandatory gate fails.
-
----
-
-## Quality Gate Matrix
-
-| Gate | Category | Objective Focus | Verification Mechanism |
-| :--- | :--- | :--- | :--- |
-| **Gate A** | Architecture & Design | Hexagonal boundaries, ADRs, 4D alignment | Architectural Review & Linting |
-| **Gate B** | Code Quality | Clean code, strict typing, zero duplication | Static Analysis, Type Checkers |
-| **Gate C** | Software Testing | Unit, integration, scenario tests | Automated Test Runners (`pytest`, `dotnet test`) |
-| **Gate D** | AI Evaluation | Groundedness, relevance, schema adherence | Automated Eval Harness (`eval_dataset.jsonl`) |
-| **Gate E** | Security & Safety | OWASP Top 10 for LLMs, secrets, RBAC | Security Scanners (`bandit`, `trivy`, `semgrep`) |
-| **Gate F** | Observability | OpenTelemetry tracing, metrics, logs | Telemetry Spans & Prometheus Validation |
-| **Gate G** | Performance & Sizing | Latency, TTFT, token consumption, memory | Benchmark Harness, Hardware Profiling |
-| **Gate H** | Documentation | Complete reference contract, diagrams | Markdown Lint, Link Validation, Review |
-| **Gate I** | Demo & Local Run | Local execution via Ollama without API keys | Docker Compose & CLI Demo Verification |
-| **Gate J** | Production Readiness | Resilience, graceful degradation, rollback | Fault Injection & Chaos Testing |
+Applicability varies by the [Reference Implementation Tier](docs/architecture/reference-standard.md):
+* **Tier 1 (Reference Application)**: Subject to **all** Quality Gates (Gates A–J).
+* **Tier 2 (Pattern Example)**: Subject to Gates B, C, H, and I.
+* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, F, and H.
+* **Tier 4 (Template)**: Subject to Gates B and H.
 
 ---
 
-## Gate A: Architecture & Design
+## Gate A — Architecture & Structural Boundaries
 
-* **A.1 Hexagonal Separation**: Domain business rules must have zero dependency on frameworks, databases, or LLM provider SDKs. Verified by import dependency inspection.
-* **A.2 Four-Dimension Model Alignment**: The system must be explicitly classified across all four dimensions (Application Type, Intelligence Pattern, Architecture Pattern, Production Capability) per [four-dimension-model.md](docs/architecture/four-dimension-model.md).
-* **A.3 Architecture Decision Records**: Every major structural decision or pattern selection must have an approved ADR in `adr/` following [adr/template.md](adr/template.md).
-* **A.4 Provider Decoupling**: Application must depend strictly on `ILlmProvider` or `IModelGateway`, never on vendor packages (`openai`, `anthropic`, etc.).
-
----
-
-## Gate B: Code Quality
-
-* **B.1 Strict Static Typing**:
-  * Python: `mypy --strict` with zero type errors.
-  * .NET: Zero compiler warnings (`<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`).
-  * TypeScript: Zero `tsc --noEmit` errors with `"strict": true`.
-* **B.2 Linting & Formatting**: Clean run of configured linters (`ruff`, `dotnet format`, `eslint`) with zero rule violations.
-* **B.3 Complexity & Maintainability**: Cyclomatic complexity per function must not exceed 10. No duplicated logic or copy-pasted provider blocks.
-* **B.4 Structured Output Schemas**: All model responses must be parsed into strongly typed domain models using Pydantic, Zod, or C# records.
+* **Requirement**: Domain business logic, state machines, and workflow coordinators must have zero direct compile-time or runtime dependencies on external AI provider SDKs (`openai`, `anthropic`, `google-generativeai`) or web frameworks. All model interactions must pass through architectural ports.
+* **Applicability**: Tier 1 (Reference Applications) and Tier 3 (Platform Components).
+* **Verification Method**: Static import analysis, dependency linter check, and code review.
+* **Evidence Expected**: Automated import scan report proving absence of vendor SDK imports in `domain/` and `application/` source paths; approved Architecture Decision Record in `adr/` for pattern selection.
 
 ---
 
-## Gate C: Software Testing
+## Gate B — Code Quality & Type Safety
 
-* **C.1 Unit Test Coverage**: Minimum **85% statement coverage** across domain logic, workflow state machines, and data mappers.
-* **C.2 Deterministic Test Execution**: Unit tests must execute in isolation using in-memory test doubles without requiring live network access or active LLM endpoints.
-* **C.3 Integration Testing**: Integration test suite verifying end-to-end wiring with local Ollama, vector stores, and relational databases.
-* **C.4 Scenario / Boundary Testing**: Explicit test cases covering context overflow, malformed JSON responses, rate limits, and network timeout errors.
-
----
-
-## Gate D: AI Evaluation
-
-* **D.1 Evaluation Dataset**: Application must include a versioned, curated evaluation dataset (`eval_dataset.jsonl`) containing minimum 30 representative test prompts with reference contexts.
-* **D.2 Groundedness & Faithfulness**: Automated evaluation score must achieve:
-  * **Faithfulness / Groundedness** $\ge 0.85$ (answer relies strictly on context).
-  * **Context Relevance** $\ge 0.80$ (retrieved chunks are pertinent to query).
-* **D.3 Schema Adherence Rate**: Minimum **98% valid schema adherence** across evaluation iterations without unhandled parsing exceptions.
-* **D.4 Hallucination & Negative Testing**: Evaluation suite must include negative test cases (unanswerable questions) where the model must abstain or report lack of context rather than fabricate answers.
+* **Requirement**: Source code must be strictly typed, adhere to configured linters without warnings, and parse all external/model inputs into validated schemas.
+* **Applicability**: All Tiers (Tiers 1, 2, 3, and 4).
+* **Verification Method**: Execution of language-specific static type checkers and linters:
+  * Python: `mypy --strict` and `ruff check`.
+  * .NET: `dotnet build --warnaserror` and `dotnet format --verify-no-changes`.
+  * TypeScript: `tsc --noEmit` with `"strict": true` and `eslint`.
+* **Evidence Expected**: Clean terminal execution logs with zero errors and zero warnings in CI/CD pipeline.
 
 ---
 
-## Gate E: Security & Safety
+## Gate C — Software Testing
 
-* **E.1 Secret Zero-Tolerance**: Zero committed API keys, secrets, or passwords. Scanned and verified using `gitleaks` or equivalent automated pre-commit scanners.
-* **E.2 Prompt Injection Defense**: Input validation layer must detect and neutralize indirect/direct prompt injection attempts per OWASP LLM01.
-* **E.3 Tool Authorization & Least Privilege**: Agents must enforce explicit tool whitelisting and require user authorization for destructive or state-mutating operations (OWASP LLM08).
-* **E.4 Dependency Vulnerability Scan**: Zero `Critical` or `High` CVEs in application dependencies, verified via `trivy` or `pip-audit`.
-
----
-
-## Gate F: Observability & Telemetry
-
-* **F.1 OpenTelemetry GenAI Conventions**: Traces must be emitted for every LLM, retrieval, and tool invocation using standardized semantic conventions.
-* **F.2 Token Tracking & Cost Attribution**: Telemetry must record input tokens, output tokens, total tokens, model name, and estimated cost per request.
-* **F.3 Latency & Duration Metrics**: Standard metrics exported for Time-to-First-Token (TTFT), total request latency, and retrieval search duration.
-* **F.4 Structured Logging**: Contextual JSON logs incorporating `trace_id`, `span_id`, tenant ID, and operation name. Zero raw PII in logs.
+* **Requirement**: Deterministic domain logic, workflow state machines, and data mappers must achieve a minimum of **85% statement coverage** using hermetic unit tests. Unit tests must execute in isolation using in-memory test doubles without requiring live network access or running models. Integration tests must verify end-to-end component wiring against local containers.
+* **Applicability**: Tiers 1, 2, and 3.
+* **Verification Method**: Automated execution of test runners (`pytest --cov`, `dotnet test /p:CollectCoverage=true`, `vitest run`).
+* **Evidence Expected**: Test execution report showing $\ge 85\%$ coverage for domain modules and 100% passing test assertions without skipped failures.
 
 ---
 
-## Gate G: Performance & Sizing
+## Gate D — AI Evaluation
 
-* **G.1 Hardware Profiling**: Application documentation must declare minimum hardware requirements (RAM, VRAM, CPU cores) to run successfully on developer machines.
-* **G.2 Latency Thresholds**:
-  * Local Ollama inference: Time-to-first-token $\le 2.0$s on standard developer workstations (Apple Silicon M-series or 16GB RAM x86 with mid-range GPU).
-  * Streaming responses enabled for interactive UI/chat endpoints.
-* **G.3 Memory & Resource Leaks**: Process memory profile must remain stable across 1,000 consecutive simulated requests without memory leakage.
-
----
-
-## Gate H: Documentation & Contracts
-
-* **H.1 Reference Implementation Contract**: Application contains all mandatory files specified in [reference-implementation-standard.md](docs/architecture/reference-implementation-standard.md) (README, architecture diagram, domain model, API contract, threat model, run guide).
-* **H.2 Visual Architecture Diagrams**: System architecture and data flow visualized using Mermaid.js diagrams directly embedded in markdown.
-* **H.3 Trade-offs & Limitations**: Explicit section documenting architectural compromises, trade-offs, and known operational boundaries.
-* **H.4 Zero Broken Links**: All relative markdown links and cross-references must resolve cleanly without 404s.
+* **Requirement**: Every probabilistic capability must include an automated evaluation harness and a versioned evaluation dataset (`eval_dataset.jsonl`) containing at least 30 representative test scenarios. Evaluation runs must achieve:
+  * **Groundedness / Faithfulness**: $\ge 0.85$ (factual claims supported by retrieved context).
+  * **Context Relevance**: $\ge 0.80$ (retrieved context chunks pertinent to query).
+  * **Schema Adherence**: $\ge 0.98$ (valid output parsing without syntax errors).
+  * **Adversarial Handling**: Explicit test cases where the model abstains or flags unanswerable queries.
+* **Applicability**: Tier 1 (Reference Applications).
+* **Verification Method**: Execution of the application's evaluation runner script (`python eval/eval_runner.py`).
+* **Evidence Expected**: Generated evaluation report (`eval/results/eval_report_<timestamp>.json`) containing quantitative metric scores meeting or exceeding required thresholds.
 
 ---
 
-## Gate I: Demo & Local Execution
+## Gate E — Security & Safety
 
-* **I.1 Zero-API-Key Local Execution**: Application must launch and execute completely using local Ollama and local containers without requiring paid cloud API keys.
-* **I.2 Single-Command Bootstrapping**: Developer must be able to boot the entire stack with a single command (e.g., `docker compose up` or `task dev`).
-* **I.3 Interactive Demonstration**: Includes a verified demonstration script or interactive CLI/UI allowing an architect to test the core value proposition in under 5 minutes.
+* **Requirement**: Systems must prevent secret leakage, mitigate prompt injection risks, enforce least-privilege tool execution, and maintain zero high-severity dependencies:
+  * Zero committed API keys, tokens, or plaintext credentials.
+  * Inputs and retrieved contexts sanitized before model submission.
+  * State-mutating tools enforce authorization checks and audit logging.
+  * Zero `Critical` or `High` CVEs in application dependencies.
+* **Applicability**: Tier 1 (Reference Applications) and Tier 3 (Platform Components).
+* **Verification Method**: Execution of automated security scanners (`gitleaks`, `bandit`, `pip-audit` / `trivy`) and review of the application's `threat-model.md`.
+* **Evidence Expected**: Clean security scanner output logs and documented STRIDE/OWASP LLM threat model in application documentation.
 
 ---
 
-## Gate J: Production Readiness & Resilience
+## Gate F — Observability & Telemetry
 
-* **J.1 Circuit Breaking & Retries**: External provider calls must be wrapped in configurable retries with exponential backoff and circuit breaking to prevent cascading failure.
-* **J.2 Graceful Degradation**: If an AI model or vector store becomes unavailable, the application must degrade gracefully (e.g., return cached answers, notify user of service disruption) rather than crash with uncaught stack traces.
-* **J.3 Health Checks & Probes**: Readiness and liveness endpoints (`/health/ready`, `/health/live`) reporting status of downstream vector stores, databases, and model endpoints.
-* **J.4 Configuration Validation**: Application fails fast at startup if required configuration parameters or environment variables are missing or invalid.
+* **Requirement**: External model interactions, retrieval queries, and tool executions must emit structured OpenTelemetry trace spans. Telemetry spans must capture:
+  * `gen_ai.system` (provider identifier).
+  * `gen_ai.request.model` and `gen_ai.response.model`.
+  * Request latency / duration.
+  * Token consumption (`usage.input_tokens`, `usage.output_tokens`) where provided.
+  * Success, error, or fallback state.
+  * Raw customer PII must be redacted before export.
+* **Applicability**: Tier 1 (Reference Applications) and Tier 3 (Platform Components).
+* **Verification Method**: Trace emission verification in automated integration tests or trace inspection using OpenTelemetry Collector mock exporter.
+* **Evidence Expected**: JSON trace span dump or integration test log asserting presence of required `gen_ai.*` semantic attributes.
+
+---
+
+## Gate G — Performance & Sizing
+
+* **Requirement**: Applications must document explicit hardware sizing requirements and demonstrate stable memory and latency behavior:
+  * Time-to-First-Token (TTFT) $\le 2.0\text{s}$ on standard developer workstations (Apple Silicon M-series or 16GB RAM x86 with local Ollama 8B model).
+  * Interactive endpoints must implement chunked streaming.
+  * Zero memory leaks across 500 consecutive test requests.
+* **Applicability**: Tier 1 (Reference Applications).
+* **Verification Method**: Local benchmark script execution measuring TTFT, total latency, and process RSS memory.
+* **Evidence Expected**: Benchmark results table in the application's `README.md` or architecture document documenting measured latencies and workstation specifications.
+
+---
+
+## Gate H — Documentation & Architectural Integrity
+
+* **Requirement**: Implementations must provide comprehensive documentation conforming to their tier contract:
+  * Clear problem statement and business context.
+  * Renderable Mermaid.js architecture and sequence diagrams.
+  * Documented trade-offs, architectural compromises, and known limitations.
+  * All markdown links and cross-references must resolve cleanly without broken links.
+* **Applicability**: All Tiers (Tiers 1, 2, 3, and 4).
+* **Verification Method**: Automated markdown link checker and peer architectural review.
+* **Evidence Expected**: Clean link checker execution log and completed documentation checklist.
+
+---
+
+## Gate I — Demo & Operational Verification
+
+* **Requirement**: The application must be runnable by a new developer on a clean workstation following a documented, single-command bootstrapping procedure:
+  * Executes locally without requiring commercial cloud API keys (under Mode A or Mode B).
+  * Interactive demonstration script or CLI executable in $< 5$ minutes.
+  * Clean shutdown and teardown with zero orphaned processes or resources.
+* **Applicability**: Tier 1 (Reference Applications) and Tier 2 (Pattern Examples).
+* **Verification Method**: Clean workstation trial run executing documented commands (`docker compose up`, `task demo`).
+* **Evidence Expected**: Step-by-step verification log demonstrating successful execution from cold clone to completion.
+
+---
+
+## Gate J — Production Readiness & Resilience
+
+* **Requirement**: Systems must demonstrate resilience under downstream model or network failure:
+  * Configurable timeouts on all external provider calls.
+  * Exponential backoff retries on transient errors (HTTP 429, 503).
+  * Circuit breaking preventing cascading failure during provider outages.
+  * Graceful degradation returning cached data or user notification when models are unavailable.
+  * Health probes (`/health/live`, `/health/ready`) reporting downstream readiness.
+* **Applicability**: Tier 1 (Reference Applications).
+* **Verification Method**: Automated fault injection test (e.g., simulating HTTP 503 from provider and verifying fallback or error response).
+* **Evidence Expected**: Passing resilience test logs demonstrating circuit tripping and graceful degradation handling.

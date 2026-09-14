@@ -1,8 +1,13 @@
 # Architecture Delivery Roadmap: Phases 0 to 14
 
-This document defines the multi-phase engineering and delivery lifecycle for the **`ai-application-architecture`** repository. 
+This document defines the sequential engineering and delivery lifecycle for the **`ai-application-architecture`** repository.
 
-To maintain enterprise quality and avoid architectural drift, **phases must be executed sequentially**. Progress from one phase to the next is strictly gated by the completion of all exit criteria and validation against [QUALITY-GATES.md](QUALITY-GATES.md).
+To maintain architectural integrity, phases are executed sequentially. Advancement to subsequent phases requires meeting defined exit criteria and satisfying applicable quality gates defined in [QUALITY-GATES.md](QUALITY-GATES.md).
+
+> [!IMPORTANT]
+> **The Early Cross-Cutting Capability Principle**  
+> Later platform phases do **not** mean that evaluation, security, observability, and provider abstractions are absent before then.  
+> Minimal contracts and capabilities begin early (Phase 2). Later phases provide consolidation, dashboards, enterprise policies, advanced tooling, scale, and cross-application governance.
 
 ---
 
@@ -10,216 +15,178 @@ To maintain enterprise quality and avoid architectural drift, **phases must be e
 
 ```
 Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6
-Governance  Engineering Repo       App         AI          RAG &       AI
-& Vision    Standards   Foundations Template    Foundations Knowledge   Agents
+Governance  Engineering Core       Tiered      AI          Knowledge   Agentic
+& Vision    Standards   Contracts  Templates   Foundations Intel & RAG Task Exec
    │
    ▼
 Phase 7 ──► Phase 8 ──► Phase 9 ──► Phase 10 ─► Phase 11 ─► Phase 12 ─► Phase 13 ─► Phase 14
-Agentic     Doc & Multi Voice &     Research &  Eval, Safety Infra &    Hardening &  v1.0
-Workflows   Modal AI    Real-Time   Decision    & Tracing   Deploy      Audit        Release
+Agentic     Document    Multimodal  Voice &     Research &  Decision    Hardening &  v1.0
+Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit       Release
 ```
 
 ---
 
 ## Phase 0: Vision, Scope & Architecture Governance (CURRENT)
-* **Objective**: Establish the strategic vision, operational scope, architectural principles, 4D classification model, application taxonomy, quality gates, and agent constitution for the repository.
-* **Scope**: Foundational markdown governance documentation, standards in `docs/architecture/`, domain indices, and ADR framework.
-* **Expected Applications**: None (strictly architectural governance).
-* **Architecture Capabilities**: Architecture-first constitution, Four-Dimension Architecture Model, 17 AI engineering principles, Quality Gates A–J.
-* **Dependencies**: None.
+* **Objective**: Establish the architectural vision, operational scope, core principles, application taxonomy, local-first execution policy, reference tiers, quality gates, and AI coding agent constitution.
+* **Scope**: Foundational markdown governance documentation, standards in `docs/architecture/`, and ADR framework.
+* **Expected Deliverables**: Governance constitution; zero application code or premature infrastructure.
 * **Exit Criteria**:
-  * All Phase 0 governance documents created and peer-reviewed.
-  * Zero application or infrastructure code committed.
-  * Self-audit completed with passing score across all governance dimensions.
+  * All Phase 0 governance documents created, verified, and cross-referenced.
+  * Self-audit completed verifying compliance with all Phase 0 architectural constraints.
 
 ---
 
-## Phase 1: Engineering Governance & Tooling Standards
-* **Objective**: Define code formatting, static analysis, type checking, security linting, pre-commit hooks, and CI quality pipelines across all targeted programming languages.
-* **Scope**: Linters, formatters, type checkers (`mypy`, `ruff`, `dotnet format`, `eslint`, `spotless`), git hook configurations, CI workflow definitions for linting and compliance.
-* **Expected Applications**: None.
-* **Architecture Capabilities**: Automated enforcement of Clean Architecture rules, strict typing, dependency vulnerability scanning, license compliance verification.
+## Phase 1: Engineering Standards & Governance
+* **Objective**: Define actionable coding, testing, security, and documentation standards across supported languages.
+* **Scope**:
+  * Coding and type-safety standards for Python (`mypy --strict`, `ruff`), .NET (`dotnet format`, nullable references), and TypeScript (`tsc --strict`).
+  * Testing standards (deterministic unit test requirements, coverage metrics, mocking rules).
+  * Security scanning rules (pre-commit secret detection, dependency vulnerability audits).
+  * Branching, PR review checklists, and evidence expectations for pull requests.
 * **Dependencies**: Phase 0.
-* **Exit Criteria**:
-  * Unified pre-commit and CI verification pipeline operational.
-  * Static analysis policies enforced for Python, .NET, TypeScript, and Java.
-  * Automated license and secret detection gates active.
+* **Exit Criteria**: Unified engineering standards documented; automated linting and formatting configs operational.
 
 ---
 
-## Phase 2: Repository Foundation & Core Abstractions
-* **Objective**: Implement the vendor-agnostic core abstractions, model gateway interfaces, error hierarchies, and common domain primitives in `building-blocks/`.
-* **Scope**: Base interfaces for `ILlmProvider`, `IEmbeddingProvider`, `IVectorStore`, `ITool`, `IMemoryStore`, `IGuardrail`, and telemetry wrappers.
-* **Expected Applications**: None (shared abstractions only).
-* **Architecture Capabilities**: Hexagonal ports, dependency injection setup, model gateway abstraction, unified error handling, OpenTelemetry context propagation.
+## Phase 2: Repository Foundation & Minimum Core Contracts
+* **Objective**: Establish monorepo structure, dependency boundaries, and minimal viable architectural contracts.
+* **Scope**:
+  * Modular monorepo dependency boundaries and folder layouts (`apps/`, `building-blocks/`, `platform/`).
+  * Minimal provider abstraction contract (`ILlmClient`, `IEmbeddingClient`).
+  * Minimal telemetry contract (OpenTelemetry context propagation and trace attributes).
+  * Minimal evaluation result contract (`EvaluationResult`, scoring schema).
+  * Minimal guardrail contract (`IGuardrail` for input/output schema validation).
+  * **Explicit Boundary**: Avoid premature agent, workflow, or memory abstractions.
 * **Dependencies**: Phase 1.
-* **Exit Criteria**:
-  * Core interfaces defined with comprehensive unit tests and docstrings.
-  * Zero vendor-specific SDK imports in domain interfaces.
-  * Mock provider and in-memory test doubles available for automated testing.
+* **Exit Criteria**: Minimal contracts defined and tested with in-memory doubles; zero external vendor dependencies in domain interfaces.
 
 ---
 
-## Phase 3: Reference Application Template & Developer Ergonomics
-* **Objective**: Create the canonical "gold-standard" reference application template implementing the Reference Implementation Contract.
-* **Scope**: A standalone, runnable template skeleton incorporating hexagonal structure, docker compose environment, local Ollama connectivity, automated tests, eval harness stub, and telemetry.
-* **Expected Applications**: Archetype template (`apps/_template`).
-* **Architecture Capabilities**: Reference implementation contract scaffolding, health checks, local container orchestration, standardized config loading (`.env` validation).
+## Phase 3: Tiered Reference Implementation Templates
+* **Objective**: Build reusable, unpopulated scaffolding archetypes for each reference tier.
+* **Scope**:
+  * **Tier 1 Template**: Comprehensive Reference Application skeleton (`apps/_template/reference-app`).
+  * **Tier 2 Template**: Focused Pattern Example skeleton (`apps/_template/pattern-example`).
+  * **Tier 3 Template**: Platform Component skeleton (`building-blocks/_template`).
 * **Dependencies**: Phase 2.
-* **Exit Criteria**:
-  * Developer can run `task app:create --name <new-app>` or copy template and execute it locally in < 3 minutes.
-  * Conforms 100% to [reference-implementation-standard.md](docs/architecture/reference-implementation-standard.md).
-  * Passes Quality Gates A, B, C, F, and H.
+* **Exit Criteria**: Templates validate against linters; quick-start scaffolding scripts functional.
 
 ---
 
-## Phase 4: AI Foundations & Model Gateway Implementation
-* **Objective**: Build production-grade adapters for local runtimes (Ollama) and major cloud providers, alongside the resilient Model Gateway pattern.
-* **Scope**: Ollama local adapter, streaming support, model gateway with rate limiting, circuit breaker, retry backoff, fallback routing, and token counting.
-* **Expected Applications**: `platform/model-gateway` reference service.
-* **Architecture Capabilities**: Dynamic provider routing, graceful degradation, local-to-cloud parity, semantic caching, token economics tracking.
+## Phase 4: AI Foundations
+* **Objective**: Implement the first functional foundational capabilities and adapters.
+* **Scope**:
+  * Concrete local runtime adapter for **Ollama**.
+  * Structured output generation with schema validation (Pydantic / Zod).
+  * Minimal OpenTelemetry tracing emitting model name, latency, and token metrics.
+  * Minimal evaluation harness executing benchmark scoring against local models.
+  * Minimal input validation guardrail.
 * **Dependencies**: Phase 3.
-* **Exit Criteria**:
-  * Seamless runtime switching between local Ollama and cloud endpoints via config toggle.
-  * Fault injection tests proving circuit breaking and fallback routing operate correctly.
-  * OpenTelemetry tracing verified across all provider calls.
+* **Exit Criteria**: Working local Ollama integration executing structured generation with automated test coverage and telemetry spans.
 
 ---
 
-## Phase 5: RAG & Knowledge Intelligence Reference Architectures
-* **Objective**: Deliver enterprise reference implementations for Retrieval-Augmented Generation across structured and unstructured domains.
-* **Scope**: Advanced chunking, hybrid search (dense + sparse BM25), reciprocal rank fusion (RRF), re-ranking, multi-tenancy vector partitioning, query rewriting, and context window optimization.
-* **Expected Applications**:
-  * `apps/rag-enterprise-knowledge-base` (Document search with citation verification).
-  * `apps/rag-hybrid-tabular` (Structured enterprise DB + unstructured document synthesis).
-* **Architecture Capabilities**: Knowledge graph integration, vector metadata filtering, citation verification, hallucination guardrails.
+## Phase 5: Knowledge Intelligence & RAG
+* **Objective**: Build canonical enterprise knowledge intelligence reference implementations.
+* **Scope**:
+  * Enterprise RAG reference application (Tier 1).
+  * Semantic chunking, dense vector search, hybrid search (dense + BM25), and reciprocal rank fusion.
+  * Grounded citation extraction and hallucination detection.
+  * Automated RAG evaluation dataset (`eval_dataset.jsonl`) and scoring harness.
 * **Dependencies**: Phase 4.
-* **Exit Criteria**:
-  * Automated RAG evaluation achieving > 0.85 groundedness and context relevance.
-  * Runs completely locally on Ollama (e.g., Llama 3 8B + nomic-embed-text).
-  * Passes Quality Gates A through J.
+* **Exit Criteria**: Fully runnable local RAG application meeting Quality Gates A through J; evaluation achieving groundedness $\ge 0.85$.
 
 ---
 
-## Phase 6: AI Agents & Tool Execution Architectures
-* **Objective**: Implement bounded, deterministic agent architectures with explicit capability boundaries, tool calling, and sandbox execution.
-* **Scope**: ReAct loops, Plan-and-Solve patterns, Tool registries with strict JSON-schema parameter validation, human approval checkpoints for side effects.
-* **Expected Applications**:
-  * `apps/agent-it-incident-triage` (Automated diagnostic agent with restricted read-only tools).
-  * `apps/agent-customer-support` (Multi-turn tool-using service agent with human escalation).
-* **Architecture Capabilities**: Bounded reasoning iterations (cycle prevention), tool authorization policies, stateful conversation memory, deterministic exception recovery.
+## Phase 6: Agentic Task Execution
+* **Objective**: Implement bounded, tool-using autonomous agents with explicit authorization controls.
+* **Scope**:
+  * Agent task execution reference application (Tier 1).
+  * ReAct reasoning loops, typed tool calling, parameter schema validation.
+  * Hard execution boundaries (iteration caps, timeouts, cycle detection).
+  * State-mutating tool authorization checks and audit logging.
 * **Dependencies**: Phase 5.
-* **Exit Criteria**:
-  * Zero unbounded execution loops (hard iteration and token caps enforced).
-  * Tool injection mitigation verified via adversarial test suite.
-  * Full trajectory tracing in OpenTelemetry.
+* **Exit Criteria**: Autonomous agent successfully completes multi-step diagnostics within bounded iterations; full trajectory captured in traces.
 
 ---
 
-## Phase 7: Agentic Workflows & Multi-Agent Systems
-* **Objective**: Architect stateful multi-agent collaboration topologies and deterministic workflow orchestrations.
-* **Scope**: Hierarchical supervisor-worker patterns, debate/consensus patterns, saga-based transactional agent workflows, long-running state machines.
-* **Expected Applications**:
-  * `apps/workflow-financial-reconciliation` (Multi-agent discrepancy analysis with audit trail).
-  * `apps/workflow-code-review-assistant` (Specialized multi-agent reviewer team).
-* **Architecture Capabilities**: Distributed state persistence, human-in-the-loop pause/resume, event-driven message bus communication between agents.
+## Phase 7: Agentic Workflow Orchestration
+* **Objective**: Build durable multi-agent workflows, human-in-the-loop gates, and persistent state management.
+* **Scope**:
+  * Multi-agent collaborative workflow application (Tier 1).
+  * Durable state machine orchestration and saga compensation.
+  * Human-in-the-loop asynchronous pause/resume checkpoints.
 * **Dependencies**: Phase 6.
-* **Exit Criteria**:
-  * Stateful workflows survive process restart without state loss.
-  * Human approval checkpoints function asynchronously via webhook/event trigger.
-  * Complete trajectory and inter-agent communication captured in telemetry.
+* **Exit Criteria**: Workflow survives process restart without state loss; human approval checkpoint functions asynchronously.
 
 ---
 
-## Phase 8: Document AI & Multimodal Intelligence
-* **Objective**: Implement enterprise Intelligent Document Processing (IDP) and vision-language architectures.
-* **Scope**: Complex multi-page PDF processing, form extraction, table recognition, vision-model visual QA, optical character reconciliation.
-* **Expected Applications**:
-  * `apps/document-ai-invoice-processing` (Multi-layout enterprise invoice extraction and validation).
-  * `apps/multimodal-inspection-assistant` (Image inspection and compliance checklist verification).
-* **Architecture Capabilities**: Multimodal model abstraction, structured schema extraction with Pydantic/Zod, confidence scoring, human verification routing for low-confidence fields.
+## Phase 8: Document Intelligence
+* **Objective**: Implement structured document processing (IDP) over complex enterprise documents.
+* **Scope**:
+  * Intelligent document processing reference application (Tier 1).
+  * Layout analysis, multi-page extraction, table extraction, and optical confidence scoring.
+  * Human review routing for low-confidence fields.
 * **Dependencies**: Phase 7.
-* **Exit Criteria**:
-  * Schema extraction accuracy > 95% on standardized benchmark test sets.
-  * Graceful handling of corrupted, blurry, or malformed input documents.
-  * Local multimodal execution via Ollama (e.g. LLaVA or MiniCPM-V).
+* **Exit Criteria**: End-to-end extraction accuracy $\ge 95\%$ on standardized document benchmark test sets.
 
 ---
 
-## Phase 9: Voice & Real-Time AI Systems
-* **Objective**: Architect low-latency voice, speech-to-text (STT), text-to-speech (TTS), and streaming conversational interfaces.
-* **Scope**: WebSocket streaming architectures, audio chunking, real-time interruptibility (barge-in), low-latency VAD (Voice Activity Detection).
-* **Expected Applications**:
-  * `apps/voice-realtime-call-assistant` (Streaming audio conversational agent).
-* **Architecture Capabilities**: Full-duplex WebSocket streaming, backpressure control, audio buffer management, sub-second latency optimization.
+## Phase 9: Multimodal Intelligence
+* **Objective**: Implement joint reasoning across visual assets, documents, and textual context.
+* **Scope**:
+  * Multimodal inspection reference application (Tier 1).
+  * Vision-language model adapters (local VLM / cloud).
+  * Image tiling, resolution management, and spatial grounding.
 * **Dependencies**: Phase 8.
-* **Exit Criteria**:
-  * End-to-end audio round-trip latency < 800ms locally.
-  * Barge-in correctly cancels model streaming response mid-sentence.
-  * Telemetry tracks time-to-first-token (TTFT) and audio buffer underruns.
+* **Exit Criteria**: Multimodal reference application runs locally against supported vision models with automated evaluation.
 
 ---
 
-## Phase 10: AI Research & Decision Intelligence Systems
-* **Objective**: Implement deep-search, multi-source synthesis, and probabilistic decision intelligence architectures.
-* **Scope**: Recursive web/document decomposition, source citation trees, confidence-weighted decision matrices, causal graph reasoning.
-* **Expected Applications**:
-  * `apps/research-market-intelligence` (Autonomous deep research and report synthesis).
-  * `apps/decision-credit-risk-evaluator` (Transparent decision intelligence combining ML score with LLM explanatory rationale).
-* **Architecture Capabilities**: Citation graph construction, multi-source conflict resolution, counterfactual reasoning checks, auditable decision logging.
+## Phase 10: Voice & Real-Time Interaction
+* **Objective**: Architect ultra-low-latency real-time voice and streaming conversational systems.
+* **Scope**:
+  * Real-time voice interaction reference application (Tier 1).
+  * Full-duplex WebSocket streaming, Voice Activity Detection (VAD), and streaming TTS.
+  * Barge-in interruption handling and sub-second latency optimization.
 * **Dependencies**: Phase 9.
-* **Exit Criteria**:
-  * 100% of claims in generated synthesis mapped to verifiable source citations.
-  * Transparent audit trail generated for every decision step.
+* **Exit Criteria**: End-to-end round-trip audio latency $< 800\text{ms}$ locally; barge-in cancels audio stream correctly.
 
 ---
 
-## Phase 11: Enterprise Evaluation, Safety & Observability Platform
-* **Objective**: Consolidate and centralize evaluation frameworks, red-teaming harnesses, and operational dashboards.
-* **Scope**: Automated regression evaluation test runners, adversarial red-teaming pipelines, LLM-as-a-judge calibration tools, Grafana/Prometheus dashboard blueprints.
-* **Expected Applications**:
-  * `platform/evaluation-harness` (Unified CLI and service for CI/CD eval runs).
-  * `platform/observability-dashboards` (Preconfigured Grafana/OTel dashboards).
-* **Architecture Capabilities**: Continuous eval regression gating, automated drift detection, centralized prompt injection scanning, cost-per-tenant telemetry.
+## Phase 11: Research & Synthesis Systems
+* **Objective**: Architect evidence-driven deep research, multi-source investigation, and report synthesis.
+* **Scope**:
+  * Autonomous deep research reference application (Tier 1).
+  * Recursive query decomposition, citation graph generation, and contradictory evidence resolution.
 * **Dependencies**: Phase 10.
-* **Exit Criteria**:
-  * CI pipeline executes automated eval regression on every pull request.
-  * Real-time Grafana dashboards display token usage, latency percentiles (p50/p95/p99), and eval scores.
+* **Exit Criteria**: 100% of synthesized claims map to verifiable source citations in the output graph.
 
 ---
 
-## Phase 12: AI Infrastructure, Containerization & Production Deployment
-* **Objective**: Establish production deployment patterns, cloud-native deployment manifests, and infrastructure blueprints.
-* **Scope**: Helm charts, Kubernetes operators, GPU workload scheduling blueprints, zero-downtime model swap deployments, serverless gateway configurations.
-* **Expected Applications**:
-  * `platform/deployment-blueprints` (Kubernetes manifests, Terraform modules, Docker Compose topologies).
-* **Architecture Capabilities**: Horizontal pod autoscaling based on queue depth / concurrency, private model endpoint ingress, secret injection via external secret managers.
+## Phase 12: Decision Intelligence & Advanced Platform Capabilities
+* **Objective**: Build high-stakes decision support architectures and consolidate platform capabilities.
+* **Scope**:
+  * Decision intelligence reference application combining deterministic rules, ML scores, and LLM reasoning.
+  * Advanced platform capabilities: consolidated evaluation dashboards, centralized model gateway with dynamic routing, and cloud deployment blueprints.
 * **Dependencies**: Phase 11.
-* **Exit Criteria**:
-  * Complete reference deployment tested against local Kubernetes (k3s/kind) and cloud target (EKS/AKS/GKE).
-  * Zero-downtime model endpoint migration demonstrated.
+* **Exit Criteria**: Auditable decision traces generated; centralized model gateway demonstrates fallback routing and rate limiting.
 
 ---
 
-## Phase 13: Architecture Hardening & Independent Security Audit
-* **Objective**: Perform comprehensive architectural review, penetration testing, adversarial prompt injection audits, and performance benchmarking across all reference applications.
-* **Scope**: Full-suite vulnerability scanning, OWASP Top 10 for LLMs audit, secret leakage sweeps, load testing under high concurrency.
-* **Expected Applications**: All applications from Phases 4 through 12.
-* **Architecture Capabilities**: Hardened security perimeters, documented threat models, verified circuit breaking under catastrophic downstream provider failure.
+## Phase 13: Architecture Hardening & Independent Audit
+* **Objective**: Conduct comprehensive architectural review, security penetration audits, and performance profiling.
+* **Scope**:
+  * Full-suite vulnerability scans, OWASP Top 10 for LLMs audit, secret sweeps.
+  * Concurrency load testing and resilience fault injection across all applications.
 * **Dependencies**: Phase 12.
-* **Exit Criteria**:
-  * Zero Critical or High vulnerabilities across code and dependencies.
-  * Formal Security & Architecture Audit Report published in `docs/decisions/`.
+* **Exit Criteria**: Zero Critical or High vulnerabilities; audit report published in `docs/decisions/`.
 
 ---
 
 ## Phase 14: v1.0 Reference Architecture Release
-* **Objective**: Formal public release of the enterprise reference architecture repository.
-* **Scope**: Comprehensive documentation polish, end-to-end verification of all reference apps, multi-language parity checks, unified quick-start guides, and public release notes.
-* **Expected Applications**: Complete portfolio of reference implementations.
-* **Architecture Capabilities**: Production-grade, peer-reviewed, fully observable, locally executable, enterprise AI reference benchmark.
+* **Objective**: Publish the stable v1.0 enterprise reference architecture release.
+* **Scope**:
+  * Documentation audit, verified quick-start developer experience, and release tagging.
 * **Dependencies**: Phase 13.
-* **Exit Criteria**:
-  * Every application builds, passes tests, runs locally on Ollama, and passes Quality Gates A–J.
-  * Complete developer documentation and architecture diagrams published.
-  * v1.0 tag cut and released.
+* **Exit Criteria**: All applications runnable, observable, evaluated, and compliant with Quality Gates A–J.

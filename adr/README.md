@@ -72,7 +72,7 @@ Every ADR must include:
 4. **Decision Outcome**: The chosen path and explicit rationale.
 5. **Consequences**: Positive, negative, and neutral trade-offs.
 6. **Alternatives Rejected**: Concrete reasons why other options were declined.
-7. **Compliance with Principles**: Mapping to [docs/architecture/architecture-principles.md](../docs/architecture/architecture-principles.md).
+7. **Compliance with Principles**: Mapping to [docs/architecture/principles.md](../docs/architecture/principles.md).
 
 ---
 

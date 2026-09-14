@@ -9,23 +9,29 @@
 
 ---
 
-## 1. Context and Problem Statement
+## 1. Context
 
-[Describe the context and problem being addressed. What situation requires an architectural decision? What business, functional, or non-functional requirements must be satisfied? Keep this objective and grounded in facts.]
-
----
-
-## 2. Decision Drivers
-
-* [Driver 1, e.g., Local development requirement without cloud API keys]
-* [Driver 2, e.g., Strict vendor portability across cloud providers]
-* [Driver 3, e.g., Latency requirement of < 500ms time-to-first-token]
-* [Driver 4, e.g., OpenTelemetry semantic tracing compatibility]
-* [Driver 5, e.g., Memory and hardware constraints on developer workstations]
+[Describe the business, architectural, or organizational context in which this decision is being made. What system, application, or platform component is affected?]
 
 ---
 
-## 3. Options Considered
+## 2. Problem Statement
+
+[What specific technical or architectural problem needs to be resolved? What functional or non-functional requirements (NFRs) must be satisfied?]
+
+---
+
+## 3. Decision Drivers
+
+* [Driver 1, e.g., Local-first execution feasibility under Mode A or B]
+* [Driver 2, e.g., Strict provider decoupling from vendor SDKs]
+* [Driver 3, e.g., Latency budget of < 1.5s time-to-first-token]
+* [Driver 4, e.g., OpenTelemetry GenAI semantic tracing support]
+* [Driver 5, e.g., Workstation memory constraint on 16GB machines]
+
+---
+
+## 4. Options Considered
 
 ### Option 1: [Option Name]
 * **Description**: [Brief summary of option 1]
@@ -56,47 +62,56 @@
 
 ---
 
-## 4. Decision Outcome
+## 5. Decision Outcome
 
 **Chosen Option**: **Option [X]: [Option Name]**
 
-### Positive Rationale
+### Rationale
 [Explain why this option was chosen. How does it satisfy the decision drivers? Why is it superior to the alternatives for this specific context?]
 
 ### Architectural Implementation Details
-[Describe key structural aspects, interfaces, dependencies, or patterns that will be applied as part of executing this decision.]
+[Describe key structural aspects, interfaces, ports, or adapters that will be introduced as part of executing this decision.]
 
 ---
 
-## 5. Consequences
+## 6. Consequences
 
 ### Positive Consequences
 * [Benefit 1]
 * [Benefit 2]
 
-### Negative Consequences & Trade-offs (Mitigations Required)
-* [Trade-off 1: Mitigation strategy]
-* [Trade-off 2: Mitigation strategy]
+### Negative Consequences & Trade-offs
+* [Trade-off 1 and how it will be managed]
+* [Trade-off 2 and how it will be managed]
 
 ### Neutral / Operational Consequences
 * [Operational impact 1]
-* [Tooling or maintenance impact 2]
+* [Maintenance or tooling impact 2]
 
 ---
 
-## 6. Alternatives Rejected & Why
+## 7. Risks & Mitigations
 
-* **[Option A]**: Rejected because [concrete technical reason, e.g., incompatible with local execution, tight vendor coupling, lack of async support].
-* **[Option B]**: Rejected because [concrete technical reason, e.g., excessive operational overhead, licensing restrictions, immature community support].
+* **[Risk 1]**: [Description of technical or operational risk]
+  * *Mitigation*: [Concrete action or architectural constraint that mitigates this risk]
+* **[Risk 2]**: [Description of technical or operational risk]
+  * *Mitigation*: [Concrete action or architectural constraint that mitigates this risk]
 
 ---
 
-## 7. Compliance with Architectural Principles
+## 8. Alternatives Rejected & Why
 
-Verify alignment with [docs/architecture/architecture-principles.md](../docs/architecture/architecture-principles.md):
+* **[Option A]**: Rejected because [concrete technical reason, e.g., tight coupling to proprietary vendor SDK, incompatible with local Ollama runtime].
+* **[Option B]**: Rejected because [concrete technical reason, e.g., excessive operational complexity, unmaintained library, missing type safety].
 
-* **Principle 1 (Untrusted LLM Output)**: [Compliant | N/A - Explain]
-* **Principle 3 (Provider Abstraction)**: [Compliant | N/A - Explain]
-* **Principle 4 (Deterministic Logic)**: [Compliant | N/A - Explain]
-* **Principle 12 (Observability)**: [Compliant | N/A - Explain]
-* **Principle 15 (Local-First Parity)**: [Compliant | N/A - Explain]
+---
+
+## 9. Compliance with Architectural Principles
+
+Verify alignment with [docs/architecture/principles.md](../docs/architecture/principles.md):
+
+* **Principle 1 (Untrusted Model Output)**: [Compliant | N/A - Explain]
+* **Principle 2 (Deterministic Rules)**: [Compliant | N/A - Explain]
+* **Principle 3 (Provider Decoupling)**: [Compliant | N/A - Explain]
+* **Principle 4 (Conditional Gateway)**: [Compliant | N/A - Explain]
+* **Principle 9 (Observability)**: [Compliant | N/A - Explain]
