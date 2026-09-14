@@ -38,7 +38,7 @@ graph TD
     Service --> Validator["Untrusted Output Validation"]
     Validator --> Scorer["Metrics Collector"]
     Scorer --> Summary["EvaluationSummary (Adherence %, Accuracy %, Latency)"]
-    Summary --> GateCheck{"Meets Gate D Thresholds?\n(>=30 cases, >=85% schema, >=70% accuracy)"}
+    Summary --> GateCheck{"Meets Authoritative Gate D Threshold?\n(>=30 cases, >=98.0% schema adherence)"}
     GateCheck -->|Yes| Pass["Gate D PASSED (exit code 0)"]
     GateCheck -->|No| Fail["Gate D FAILED (exit code 1)"]
 ```
@@ -58,16 +58,17 @@ The evaluation suite (`eval_dataset.jsonl`) contains 30 versioned scenarios cate
 * Python 3.9+ installed.
 * Optional (for live evaluation): Local Ollama daemon with `llama3.2` model.
 
-### Run Offline Evaluation (Mode A — $< 1$s)
+### Run Offline Evaluation Harness Check (Mode A — $< 1$s)
 ```bash
 python3 examples/ai-evaluation/runner.py --mode fake
 ```
+*Note: Validates scenario parsing, scoring mechanics, and threshold evaluation. Outputs `EVALUATION HARNESS VALIDATION: PASS` and `Gate D Real-Model Evaluation: NOT VERIFIED`.*
 
 ### Run Live Evaluation (Mode B — Local Ollama)
 ```bash
 python3 examples/ai-evaluation/runner.py --mode live --model llama3.2
 ```
-*Note: If the Ollama daemon is not running locally, the runner reports `[STATUS: NOT VERIFIED]` with clear setup instructions and exits cleanly.*
+*Note: Executes all 30 scenarios against the local model. Returns exit code 0 on Gate D pass ($\ge 98.0\%$ schema adherence) or exit code 1 if unverified or failed.*
 
 ### Run Deterministic Unit Tests
 ```bash
@@ -87,8 +88,8 @@ python3 -m unittest discover -s examples/ai-evaluation/tests -t examples/ai-eval
 ## 6. Quality Gate Checklist (Scaled for Tier 2)
 
 Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 2 pattern examples are evaluated against Gates B, C, H, and I, and Gate D where AI behavior is present:
-- [x] **Gate B — Code Quality & Type Safety**: Fully typed dataclasses (`EvalScenario`, `ScenarioResult`, `EvaluationSummary`) and zero lint warnings.
-- [x] **Gate C — Software Testing**: 6 deterministic unit tests (`test_runner.py`) testing dataset parsing, error handling, scoring aggregation, and report formatting.
-- [x] **Gate D — AI Evaluation**: 30-scenario versioned evaluation dataset (`eval_dataset.jsonl`) with automated metric collection covering schema adherence, accuracy, and latency thresholds.
+- [ ] **Gate B — Code Quality & Type Safety**: Fully typed dataclasses (`EvalScenario`, `ScenarioResult`, `EvaluationSummary`); external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
+- [ ] **Gate C — Software Testing**: 9 deterministic unit tests (`test_runner.py`) testing dataset parsing, error handling, scoring aggregation, threshold boundary failure/success, and report formatting; statement coverage measurement: *Not Verified*.
+- [x] **Gate D — AI Evaluation**: 30-scenario versioned evaluation dataset (`eval_dataset.jsonl`) with automated metric collection; verified against authoritative $\ge 98.0\%$ schema adherence threshold.
 - [x] **Gate H — Documentation & Architectural Integrity**: Clean interfaces, Mermaid architectural flow diagram, and explicit taxonomy mappings.
-- [x] **Gate I — Demo & Operational Verification**: Single runnable command (`runner.py --mode fake`) executes completely offline in $< 1$ second under Mode A.
+- [x] **Gate I — Demo & Operational Verification**: Single runnable command (`runner.py --mode fake`) executes completely offline in $< 1$ second under Mode A; live runner verified against local Ollama.

@@ -247,11 +247,12 @@ async def evaluate_service(
             "category_accuracy_pct": (sum(1 for r in type_res if r.category_match) / t_total) * 100.0,
         }
 
-    # Gate D Acceptance Criteria:
-    # 1. Minimum 30 test scenarios (satisfied: total >= 30)
-    # 2. Schema adherence >= 85.0%
-    # 3. Category accuracy >= 70.0%
-    gate_d_passed = (total >= 30) and (schema_rate >= 85.0) and (cat_acc >= 70.0)
+    # Authoritative Gate D Acceptance Criteria (QUALITY-GATES.md):
+    # 1. Versioned evaluation dataset containing at least 30 scenarios (total >= 30)
+    # 2. Schema adherence >= 0.98 (schema_rate >= 98.0%)
+    # 3. Adversarial handling evaluated
+    has_adversarial = any(r.scenario_type == "adversarial" for r in results)
+    gate_d_passed = (total >= 30) and (schema_rate >= 98.0) and has_adversarial
 
     summary = EvaluationSummary(
         total=total,
@@ -271,11 +272,12 @@ async def evaluate_service(
 def print_report(summary: EvaluationSummary) -> None:
     """Format and print an executive evaluation report to stdout."""
     print("=" * 75)
-    print(f"GATE D AI EVALUATION REPORT (MODE: {summary.mode.upper()})")
+    mode_label = "OFFLINE TEST DOUBLE" if summary.mode == "fake" else "LIVE RUNTIME"
+    print(f"AI EVALUATION REPORT (EXECUTION: {mode_label})")
     print("=" * 75)
     print(f"Total Scenarios Evaluated: {summary.total}")
-    print(f"Schema Adherence Rate:     {summary.schema_adherence_rate}% ({summary.schema_valid_count}/{summary.total})")
-    print(f"Category Accuracy:         {summary.category_accuracy}%")
+    print(f"Schema Adherence Rate:     {summary.schema_adherence_rate}% ({summary.schema_valid_count}/{summary.total}) [Gate D Mandatory: >=98.0%]")
+    print(f"Category Accuracy:         {summary.category_accuracy}% [Artifact Target: >=70.0%]")
     print(f"Sentiment Accuracy:        {summary.sentiment_accuracy}%")
     print(f"Urgency Accuracy:          {summary.urgency_accuracy}%")
     print(f"Average Round-Trip Latency:{summary.avg_latency_ms} ms")
@@ -286,8 +288,14 @@ def print_report(summary: EvaluationSummary) -> None:
               f"Schema Adherence: {metrics['schema_adherence_pct']:.1f}% | "
               f"Category Accuracy: {metrics['category_accuracy_pct']:.1f}%")
     print("-" * 75)
-    status_str = "PASSED" if summary.gate_d_passed else "FAILED"
-    print(f"Gate D Acceptance Verdict: [{status_str}] (Criteria: >=30 cases, >=85% schema, >=70% accuracy)")
+    if summary.mode == "fake":
+        print("EVALUATION HARNESS VALIDATION: [PASS]")
+        print("  -> Deterministic scenario loading, scoring mechanics, and threshold evaluation verified.")
+        print("Gate D Real-Model Evaluation:  [NOT VERIFIED]")
+        print("  -> Offline test doubles cannot provide evidence of real probabilistic model compliance.")
+    else:
+        status_str = "PASSED" if summary.gate_d_passed else "FAILED"
+        print(f"Gate D Real-Model Evaluation:  [{status_str}] (Criteria: >=30 cases, >=98.0% schema adherence)")
     print("=" * 75)
 
 
@@ -304,7 +312,8 @@ async def run_evaluation(
         service = FeedbackExtractionService(client=stub_client, model=model)
         summary, _ = await evaluate_service(service, scenarios, mode="fake")
         print_report(summary)
-        return 0 if summary.gate_d_passed else 1
+        # Fake mode validates harness mechanics
+        return 0 if summary.schema_adherence_rate == 100.0 else 1
 
     # Live Mode
     try:
@@ -326,9 +335,26 @@ async def run_evaluation(
         print(f"  2. ollama pull {model}")
         print(f"  3. python3 examples/ai-evaluation/runner.py --mode live --model {model}")
         print("=" * 75)
-        return 0
+        return 1
 
-    service = FeedbackExtractionService(client=adapter, model=model, max_corrective_retries=1)
+    installed = await adapter.get_installed_models()
+    # Check if target model or model prefix is installed
+    matching_model = None
+    for m in installed:
+        if m == model or m.startswith(f"{model}:") or model.startswith(f"{m}:"):
+            matching_model = m
+            break
+
+    if not matching_model:
+        print("=" * 75)
+        print("GATE D AI EVALUATION (MODE: LIVE)")
+        print("=" * 75)
+        print(f"[STATUS: NOT VERIFIED] Model '{model}' not found in installed models: {installed}.")
+        print(f"Steps to resolve: ollama pull {model}")
+        print("=" * 75)
+        return 1
+
+    service = FeedbackExtractionService(client=adapter, model=matching_model, max_corrective_retries=1)
     summary, _ = await evaluate_service(service, scenarios, mode="live")
     print_report(summary)
     return 0 if summary.gate_d_passed else 1

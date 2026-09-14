@@ -80,7 +80,7 @@ How should the repository structure and implement its first concrete AI model ex
    * Communicates directly with Ollama's native HTTP API (`/api/generate` and `/api/chat`).
    * Maps Ollama duration nanoseconds to `latency_ms` and prompt/eval tokens to `UsageMetrics`.
    * Maps HTTP 404 to `AiModelNotFoundError`, connection refusal to `AiProviderUnavailableError`, timeouts to `AiTimeoutError`, and bad requests to `AiInvalidRequestError`.
-   * Implements selective retry with jitter only on transient errors (`AiTransientError`), with bounded attempts (max 2 retries). Fatal errors (invalid model, invalid request) fail immediately.
+   * Implements selective exponential backoff retry without jitter on transient errors (`AiTransientError`), with bounded attempts (max 2 retries). Fatal errors (invalid model, invalid request) fail immediately.
    * Provides non-blocking execution via `asyncio.to_thread` and honors task cancellation.
 
 3. **Untrusted Model Output & Structured Generation (`examples/structured-generation/`)**:
@@ -125,13 +125,13 @@ How should the repository structure and implement its first concrete AI model ex
 
 ## 7. Compliance with Quality Gates
 
-* **Gate A — Architecture & Structural Boundaries**: Inward dependency direction strictly enforced. Applications depend only on contracts; zero Ollama imports in application or domain layers.
-* **Gate B — Code Quality & Type Safety**: Pure Python typing with standard library dataclasses, enums, and protocols; clean linting and strict type signatures.
-* **Gate C — Software Testing**: Hermetic unit test suites cover request formatting, response parsing, error mapping, bounded retry, and schema validation using in-memory test doubles without requiring network access.
-* **Gate D — AI Evaluation**: Versioned 30-scenario dataset (`eval_dataset.jsonl`) and automated evaluation runner measuring schema adherence and adversarial handling.
+* **Gate A — Architectural Alignment**: Inward dependency direction strictly enforced. Applications depend only on contracts; zero Ollama imports in application or domain layers.
+* **Gate B — Code Quality & Type Safety**: Pure Python typing with standard library dataclasses, enums, and protocols; external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
+* **Gate C — Software Testing**: 63 hermetic unit tests cover request formatting, response parsing, error mapping, bounded retry, and schema validation using in-memory test doubles; statement coverage measurement: *Not Verified*.
+* **Gate D — AI Evaluation**: Versioned 30-scenario dataset (`eval_dataset.jsonl`) and automated evaluation runner measuring authoritative schema adherence ($\ge 0.98$) and adversarial handling.
 * **Gate E — Security & Safety**: Zero committed credentials; model outputs treated strictly as untrusted data; no model generation directly executed as code or query.
-* **Gate F — Observability & Telemetry**: AI operation context captures `gen_ai.*` standard attributes, latency measurements, and token usage metrics.
-* **Gate G — Performance & Sizing**: Zero memory leaks; latency measurements recorded at the adapter boundary.
+* **Gate F — Observability & Telemetry**: Basic latency measurements and token usage metrics recorded at the adapter boundary; distributed OpenTelemetry trace exporter: *Deferred*.
+* **Gate G — Performance & Sizing**: Latency measurements recorded at the adapter boundary; formal memory leak tests and TTFT benchmarks: *Not Verified*.
 * **Gate H — Documentation & Architectural Integrity**: Comprehensive READMEs conforming to Tier 2 and Tier 3 templates; Mermaid architecture diagrams; all links validated via `validate-docs.py`.
-* **Gate I — Demo & Operational Verification**: Single-command demonstration script runs locally in $< 1$ minute under Mode A.
-* **Gate J — Production Readiness & Resilience**: Bounded timeouts on all calls; selective retry with backoff on transient errors; circuit-safe failure handling.
+* **Gate I — Demo & Operational Verification**: Single-command demonstration script runs locally in $< 1$ minute under Mode A; live mode verified against local Ollama.
+* **Gate J — Production Readiness & Resilience**: Bounded timeouts on all calls; selective retry with backoff on transient errors; production circuit breaker orchestration: *Not Verified* (Tier 1 concern).

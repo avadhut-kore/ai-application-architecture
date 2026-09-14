@@ -92,8 +92,8 @@ python3 -m unittest discover -s examples/structured-generation/tests -t examples
 ## 6. Quality Gate Checklist (Scaled for Tier 2)
 
 Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 2 pattern examples are evaluated against Gates B, C, H, and I:
-- [x] **Gate B — Code Quality & Type Safety**: Source code is strictly typed with dataclasses, enums, and comprehensive type annotations.
-- [x] **Gate C — Software Testing**: Hermetic unit test suite (`test_service.py`) tests clean extraction, malformed JSON, invalid enum values, confidence range violations, markdown code fence extraction, and corrective retry recovery using test doubles.
+- [ ] **Gate B — Code Quality & Type Safety**: Source code is strictly typed with dataclasses, enums, and comprehensive type annotations; external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
+- [ ] **Gate C — Software Testing**: 10 hermetic unit tests (`test_service.py`) testing clean extraction, malformed JSON, invalid enum values, confidence range violations, markdown code fence extraction, boolean confidence rejection, unexpected-field rejection, and corrective retry recovery using test doubles; statement coverage measurement: *Not Verified*.
 - [x] **Gate H — Documentation & Architectural Integrity**: Clean interfaces, strongly typed outputs (`CustomerFeedbackExtraction`), renderable Mermaid interaction diagram, and validated cross-references.
-- [x] **Gate I — Demo & Operational Verification**: Runnable CLI (`demo.py --mode fake`) executes hermetically in $< 1$ second under Mode A without external dependencies.
+- [x] **Gate I — Demo & Operational Verification**: Runnable CLI (`demo.py --mode fake`) executes hermetically in $< 1$ second under Mode A; live mode (`demo.py --mode live`) verifies live execution against local Ollama.
 - [x] *Gate D — AI Evaluation (Scaled)*: Validated through dedicated AI evaluation harness in `examples/ai-evaluation/`.

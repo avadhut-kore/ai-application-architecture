@@ -1,0 +1,48 @@
+{
+  "provider": "ollama",
+  "endpoint": "http://localhost:11434",
+  "model": "llama3.2:3b",
+  "timestamp": "2026-09-14T16:33:05+05:30",
+  "dataset": "examples/ai-evaluation/eval_dataset.jsonl",
+  "total_scenarios": 30,
+  "metrics": {
+    "schema_adherence_rate": 100.0,
+    "schema_valid_count": 30,
+    "category_accuracy": 73.33,
+    "sentiment_accuracy": 76.67,
+    "urgency_accuracy": 63.33,
+    "avg_latency_ms": 1156.12
+  },
+  "type_breakdown": {
+    "adversarial": {
+      "total": 8.0,
+      "schema_adherence_pct": 100.0,
+      "category_accuracy_pct": 62.5
+    },
+    "ambiguous": {
+      "total": 7.0,
+      "schema_adherence_pct": 100.0,
+      "category_accuracy_pct": 71.4
+    },
+    "boundary": {
+      "total": 5.0,
+      "schema_adherence_pct": 100.0,
+      "category_accuracy_pct": 80.0
+    },
+    "normal": {
+      "total": 10.0,
+      "schema_adherence_pct": 100.0,
+      "category_accuracy_pct": 80.0
+    }
+  },
+  "gate_d_mandatory_criteria": {
+    "min_scenarios": 30,
+    "min_schema_adherence": 0.98,
+    "adversarial_evaluated": true,
+    "status": "PASSED"
+  },
+  "artifact_target_criteria": {
+    "target_category_accuracy": 0.70,
+    "status": "MET"
+  }
+}

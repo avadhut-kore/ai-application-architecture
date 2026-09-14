@@ -86,6 +86,12 @@ class FeedbackExtractionService:
                 raw_text=raw_text,
             )
 
+        # 0. Strict schema validation: reject unexpected fields
+        allowed_fields = {"category", "sentiment", "urgency", "summary", "confidence"}
+        unexpected = set(payload.keys()) - allowed_fields
+        if unexpected:
+            errors.append(f"Unexpected fields not permitted in strict schema: {sorted(unexpected)}")
+
         # 1. Category validation
         raw_category = payload.get("category")
         category: Optional[FeedbackCategory] = None
@@ -131,8 +137,8 @@ class FeedbackExtractionService:
         confidence = payload.get("confidence")
         if confidence is None:
             errors.append("Missing required field: 'confidence'")
-        elif not isinstance(confidence, (int, float)):
-            errors.append(f"Field 'confidence' must be a float between 0.0 and 1.0, got {type(confidence).__name__}")
+        elif isinstance(confidence, bool) or not isinstance(confidence, (int, float)):
+            errors.append(f"Field 'confidence' must be a numeric float between 0.0 and 1.0, got {type(confidence).__name__}")
         elif not (0.0 <= float(confidence) <= 1.0):
             errors.append(f"Field 'confidence' must be between 0.0 and 1.0, got {confidence}")
 

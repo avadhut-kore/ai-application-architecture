@@ -22,7 +22,7 @@ from contracts.models import CompletionRequest
 from ollama_adapter.adapter import OllamaAdapter
 
 
-async def run_verification(endpoint: str, model: Optional[str] = None, strict: bool = False) -> int:
+async def run_verification(endpoint: str, model: Optional[str] = None, allow_unverified: bool = False) -> int:
     print("=" * 60)
     print("ai-application-architecture — Ollama Runtime Verification")
     print("=" * 60)
@@ -37,7 +37,7 @@ async def run_verification(endpoint: str, model: Optional[str] = None, strict: b
         print("Note: In offline CI environments, deterministic unit tests verify adapter behavior.")
         print("      To run live verification, start Ollama locally (`ollama serve`).")
         print("=" * 60)
-        return 1 if strict else 0
+        return 0 if allow_unverified else 1
 
     installed_models = await adapter.get_installed_models()
     print(f"Connection: Reachable (HTTP 200 OK)")
@@ -48,7 +48,7 @@ async def run_verification(endpoint: str, model: Optional[str] = None, strict: b
         print("Reason: Ollama daemon is running, but no models are installed.")
         print("Resolution: Run `ollama pull <model>` (e.g. `ollama pull llama3.2`) to install a model.")
         print("=" * 60)
-        return 1 if strict else 0
+        return 0 if allow_unverified else 1
 
     target_model = model or installed_models[0]
     print(f"Executing Generation Test using model: '{target_model}'...")
@@ -90,13 +90,15 @@ def main() -> int:
         help="Specific model name to test (defaults to first installed model)",
     )
     parser.add_argument(
-        "--strict",
+        "--allow-unverified",
         action="store_true",
-        help="Exit with code 1 if Ollama is unreachable (for environments requiring live provider)",
+        help="Exit with code 0 instead of 1 when Ollama is unreachable or unverified",
     )
     args = parser.parse_args()
 
-    return asyncio.run(run_verification(endpoint=args.endpoint, model=args.model, strict=args.strict))
+    return asyncio.run(
+        run_verification(endpoint=args.endpoint, model=args.model, allow_unverified=args.allow_unverified)
+    )
 
 
 if __name__ == "__main__":

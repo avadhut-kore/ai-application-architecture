@@ -134,6 +134,13 @@ class OllamaAdapter(TextGenerationPort):
                     details={"http_status": ex.code, "endpoint": url, "error_body": error_body},
                 ) from ex
         except urllib.error.URLError as ex:
+            if isinstance(ex.reason, (socket.timeout, TimeoutError)) or (
+                isinstance(ex.reason, str) and "timed out" in ex.reason.lower()
+            ):
+                raise AiTimeoutError(
+                    message=f"Operation timed out after {self.timeout_seconds}s waiting for Ollama: {ex.reason}",
+                    details={"endpoint": url, "timeout_seconds": self.timeout_seconds, "reason": str(ex.reason)},
+                ) from ex
             raise AiProviderUnavailableError(
                 message=f"Failed to reach Ollama endpoint at {url}: {ex.reason}",
                 details={"endpoint": url, "reason": str(ex.reason)},
@@ -210,6 +217,14 @@ class OllamaAdapter(TextGenerationPort):
                 if response.latency_ms is None:
                     calc_latency = (time.monotonic() - start_time) * 1000.0
                     object.__setattr__(response, "latency_ms", round(calc_latency, 2))
+
+                # Propagate operation context into response metadata if provided
+                if context:
+                    meta = dict(response.metadata) if response.metadata else {}
+                    meta["trace_id"] = context.trace_id
+                    meta["span_id"] = context.span_id
+                    meta["operation_name"] = context.operation_name
+                    object.__setattr__(response, "metadata", meta)
 
                 return response
 

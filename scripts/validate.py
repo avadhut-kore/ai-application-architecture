@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import ast
 import os
+import re
 import subprocess
 import sys
 import unittest
@@ -30,6 +31,8 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from artifact_validator import (
+    APPROVED_ARTIFACT_ROOTS,
+    IGNORED_DISCOVERY_DIRS,
     find_all_artifacts,
     validate_all_templates,
     validate_artifact,
@@ -168,21 +171,43 @@ def run_doc_validation() -> Tuple[bool, List[str]]:
     return True, []
 
 
+def discover_all_test_suites(repo_root: Path) -> List[Tuple[str, Path, Path]]:
+    """Discover unit test suites under approved artifact roots.
+
+    Returns a list of (label, test_dir, top_dir) sorted deterministically.
+    """
+    suites: List[Tuple[str, Path, Path]] = []
+
+    for root_name in APPROVED_ARTIFACT_ROOTS:
+        root_dir = repo_root / root_name
+        if not root_dir.is_dir():
+            continue
+
+        for current_dir, dirs, files in os.walk(root_dir):
+            dirs[:] = [d for d in dirs if d not in IGNORED_DISCOVERY_DIRS]
+
+            curr_path = Path(current_dir)
+            tests_dir = curr_path / "tests"
+            if tests_dir.is_dir():
+                test_files = list(tests_dir.glob("test_*.py"))
+                if test_files:
+                    rel_label = str(curr_path.relative_to(repo_root))
+                    suites.append((rel_label, tests_dir, curr_path))
+
+    return sorted(suites, key=lambda s: s[0])
+
+
 def run_contract_tests() -> Tuple[bool, List[str]]:
-    """Run hermetic unit test suites across contracts, platform adapters, and pattern examples."""
-    test_targets = [
-        ("Contracts", REPO_ROOT / "building-blocks" / "python" / "tests", REPO_ROOT / "building-blocks" / "python"),
-        ("Ollama Adapter", REPO_ROOT / "platform" / "ollama-adapter" / "tests", REPO_ROOT / "platform" / "ollama-adapter"),
-        ("Structured Generation", REPO_ROOT / "examples" / "structured-generation" / "tests", REPO_ROOT / "examples" / "structured-generation"),
-        ("AI Evaluation", REPO_ROOT / "examples" / "ai-evaluation" / "tests", REPO_ROOT / "examples" / "ai-evaluation"),
-    ]
+    """Discover and execute all hermetic unit test suites across approved monorepo roots."""
+    suites = discover_all_test_suites(REPO_ROOT)
+    if not suites:
+        return False, ["No unit test suites discovered in approved artifact roots."]
 
     all_errors: List[str] = []
-    passed_labels: List[str] = []
+    suite_summaries: List[str] = []
+    total_tests = 0
 
-    for label, test_dir, top_dir in test_targets:
-        if not test_dir.is_dir():
-            continue
+    for label, test_dir, top_dir in suites:
         env = os.environ.copy()
         pythonpath = f"{top_dir}:{REPO_ROOT / 'building-blocks' / 'python'}:{REPO_ROOT / 'examples' / 'structured-generation'}"
         if "PYTHONPATH" in env:
@@ -198,12 +223,16 @@ def run_contract_tests() -> Tuple[bool, List[str]]:
         if proc.returncode != 0:
             all_errors.append(f"[{label}] Tests failed:\n{proc.stderr}\n{proc.stdout}")
         else:
-            passed_labels.append(label)
+            output = proc.stderr + proc.stdout
+            match = re.search(r"Ran (\d+) tests?", output)
+            count = int(match.group(1)) if match else 0
+            total_tests += count
+            suite_summaries.append(f"{label} ({count})")
 
     if all_errors:
         return False, all_errors
 
-    return True, [f"Passed {len(passed_labels)} component test suites: {', '.join(passed_labels)}."]
+    return True, [f"Ran {total_tests} unit tests across {len(suites)} suites: {', '.join(suite_summaries)}."]
 
 
 def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:
@@ -283,6 +312,8 @@ def main() -> int:
     tests_ok, test_msgs = run_contract_tests()
     if tests_ok:
         print("   PASS — Automated unit tests")
+        for msg in test_msgs:
+            print(f"      - {msg}")
     else:
         print("   FAIL — Automated unit tests:")
         for err in test_msgs:

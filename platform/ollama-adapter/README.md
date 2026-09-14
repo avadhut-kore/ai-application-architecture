@@ -122,8 +122,8 @@ python3 platform/ollama-adapter/verify.py
 ## 7. Quality Gate Checklist (Scaled for Tier 3)
 
 Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, F, and H:
-- [x] **Gate A — Architecture & Structural Boundaries**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
-- [x] **Gate B — Code Quality & Type Safety**: Source code is strictly typed, linter clean, with zero compiler warnings.
-- [x] **Gate C — Software Testing**: Hermetic unit tests achieve $\ge 85\%$ statement coverage using test doubles; integration tests verify wiring.
-- [x] **Gate F — Observability & Telemetry**: OpenTelemetry GenAI semantic trace context propagated if component participates in runtime execution.
+- [x] **Gate A — Architectural Alignment**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
+- [ ] **Gate B — Code Quality & Type Safety**: Strictly typed with standard Python type annotations; formal external linters (`mypy`, `ruff`) not installed/run in CI (*Partially Verified*).
+- [ ] **Gate C — Software Testing**: 15 hermetic unit tests verifying request/response mapping, error translation, timeout classification, and retries; statement coverage measurement: *Not Verified* (coverage tooling not installed).
+- [ ] **Gate F — Observability & Telemetry**: Minimal metadata extraction implemented (`latency_ms`, token `UsageMetrics`, model name); distributed OpenTelemetry trace exporter and span emission: *Deferred*.
 - [x] **Gate H — Documentation & Architectural Integrity**: Stable, documented public contracts, architecture specifications, and zero broken links.

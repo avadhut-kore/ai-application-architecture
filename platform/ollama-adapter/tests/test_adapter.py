@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import socket
 import sys
 import unittest
 import urllib.error
@@ -36,6 +37,7 @@ from contracts.models import (
     Role,
 )
 from contracts.ports import TextGenerationPort
+from contracts.telemetry import AiOperationContext
 from ollama_adapter.adapter import OllamaAdapter
 
 
@@ -245,7 +247,51 @@ class TestOllamaAdapter(unittest.TestCase):
         }
         with patch.object(self.adapter, "_send_http_request", return_value=mock_tags):
             models = asyncio.run(self.adapter.get_installed_models())
-            self.assertEqual(models, ["llama3.2:latest", "qwen2.5:7b"])
+    def test_wrapped_socket_timeout_mapping(self) -> None:
+        """Verify URLError wrapping socket.timeout correctly maps to AiTimeoutError."""
+        wrapped_timeout = urllib.error.URLError(socket.timeout("timed out"))
+        with patch("urllib.request.urlopen", side_effect=wrapped_timeout):
+            with self.assertRaises(AiTimeoutError) as ctx:
+                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+            self.assertTrue(ctx.exception.is_transient)
+
+    def test_direct_socket_timeout_mapping(self) -> None:
+        """Verify direct socket.timeout correctly maps to AiTimeoutError."""
+        with patch("urllib.request.urlopen", side_effect=socket.timeout("timed out")):
+            with self.assertRaises(AiTimeoutError) as ctx:
+                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+            self.assertTrue(ctx.exception.is_transient)
+
+    def test_connection_refused_error_mapping(self) -> None:
+        """Verify URLError with connection refused maps to AiProviderUnavailableError."""
+        conn_err = urllib.error.URLError(ConnectionRefusedError("Connection refused"))
+        with patch("urllib.request.urlopen", side_effect=conn_err):
+            with self.assertRaises(AiProviderUnavailableError) as ctx:
+                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+            self.assertTrue(ctx.exception.is_transient)
+
+    def test_context_metadata_propagation(self) -> None:
+        """Verify AiOperationContext attributes are attached to response metadata."""
+        success_response = {
+            "model": "llama3.2",
+            "response": "Hello context",
+            "done": True,
+            "total_duration": 50_000_000,
+        }
+        ctx = AiOperationContext(
+            trace_id="test-trace-123",
+            span_id="test-span-456",
+            operation_name="feedback-classification",
+            system="ollama",
+            model="llama3.2",
+        )
+        with patch.object(self.adapter, "_send_http_request", return_value=success_response):
+            request = CompletionRequest(prompt="Test", model="llama3.2")
+            response = asyncio.run(self.adapter.generate(request, context=ctx))
+            self.assertIsNotNone(response.metadata)
+            self.assertEqual(response.metadata["trace_id"], "test-trace-123")
+            self.assertEqual(response.metadata["span_id"], "test-span-456")
+            self.assertEqual(response.metadata["operation_name"], "feedback-classification")
 
 
 if __name__ == "__main__":

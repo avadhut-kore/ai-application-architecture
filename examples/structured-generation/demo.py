@@ -148,7 +148,7 @@ async def run_live_demo(base_url: str, model: str) -> int:
         print("  2. Start the daemon: ollama serve")
         print(f"  3. Pull the model:   ollama pull {model}")
         print("  4. Re-run: python3 examples/structured-generation/demo.py --mode live")
-        return 0
+        return 1
 
     service = FeedbackExtractionService(client=adapter, model=model, max_corrective_retries=1)
     input_text = "The system crashes every time I export more than 1000 items to CSV. This is blocking our audit!"
@@ -167,13 +167,13 @@ async def run_live_demo(base_url: str, model: str) -> int:
         print(f"  - Urgency:    {result.data.urgency.value}")
         print(f"  - Summary:    {result.data.summary}")
         print(f"  - Confidence: {result.data.confidence:.2f}")
+        return 0
     else:
         print("\nExtraction returned schema validation errors:")
         for err in result.errors:
             print(f"  * {err}")
         print(f"Raw Output: {result.raw_text}")
-
-    return 0
+        return 1
 
 
 def main() -> int:

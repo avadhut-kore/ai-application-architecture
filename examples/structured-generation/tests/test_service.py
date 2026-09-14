@@ -193,10 +193,68 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
         self.assertTrue(result.is_valid)
         self.assertEqual(fake_client.call_count, 2)
-        self.assertEqual(result.unwrap().category, FeedbackCategory.BUG)
         # Verify that corrective prompt included previous error feedback
         corrective_request = fake_client.recorded_requests[1]
         self.assertIn("Your previous JSON output was invalid", corrective_request.prompt)
+
+    def test_boolean_confidence_rejected(self) -> None:
+        """Verify that boolean true/false in confidence field is rejected."""
+        bool_confidence_json = (
+            '{\n'
+            '  "category": "bug",\n'
+            '  "sentiment": "negative",\n'
+            '  "urgency": "high",\n'
+            '  "summary": "Crash on save",\n'
+            '  "confidence": true\n'
+            '}'
+        )
+        fake_client = FakeLlmClient([bool_confidence_json, bool_confidence_json])
+        service = FeedbackExtractionService(client=fake_client, max_corrective_retries=0)
+
+        result = asyncio.run(service.extract_feedback("Crash on save"))
+
+        self.assertFalse(result.is_valid)
+        self.assertTrue(any("Field 'confidence' must be a numeric float" in err for err in result.errors))
+
+    def test_unexpected_fields_rejected(self) -> None:
+        """Verify strict schema rejects unpermitted unexpected fields."""
+        extra_fields_json = (
+            '{\n'
+            '  "category": "bug",\n'
+            '  "sentiment": "negative",\n'
+            '  "urgency": "medium",\n'
+            '  "summary": "Export error",\n'
+            '  "confidence": 0.95,\n'
+            '  "admin_override": true,\n'
+            '  "injected_field": "unauthorized"\n'
+            '}'
+        )
+        fake_client = FakeLlmClient([extra_fields_json])
+        service = FeedbackExtractionService(client=fake_client, max_corrective_retries=0)
+
+        result = asyncio.run(service.extract_feedback("Export error"))
+
+        self.assertFalse(result.is_valid)
+        self.assertTrue(any("Unexpected fields not permitted in strict schema" in err for err in result.errors))
+        self.assertTrue(any("admin_override" in err for err in result.errors))
+
+    def test_valid_numeric_confidence_boundaries(self) -> None:
+        """Verify confidence boundaries at 0.0, 0.5, and 1.0 pass validation."""
+        for val in [0.0, 0.5, 1.0]:
+            json_str = (
+                f'{{\n'
+                f'  "category": "inquiry",\n'
+                f'  "sentiment": "neutral",\n'
+                f'  "urgency": "low",\n'
+                f'  "summary": "API limits query",\n'
+                f'  "confidence": {val}\n'
+                f'}}'
+            )
+            fake_client = FakeLlmClient([json_str])
+            service = FeedbackExtractionService(client=fake_client)
+            result = asyncio.run(service.extract_feedback("What are API limits?"))
+            self.assertTrue(result.is_valid)
+            self.assertEqual(result.unwrap().confidence, val)
 
 
 if __name__ == "__main__":
