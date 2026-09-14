@@ -347,8 +347,8 @@ $$\text{Cosine Similarity}(\mathbf{q}, \mathbf{v}) = \frac{\mathbf{q} \cdot \mat
 ### Deterministic Tie-Breaking
 When multiple chunks have identical similarity scores (common with synthetic test vectors or brief queries), sorting them non-deterministically causes flaky tests and evaluation jitter. `InMemoryVectorIndex` resolves this by sorting with a secondary key:
 ```python
-# Sort descending by score, then ascending by chunk_id for deterministic ranking
-scored_entries.sort(key=lambda x: (-x[0], x[1].chunk_id))
+# Deterministic tie-breaking: sort descending by score, ascending by chunk_id
+candidates.sort(key=lambda sc: (-sc.score, sc.chunk.chunk_id))
 ```
 
 ### Metadata Filtering
