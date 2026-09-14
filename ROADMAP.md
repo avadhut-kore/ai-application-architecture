@@ -9,6 +9,11 @@ To maintain architectural integrity, phases are executed sequentially. Advanceme
 > Later platform phases do **not** mean that evaluation, security, observability, and provider abstractions are absent before then.  
 > Minimal contracts and capabilities begin early (Phase 2). Later phases provide consolidation, dashboards, enterprise policies, advanced tooling, scale, and cross-application governance.
 
+> [!NOTE]
+> **Normative Authority for Phase Scope**  
+> `ROADMAP.md` is the single authoritative source for phase scope, dependencies, and exit criteria across this repository. Other documents may reference or summarize roadmap phases, but normative ownership resides exclusively herein.  
+> *A concept may be explained in multiple documents, but its normative ownership must have one authoritative source.*
+
 ---
 
 ## Roadmap Overview
@@ -52,13 +57,17 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 * **Objective**: Establish monorepo structure, dependency boundaries, and minimal viable architectural contracts.
 * **Scope**:
   * Modular monorepo dependency boundaries and folder layouts (`apps/`, `building-blocks/`, `platform/`).
-  * Minimal provider abstraction contract (`ILlmClient`, `IEmbeddingClient`).
-  * Minimal telemetry contract (OpenTelemetry context propagation and trace attributes).
-  * Minimal evaluation result contract (`EvaluationResult`, scoring schema).
-  * Minimal guardrail contract (`IGuardrail` for input/output schema validation).
-  * **Explicit Boundary**: Avoid premature agent, workflow, or memory abstractions.
-* **Dependencies**: Phase 1.
-* **Exit Criteria**: Minimal contracts defined and tested with in-memory doubles; zero external vendor dependencies in domain interfaces.
+  * **Mandatory Minimum Contracts**:
+    1. **Model/LLM Client Port**: Standardized interface for text and structured generation (`ILlmClient`).
+    2. **AI Operation / Telemetry Context**: OpenTelemetry context propagation and trace attributes.
+    3. **Base Evaluation Result Contract**: Shared schema for recording evaluation scores and benchmark metadata (`EvaluationResult`).
+    4. **Structured Schema Validation & Error Contract**: Shared representation for parsing errors and domain validation failures.
+  * **Conditional Early Contract**:
+    * Embedding client abstraction (`IEmbeddingClient`) may be established if Phase 2 demonstrates a concrete requirement to support the immediately upcoming Knowledge Intelligence/RAG architecture. If no concrete Phase 2 requirement exists, the interface is deferred to Phase 5.
+  * **Explicitly NOT Mandatory in Phase 2**:
+    * Do **not** mandate a generic `IGuardrail` interface merely for architectural symmetry; guardrails represent multiple disparate concerns (input sanitization, schema validation, policy checks) and must not be reduced prematurely to one speculative interface.
+    * Do **not** invent speculative agent interfaces, workflow interfaces, memory interfaces, tool interfaces, vector-store abstractions, or agent-loop abstractions before concrete reference implementations establish their requirements.
+* **Exit Criteria**: Mandatory minimum contracts defined and verified with in-memory test doubles; zero external vendor SDK dependencies in domain interfaces.
 
 ---
 

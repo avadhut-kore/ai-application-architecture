@@ -10,6 +10,30 @@ Applicability varies by the [Reference Implementation Tier](docs/architecture/re
 
 ---
 
+## Evidence-Based Verification Policy
+
+> [!CRITICAL]
+> **MANDATORY VERIFICATION PRINCIPLE**  
+> **No verification claim may be made without identifying the verification method and evidence.**
+
+Vague, unsupported assertions such as *"all tests pass"* or *"observability is verified"* are strictly prohibited. Every claim must identify the concrete method used and the objective evidence produced.
+
+### Verification Claim Standards
+
+* **Bad**: *"All links are valid."*
+* **Good**: *"Internal Markdown link validation: PASS. Verification method: python3 link validator script. Files checked: 16. Broken internal references: 0."*
+* **Bad**: *"All tests passed."*
+* **Good**: *"Tests: PASS. Command: pytest tests/unit -v. Passed: 42, Failed: 0, Skipped: 0."*
+
+### Evidence Classification
+
+All verification reports must classify evidence into one of three explicit types:
+1. **Automated Evidence**: Reproducible, command-line outputs (test execution logs, linter outputs, link checker runs, build outputs, static analysis scans, security audits, schema validation logs).
+2. **Manual Evidence**: Documented qualitative inspections (architecture reviews, diagram inspections, ADR reviews, threat model sign-offs).
+3. **Not Verified**: If a requirement or gate was not objectively tested or inspected, it must be explicitly reported as **NOT VERIFIED**. Never infer or claim a PASS without evidence.
+
+---
+
 ## Gate A — Architecture & Structural Boundaries
 
 * **Requirement**: Domain business logic, state machines, and workflow coordinators must have zero direct compile-time or runtime dependencies on external AI provider SDKs (`openai`, `anthropic`, `google-generativeai`) or web frameworks. All model interactions must pass through architectural ports.

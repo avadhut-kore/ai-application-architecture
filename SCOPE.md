@@ -14,7 +14,7 @@ To preserve architectural integrity and avoid maintenance collapse, this documen
 * **Three-Mode Local-First Execution**: Support for Mode A (Offline Local), Mode B (Local-First, default), and Mode C (Cloud-Comparable) as specified in [`docs/architecture/local-first.md`](docs/architecture/local-first.md).
 
 ### 2.2 Reusable Architectural Abstractions & Building Blocks
-* **Early Minimum Core Contracts**: Phase 2 delivery of minimal viable contracts for model clients, evaluation results, telemetry context, and input/output guardrails.
+* **Early Minimum Core Contracts**: Phase 2 delivery of mandatory minimum viable contracts (model client port, telemetry context, base evaluation result, and structured schema validation/error contracts) as authoritatively specified in [`ROADMAP.md`](ROADMAP.md).
 * **Just-in-Time Ports**: Introducing specialized abstractions (vector storage, agent execution loops) only when concrete application requirements justify them.
 * **Conditional Model Gateway**: Standalone or middleware gateway patterns introduced only when multi-provider routing, rate limiting, or shared quotas demand centralized management.
 

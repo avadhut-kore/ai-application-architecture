@@ -19,7 +19,7 @@ This repository enforces two core principles for technology management:
 
 ### Abstraction Lifecycle Rules
 1. **Phase 0 (Governance)**: Establishes the policy. Zero interfaces are implemented.
-2. **Phase 2 (Foundations)**: Establishes minimum viable contracts for core model interactions (`ILlmClient`, `IEmbeddingClient`) and telemetry context propagation.
+2. **Phase 2 (Foundations)**: Establishes mandatory minimum viable contracts (model client port, telemetry context, base evaluation result, structured schema validation/error contract) per [`ROADMAP.md`](../../ROADMAP.md), with embedding client abstraction established conditionally if required.
 3. **Phases 5+ (Applications)**: Specialized abstractions (e.g., vector indexing, agent execution, workflow compensation) are introduced alongside the specific reference applications that require them.
 4. **Leak-Proof Contracts**: When introduced, abstractions must never expose vendor-specific types, exceptions, or connection flags in their signatures.
 

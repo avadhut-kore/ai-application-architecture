@@ -3,7 +3,6 @@
 [![Architecture First](https://img.shields.io/badge/Architecture-First-blue.svg)](docs/architecture/principles.md)
 [![Local First](https://img.shields.io/badge/Policy-Local--First-purple.svg)](docs/architecture/local-first.md)
 [![Quality Gates](https://img.shields.io/badge/Quality--Gates-A--J-red.svg)](QUALITY-GATES.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An architectural reference standard, taxonomy, and implementation repository for Artificial Intelligence applications.
 

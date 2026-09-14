@@ -15,9 +15,9 @@ Every implementation in this repository must stand as a production-grade benchma
 
 ---
 
-## 2. Twelve Non-Negotiable Operational Directives
+## 2. Thirteen Non-Negotiable Operational Directives
 
-When interacting with this codebase, you must strictly uphold the following twelve directives:
+When interacting with this codebase, you must strictly uphold the following thirteen directives:
 
 ### 1. Inspect the Repository Before Modifying It
 Always check the current filesystem state, directory structure, and existing building blocks before proposing changes or writing code. Never assume files exist without verifying.
@@ -54,6 +54,10 @@ Do not state "tests passed" or "quality gates satisfied" unless you actually ran
 
 ### 12. Never Claim Production Readiness Without Satisfying Applicable Gates
 Do not label an implementation as "production-ready" unless it has been objectively verified against all applicable criteria in [QUALITY-GATES.md](QUALITY-GATES.md).
+
+### 13. Identify Verification Method and Evidence for Every Claim
+> **No verification claim may be made without identifying the verification method and evidence.**  
+Never make vague assertions (e.g., "all tests pass" or "observability verified"). Specify the exact command or review method and the concrete output. Distinguish between **Automated Evidence** (command outputs, linter logs), **Manual Evidence** (documented reviews), and **Not Verified** (never infer a PASS).
 
 ---
 
@@ -95,14 +99,20 @@ When assigned an engineering task, follow this exact linear sequence:
 
 ---
 
-## 4. Completion Report Structure
+## 4. Completion Report Structure & Self-Assessment Policy
 
 Upon completing any task, produce a structured completion report covering:
 1. **Executive Summary**: High-level summary of accomplished work.
 2. **Files Created & Modified**: Explicit list of files with relative paths.
 3. **Architecture Decisions**: Key patterns adopted and ADR references.
 4. **Decisions Deliberately Deferred**: Explicit statement of what was not built and why.
-5. **Quality Gate Verification**: Line-by-line verification against applicable gates in [QUALITY-GATES.md](QUALITY-GATES.md).
+5. **Quality Gate Verification**: Line-by-line verification against applicable gates in [QUALITY-GATES.md](QUALITY-GATES.md), distinguishing Automated Evidence, Manual Evidence, and Not Verified items.
 6. **Local Execution Verification**: Proof that the system runs under Mode A or Mode B without paid API keys.
 7. **Known Risks & Limitations**: Objective documentation of technical trade-offs.
-8. **Next Steps**: What remains for subsequent roadmap phases.
+8. **Remaining Issues & Next Steps**: What remains for subsequent roadmap phases.
+
+### Self-Assessment Policy
+* **Internal Label Mandate**: Any self-score or self-evaluation must explicitly be labeled:  
+  `> **Internal Self-Assessment — Not Independent Certification**`
+* **Conservative Scoring**: Scores must be evidence-based and conservative. A score below 100 is expected.
+* **Separation of Assessment from Acceptance**: The completion report must distinguish **Implementation Assessment** (performed by the implementing agent) from **Independent Acceptance** (performed later by an independent reviewer). An AI coding agent must **never** declare its own work independently accepted.
