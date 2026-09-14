@@ -7,6 +7,8 @@ from contracts.models import (
     ChatMessage,
     CompletionRequest,
     CompletionResponse,
+    EmbeddingRequest,
+    EmbeddingResponse,
     FinishReason,
     Role,
     UsageMetrics,
@@ -88,6 +90,65 @@ class TestModels(unittest.TestCase):
 
         with self.assertRaises(FrozenInstanceError):
             resp.text = "Tampered text"  # type: ignore[misc]
+
+    def test_embedding_request_validation(self) -> None:
+        req = EmbeddingRequest(inputs=["hello world", "knowledge search"], model="nomic-embed-text")
+        self.assertEqual(len(req.inputs), 2)
+        self.assertEqual(req.model, "nomic-embed-text")
+
+        # Immutability
+        with self.assertRaises(FrozenInstanceError):
+            req.model = "other-model"  # type: ignore[misc]
+
+        # Empty inputs
+        with self.assertRaises(ValueError):
+            EmbeddingRequest(inputs=[], model="nomic-embed-text")
+
+        # Empty string inside inputs
+        with self.assertRaises(ValueError):
+            EmbeddingRequest(inputs=["valid", ""], model="nomic-embed-text")
+        with self.assertRaises(ValueError):
+            EmbeddingRequest(inputs=["   "], model="nomic-embed-text")
+
+        # Missing model
+        with self.assertRaises(ValueError):
+            EmbeddingRequest(inputs=["valid"], model="")
+
+    def test_embedding_response_validation(self) -> None:
+        resp = EmbeddingResponse(
+            embeddings=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+            model="nomic-embed-text",
+            dimensions=3,
+            latency_ms=12.5,
+        )
+        self.assertEqual(len(resp.embeddings), 2)
+        self.assertEqual(resp.dimensions, 3)
+        self.assertEqual(resp.model, "nomic-embed-text")
+
+        # Immutability
+        with self.assertRaises(FrozenInstanceError):
+            resp.dimensions = 4  # type: ignore[misc]
+
+        # Empty embeddings
+        with self.assertRaises(ValueError):
+            EmbeddingResponse(embeddings=[], model="nomic-embed-text", dimensions=3)
+
+        # Dimension mismatch
+        with self.assertRaises(ValueError):
+            EmbeddingResponse(
+                embeddings=[[0.1, 0.2, 0.3], [0.4, 0.5]],  # only 2 elements
+                model="nomic-embed-text",
+                dimensions=3,
+            )
+
+        # Non-positive dimensions
+        with self.assertRaises(ValueError):
+            EmbeddingResponse(
+                embeddings=[[0.1, 0.2]],
+                model="nomic-embed-text",
+                dimensions=0,
+            )
+
 
 
 if __name__ == "__main__":

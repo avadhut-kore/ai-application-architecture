@@ -24,11 +24,15 @@ from .models import (
     ChatMessage,
     CompletionRequest,
     CompletionResponse,
+    EmbeddingRequest,
+    EmbeddingResponse,
     FinishReason,
     Role,
     UsageMetrics,
 )
 from .ports import (
+    EmbeddingPort,
+    IEmbeddingClient,
     ILlmClient,
     LlmClientPort,
     TextGenerationPort,
@@ -51,6 +55,8 @@ __all__ = [
     "ChatMessage",
     "CompletionRequest",
     "CompletionResponse",
+    "EmbeddingRequest",
+    "EmbeddingResponse",
     "FinishReason",
     "Role",
     "UsageMetrics",
@@ -58,6 +64,8 @@ __all__ = [
     "TextGenerationPort",
     "LlmClientPort",
     "ILlmClient",
+    "EmbeddingPort",
+    "IEmbeddingClient",
     # Telemetry
     "AiOperationContext",
     "GEN_AI_OPERATION_NAME",

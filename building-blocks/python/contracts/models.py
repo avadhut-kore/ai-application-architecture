@@ -87,3 +87,44 @@ class CompletionResponse:
     usage: Optional[UsageMetrics] = None
     latency_ms: Optional[float] = None
     metadata: Optional[Mapping[str, Any]] = field(default=None)
+
+
+@dataclass(frozen=True)
+class EmbeddingRequest:
+    """Request payload for generating dense vector embeddings."""
+
+    inputs: Sequence[str]
+    model: str
+    metadata: Optional[Mapping[str, Any]] = field(default=None)
+
+    def __post_init__(self) -> None:
+        if not self.inputs:
+            raise ValueError("EmbeddingRequest must specify at least one input text")
+        for i, text in enumerate(self.inputs):
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError(f"EmbeddingRequest input at index {i} must be a non-empty string")
+        if not self.model or not self.model.strip():
+            raise ValueError("EmbeddingRequest must specify a non-empty model identifier")
+
+
+@dataclass(frozen=True)
+class EmbeddingResponse:
+    """Response payload containing generated dense vector embeddings."""
+
+    embeddings: Sequence[Sequence[float]]
+    model: str
+    dimensions: int
+    usage: Optional[UsageMetrics] = None
+    latency_ms: Optional[float] = None
+    metadata: Optional[Mapping[str, Any]] = field(default=None)
+
+    def __post_init__(self) -> None:
+        if not self.embeddings:
+            raise ValueError("EmbeddingResponse must contain at least one embedding vector")
+        if self.dimensions <= 0:
+            raise ValueError(f"Embedding dimensions must be positive, got {self.dimensions}")
+        for i, vec in enumerate(self.embeddings):
+            if len(vec) != self.dimensions:
+                raise ValueError(
+                    f"Embedding at index {i} has dimension {len(vec)}, expected {self.dimensions}"
+                )

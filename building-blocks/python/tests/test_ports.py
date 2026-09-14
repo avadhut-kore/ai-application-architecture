@@ -9,16 +9,47 @@ from typing import List, Optional
 from contracts.models import (
     CompletionRequest,
     CompletionResponse,
+    EmbeddingRequest,
+    EmbeddingResponse,
     FinishReason,
     UsageMetrics,
 )
-from contracts.ports import ILlmClient, LlmClientPort, TextGenerationPort
+from contracts.ports import (
+    EmbeddingPort,
+    IEmbeddingClient,
+    ILlmClient,
+    LlmClientPort,
+    TextGenerationPort,
+)
 from contracts.telemetry import (
     GEN_AI_OPERATION_NAME,
     GEN_AI_REQUEST_MODEL,
     GEN_AI_SYSTEM,
     AiOperationContext,
 )
+
+
+class FakeEmbeddingClient:
+    """Deterministic in-memory test double conforming to EmbeddingPort."""
+
+    def __init__(self, dimensions: int = 4) -> None:
+        self.dimensions = dimensions
+        self.recorded_requests: List[EmbeddingRequest] = []
+
+    async def embed(
+        self,
+        request: EmbeddingRequest,
+        context: Optional[AiOperationContext] = None,
+    ) -> EmbeddingResponse:
+        self.recorded_requests.append(request)
+        embeddings = [[0.1 * (i + 1)] * self.dimensions for i in range(len(request.inputs))]
+        return EmbeddingResponse(
+            embeddings=embeddings,
+            model=request.model,
+            dimensions=self.dimensions,
+            latency_ms=2.0,
+        )
+
 
 
 class FakeLlmClient:
@@ -112,6 +143,23 @@ class TestPorts(unittest.TestCase):
         req3 = CompletionRequest(prompt="Third step", model="test-model")
         resp3 = asyncio.run(fake.generate(req3))
         self.assertEqual(resp3.text, "Fake model response")
+
+    def test_fake_embedding_client_satisfies_protocol(self) -> None:
+        fake = FakeEmbeddingClient()
+        self.assertIsInstance(fake, EmbeddingPort)
+        self.assertIsInstance(fake, IEmbeddingClient)
+
+    def test_embedding_execution(self) -> None:
+        fake = FakeEmbeddingClient(dimensions=3)
+        req = EmbeddingRequest(inputs=["alpha", "beta"], model="nomic-embed-text")
+        resp = asyncio.run(fake.embed(req))
+
+        self.assertEqual(resp.model, "nomic-embed-text")
+        self.assertEqual(resp.dimensions, 3)
+        self.assertEqual(len(resp.embeddings), 2)
+        self.assertEqual(resp.embeddings[0], [0.1, 0.1, 0.1])
+        self.assertEqual(resp.embeddings[1], [0.2, 0.2, 0.2])
+        self.assertEqual(len(fake.recorded_requests), 1)
 
 
 if __name__ == "__main__":

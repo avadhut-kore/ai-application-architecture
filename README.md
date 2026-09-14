@@ -109,5 +109,10 @@ Consult the authoritative standards in `docs/architecture/`:
 ## 6. Current Phase Status
 
 > [!IMPORTANT]
-> **Current Phase: Phase 3 — Tiered Reference Implementation Templates**  
-> In accordance with Phase 3 scope, this repository establishes the canonical reference artifact templates (`templates/`), machine-readable architectural manifests (`artifact.json`), automated tier validation tooling, and quality gate applicability matrix. Consult [ROADMAP.md](ROADMAP.md) for complete phase schedules.
+> **Phase Status: Phase 5 — Knowledge Intelligence & RAG (IMPLEMENTED — PENDING INDEPENDENT CODEX AUDIT)**
+> Phase 5 implements the repository's first knowledge-grounded AI capabilities:
+> * **Platform Embedding Adapter (Tier 3)**: [`platform/ollama-embedding-adapter/`](platform/ollama-embedding-adapter/) implementing the provider-neutral `EmbeddingPort`.
+> * **Knowledge Intelligence & RAG Reference Pattern (Tier 2)**: [`examples/rag/`](examples/rag/) demonstrating ingestion, heading-aware chunking, in-memory vector index, decoupled retrieval, context budgeting, grounded generation via Phase 4 `TextGenerationPort`, and application-level citation validation.
+> * **Gate D Evaluation**: Automated 32-scenario evaluation dataset (`examples/rag/eval_dataset.jsonl`) achieving 100% Hit Rate, 0.938 MRR, 85.9% Context Relevance ($\ge 80\%$), 100% Groundedness ($\ge 85\%$), and 100% Schema Adherence ($\ge 98\%$).
+> * **Verification**: Run `python3 examples/rag/eval_runner.py --mode fake` or `python3 examples/rag/demo.py --mode fake`.
+> * Consult [ROADMAP.md](ROADMAP.md) for complete roadmap details.

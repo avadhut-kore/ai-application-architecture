@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "ollama-embedding-adapter",
+  "tier": 3,
+  "status": "implemented",
+  "languages": ["python"],
+  "local_first_mode": "A",
+  "application_domains": ["knowledge-intelligence"],
+  "intelligence_patterns": ["retrieval-augmented-generation"],
+  "architecture_patterns": ["hexagonal"]
+}

@@ -89,14 +89,17 @@ Expected response: a JSON object containing a `"models"` array.
 
 Models are pulled manually by the developer. The recommended development model for Phase 4 reference implementations is **`llama3.2:3b`** (compact, fast inference, strong structured JSON compliance).
 
-### 4.1 Installing the Recommended Model
+### 4.1 Installing the Recommended Models
 
 ```bash
-# Pull the 3B parameter Llama 3.2 model (~2.0 GB)
+# Pull the 3B parameter Llama 3.2 text generation model (~2.0 GB)
 ollama pull llama3.2:3b
 
 # Create an alias tag for convenience (optional)
 ollama cp llama3.2:3b llama3.2
+
+# Pull the recommended dense embedding model for Phase 5 Knowledge Intelligence (~274 MB)
+ollama pull nomic-embed-text
 ```
 
 ### 4.2 Verifying Installed Models
@@ -109,37 +112,60 @@ ollama list
 
 Expected output:
 ```text
-NAME              ID              SIZE      MODIFIED
-llama3.2:latest   a80c4f17acd5    2.0 GB    ...
-llama3.2:3b       a80c4f17acd5    2.0 GB    ...
+NAME                     ID              SIZE      MODIFIED
+llama3.2:latest          a80c4f17acd5    2.0 GB    ...
+llama3.2:3b              a80c4f17acd5    2.0 GB    ...
+nomic-embed-text:latest  0a109f422b47    274 MB    ...
 ```
 
 ---
 
-## 5. Running Phase 4 Live Verification
+## 5. Running Phase 4 & Phase 5 Live Verification
 
-Once the daemon is active and a model is pulled, execute the three live verification paths provided in the repository:
+Once the daemon is active and models are pulled, execute the live verification paths provided in the repository:
 
-### 5.1 Platform Adapter Smoke Verification
+### 5.1 Platform Adapter Smoke Verification (Phase 4)
 Verifies connection health, installed model discovery, and prompt execution with real token latency telemetry:
 ```bash
 python3 platform/ollama-adapter/verify.py
 ```
 *Expected Result*: Exits with code `0`, displays model latency and token counts (`prompt`, `completion`).
 
-### 5.2 Structured Generation Live Extraction
+### 5.2 Structured Generation Live Extraction (Phase 4)
 Extracts unstructured feedback into strongly typed `CustomerFeedbackExtraction` domain entities using the local model:
 ```bash
 python3 examples/structured-generation/demo.py --mode live
 ```
 *Expected Result*: Exits with code `0`, validates JSON schema without syntax or boundary errors.
 
-### 5.3 Gate D AI Evaluation Runner
-Evaluates all 30 scenarios in `eval_dataset.jsonl` against authoritative Gate D thresholds:
+### 5.3 Gate D AI Evaluation Runner (Phase 4)
+Evaluates all 30 scenarios in `examples/ai-evaluation/eval_dataset.jsonl` against authoritative Gate D thresholds:
 ```bash
 python3 examples/ai-evaluation/runner.py --mode live
 ```
 *Expected Result*: Exits with code `0`, reporting schema adherence rate ($\ge 98.0\%$), category accuracy, and latency distribution.
+
+### 5.4 Embedding Adapter Smoke Verification (Phase 5)
+Verifies connection health, installed embedding model availability, and dense vector generation:
+```bash
+python3 platform/ollama-embedding-adapter/verify.py
+```
+*Expected Result*: Exits with code `0`, reporting embedding dimensions (e.g. 768 for `nomic-embed-text`) and latency.
+
+### 5.5 Knowledge Intelligence & RAG Interactive Demo (Phase 5)
+Runs end-to-end local knowledge retrieval, context budgeting, and grounded generation with validated citations:
+```bash
+python3 examples/rag/demo.py --mode live
+```
+*Expected Result*: Exits with code `0`, displays retrieved chunks, grounded answer, and verified citation identifiers.
+
+### 5.6 Gate D RAG Evaluation Runner (Phase 5)
+Evaluates all 32 scenarios in `examples/rag/eval_dataset.jsonl` measuring retrieval and grounded generation against Gate D:
+```bash
+python3 examples/rag/eval_runner.py --mode live
+```
+*Expected Result*: Exits with code `0`, reporting Hit Rate, Recall@K, MRR, Context Relevance ($\ge 80\%$), Groundedness ($\ge 85\%$), and Schema Adherence ($\ge 98\%$).
+
 
 ---
 
