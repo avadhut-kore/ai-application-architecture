@@ -70,7 +70,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
   * **Mandatory Minimum Contracts**:
     1. **Model/LLM Client Port**: Standardized interface for text and structured generation (`ILlmClient`).
     2. **AI Operation / Telemetry Context**: OpenTelemetry context propagation and trace attributes.
-    3. **Base Evaluation Result Contract**: Shared schema for recording evaluation scores and benchmark metadata (`EvaluationResult`).
+    3. **Base Evaluation Result Contract**: Shared schema for recording evaluation scores and benchmark metadata (`EvaluationScenarioResult`, `EvaluationSummary`).
     4. **Structured Schema Validation & Error Contract**: Shared representation for parsing errors and domain validation failures.
   * **Conditional Early Contract**:
     * Embedding client abstraction (`IEmbeddingClient`) may be established if Phase 2 demonstrates a concrete requirement to support the immediately upcoming Knowledge Intelligence/RAG architecture. If no concrete Phase 2 requirement exists, the interface is deferred to Phase 5.

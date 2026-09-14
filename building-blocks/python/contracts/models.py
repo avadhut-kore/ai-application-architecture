@@ -23,7 +23,6 @@ class Role(str, Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
-    TOOL = "tool"
 
 
 @dataclass(frozen=True)

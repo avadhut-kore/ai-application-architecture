@@ -66,11 +66,11 @@ Python is the primary ecosystem for Phase 4 AI Foundations. Implementing bounded
    * `platform/`: reserved for shared platform infrastructure (Ollama container setups, optional model gateway); no speculative code in Phase 2.
 2. **Minimum Core Contracts Introduced**:
    * **Text Generation Capability Port**: `TextGenerationPort` (with aliases `LlmClientPort` and `ILlmClient`) in `ports.py`. Strictly bounded to text/structured generation; excludes tools, agents, memory, and embeddings.
-   * **Invocation Models**: `CompletionRequest`, `CompletionResponse`, `UsageMetrics`, and `FinishReason` in `models.py`.
+   * **Invocation Models**: `CompletionRequest`, `CompletionResponse`, `UsageMetrics`, `ChatMessage`, `Role`, and `FinishReason` in `models.py`.
    * **AI Operation / Telemetry Context**: `AiOperationContext` in `telemetry.py`, aligned with OpenTelemetry GenAI semantic conventions (`gen_ai.*`).
-   * **Base Evaluation Result**: `EvaluationResult` and `EvaluationStatus` in `evaluation.py`, providing a lightweight envelope for Gate D reporting.
-   * **Bounded Error Model**: `AiError` hierarchy in `errors.py` categorizing errors into Transient (`ModelRateLimitError`, `ModelUnavailableError`, `ModelTimeoutError`), Non-Transient (`InvalidPromptError`, `ModelNotFoundError`, `ContextLengthExceededError`), and Semantic AI errors (`OutputParsingError`, `SchemaValidationError`).
-   * **Structured Output Validation**: `ValidationResult[T]` in `validation.py` to decouple raw model response parsing from schema validation.
+   * **Evaluation Contracts**: `EvaluationStatus`, `EvaluationMetric`, `EvaluationScenarioResult`, and `EvaluationSummary` in `evaluation.py`, providing structured schemas for evaluation reporting and metric aggregation.
+   * **Bounded Error Taxonomy**: Bounded hierarchy in `errors.py` rooted at `AiError`: Transient / retriable errors (`AiRateLimitError`, `AiTimeoutError`, `AiProviderUnavailableError`), Non-Transient / fatal configuration errors (`AiAuthenticationError`, `AiInvalidRequestError`, `AiModelNotFoundError`), and Semantic output errors (`AiSchemaValidationError`, `AiContentFilterError`).
+   * **Structured Output Validation**: `ValidationResult[T]` generic envelope in `validation.py` to decouple raw model response parsing from schema validation.
 3. **Unified Validation Entry Point**:
    * `scripts/validate.py` executes documentation link checking, repository architecture boundary assertions, and hermetic contract tests in a single command.
    * `.github/workflows/ci.yml` invokes the exact same `python3 scripts/validate.py` entry point under least-privilege permissions.
@@ -108,6 +108,6 @@ In accordance with repository governance, the following capabilities are explici
 ## 8. Compliance with Quality Gates
 
 * **Gate A (Architecture & Boundaries)**: Zero vendor SDK imports in `building-blocks/python/contracts/`. Ports decouple domain logic from infrastructure.
-* **Gate B (Code Quality & Type Safety)**: Strictly typed contracts with explicit type annotations.
+* **Gate B (Code Quality & Type Safety)**: Strictly typed contracts with standard type annotations. Static type checker and linter execution (`mypy`, `ruff`) is explicitly deferred to later phases as runtime tooling is established.
 * **Gate C (Software Testing)**: 100% of contract assertions verified using in-memory test doubles (`FakeLlmClient`).
 * **Gate H (Documentation & Integrity)**: ADR-0001 documents context, drivers, outcomes, and deferrals; 100% internal links resolved cleanly.

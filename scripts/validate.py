@@ -190,9 +190,9 @@ def main() -> int:
     print("1. Checking physical repository structure & governance rules...")
     struct_ok, struct_errors = check_structure()
     if struct_ok:
-        print("   [PASS] Physical repository structure is clean and compliant.")
+        print("   PASS — Repository structure")
     else:
-        print("   [FAIL] Structure issues found:")
+        print("   FAIL — Repository structure:")
         for err in struct_errors:
             print(f"      - {err}")
         overall_success = False
@@ -201,9 +201,9 @@ def main() -> int:
     print("\n2. Checking contract dependency boundaries (no vendor SDKs)...")
     boundary_ok, boundary_errors = check_contract_import_boundaries()
     if boundary_ok:
-        print("   [PASS] Contracts adhere to zero-vendor-dependency boundary rules.")
+        print("   PASS — Contract boundaries")
     else:
-        print("   [FAIL] Boundary violations detected:")
+        print("   FAIL — Contract boundaries:")
         for err in boundary_errors:
             print(f"      - {err}")
         overall_success = False
@@ -212,9 +212,9 @@ def main() -> int:
     print("\n3. Validating documentation links & markdown formatting...")
     doc_ok, doc_errors = run_doc_validation()
     if doc_ok:
-        print("   [PASS] Documentation links and structure validated cleanly.")
+        print("   PASS — Documentation validation")
     else:
-        print("   [FAIL] Documentation issues found:")
+        print("   FAIL — Documentation validation:")
         for err in doc_errors:
             print(f"      - {err}")
         overall_success = False
@@ -223,21 +223,21 @@ def main() -> int:
     print("\n4. Executing contract unit test suite...")
     tests_ok, test_msgs = run_contract_tests()
     if tests_ok:
-        for msg in test_msgs:
-            print(f"   [PASS] {msg}")
+        print("   PASS — Foundation unit tests")
     else:
-        print("   [FAIL] Contract test execution failed:")
+        print("   FAIL — Foundation unit tests:")
         for err in test_msgs:
             print(f"      - {err}")
         overall_success = False
 
     print("\n" + "=" * 60)
     if overall_success:
-        print("RESULT: ALL GATES SATISFIED (PASS)")
+        print("RESULT: REPOSITORY FOUNDATION VALIDATION PASSED")
+        print("Verified: repository structure, import boundaries, doc links, foundation unit tests")
         print("=" * 60)
         return 0
     else:
-        print("RESULT: REPOSITORY VALIDATION FAILED (FAIL)")
+        print("RESULT: REPOSITORY FOUNDATION VALIDATION FAILED")
         print("=" * 60)
         return 1
 
