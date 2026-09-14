@@ -74,3 +74,6 @@ data/
 *.sqlite
 *.sqlite3
 *.db
+
+# Transient Evaluation Reports (Reference evidence maintained in canonical_eval_report.json)
+examples/rag/results/eval_report_*.json

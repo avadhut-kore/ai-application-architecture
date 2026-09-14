@@ -150,16 +150,16 @@ python3 examples/rag/demo.py --mode fake --query "What is the password requireme
 python3 examples/rag/demo.py --mode live
 ```
 
-### 6.3 Gate D AI Evaluation
-Execute the versioned 32-scenario evaluation dataset (`eval_dataset.jsonl`) measuring retrieval and grounded generation metrics against authoritative `QUALITY-GATES.md` thresholds:
+### 6.3 Automated Reference AI Evaluation
+Execute the versioned 32-scenario evaluation dataset (`eval_dataset.jsonl`) measuring retrieval and grounded generation metrics. (Note: Per [`QUALITY-GATES.md`](../../QUALITY-GATES.md#gate-d--ai-evaluation), Gate D is mandatory for Tier 1 Reference Applications; this Tier 2 Pattern Example executes evaluation as a voluntary reference quality benchmark):
 
 ```bash
 python3 examples/rag/eval_runner.py --mode fake
 ```
 
-#### Measured Gate D Baseline (Offline Deterministic Mode):
+#### Measured Reference Evaluation Baseline (Offline Deterministic Mode):
 
-| Metric | Authoritative Threshold | Measured Result | Status |
+| Metric | Reference Threshold | Measured Result | Status |
 | :--- | :--- | :--- | :--- |
 | **Total Scenarios** | $\ge 30$ | **32** | PASS |
 | **Hit Rate** | N/A | **100.0%** | PASS |
@@ -176,12 +176,12 @@ python3 examples/rag/eval_runner.py --mode fake
 
 ## 7. Decision Gates & Deferrals
 
-To prevent premature complexity and speculative architectural sprawl, the following capabilities are deliberately deferred:
+To prevent premature complexity and speculative architectural sprawl, the following capabilities are deliberately deferred per [`ADR-0004`](../../adr/0004-knowledge-intelligence-and-rag-architecture.md) and [`ADR-0005`](../../adr/0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md):
 
 | Capability | Decision | Architectural Justification |
 | :--- | :--- | :--- |
 | **Reranking** | DEFERRED | Baseline semantic retrieval achieves 100% Hit Rate and 0.938 MRR on the reference corpus. Reranking adds latency and must be justified by measured retrieval failure. |
-| **Hybrid Search (BM25 + Dense)** | DEFERRED | Dense vector search satisfies all current disambiguation scenarios. Hybrid search is deferred until lexical failure modes are demonstrated on specialized corpora. |
+| **Hybrid Search (BM25 + Dense)** | DEFERRED | Dense vector search satisfies all current disambiguation scenarios. Hybrid search is deferred per ADR-0005 until lexical failure modes are demonstrated on specialized corpora. |
 | **GraphRAG / Knowledge Graphs** | DEFERRED | Entity graph extraction introduces substantial computational overhead and is out of core Phase 5 scope. |
 | **Persistent Vector Database (pgvector / Qdrant)** | DEFERRED | The in-memory vector index satisfies hermetic CI and developer workstation testing. The storage protocol (`VectorIndexPort`) allows persistent backends to be introduced without modifying application code. |
 | **Query Rewriting / Expansion** | DEFERRED | Direct semantic embedding satisfies current query patterns. Multi-query expansion is deferred until measured failure occurs. |

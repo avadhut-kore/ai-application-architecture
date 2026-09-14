@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Mapping, Sequence, Set
+from typing import Dict, List, Mapping, Optional, Sequence, Set
 
 from .document import Chunk, Document
 

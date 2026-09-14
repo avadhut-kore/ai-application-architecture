@@ -43,17 +43,20 @@ class Retriever:
         vector_index: VectorIndexPort,
         embedding_model: str = "nomic-embed-text",
         default_top_k: int = 3,
+        min_relevance_score: Optional[float] = None,
     ) -> None:
         self.embedding_port = embedding_port
         self.vector_index = vector_index
         self.embedding_model = embedding_model
         self.default_top_k = default_top_k
+        self.min_relevance_score = min_relevance_score
 
     async def retrieve(
         self,
         query: str,
         top_k: Optional[int] = None,
         filters: Optional[Mapping[str, Any]] = None,
+        min_score: Optional[float] = None,
         context: Optional[AiOperationContext] = None,
     ) -> List[RetrievalResult]:
         """Execute semantic retrieval for a user query.
@@ -89,5 +92,10 @@ class Retriever:
                     rank=rank,
                 )
             )
+
+        # 4. Apply evidence sufficiency policy if threshold is configured
+        threshold = min_score if min_score is not None else self.min_relevance_score
+        if threshold is not None:
+            results = [r for r in results if r.score >= threshold]
 
         return results

@@ -85,3 +85,4 @@ Every ADR must include:
 | **[ADR-0002](0002-tiered-reference-implementation-templates.md)** | [Tiered Reference Implementation Templates](0002-tiered-reference-implementation-templates.md) | Accepted | 2026-09-14 |
 | **[ADR-0003](0003-provider-neutral-model-adapter-and-ai-foundations.md)** | [Provider-Neutral Model Adapter & AI Foundations](0003-provider-neutral-model-adapter-and-ai-foundations.md) | Accepted | 2026-09-14 |
 | **[ADR-0004](0004-knowledge-intelligence-and-rag-architecture.md)** | [Knowledge Intelligence & RAG Architecture](0004-knowledge-intelligence-and-rag-architecture.md) | Proposed | 2026-09-14 |
+| **[ADR-0005](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md)** | [Roadmap Reconciliation for Knowledge Intelligence & RAG](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md) | Accepted | 2026-09-14 |

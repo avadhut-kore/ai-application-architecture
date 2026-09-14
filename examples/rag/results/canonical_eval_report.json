@@ -2,7 +2,7 @@
   "summary": {
     "total_scenarios": 32,
     "mode": "fake",
-    "timestamp": "2026-09-14T15:41:08.598749Z",
+    "timestamp": "2026-09-14T17:50:56.354091Z",
     "hit_rate": 1.0,
     "mean_recall_at_k": 0.9896,
     "mrr": 0.9375,
@@ -11,9 +11,10 @@
     "groundedness_rate": 1.0,
     "citation_accuracy_rate": 1.0,
     "abstention_accuracy_rate": 1.0,
-    "avg_latency_ms": 0.63,
-    "gate_d_passed": true,
-    "gate_d_details": {
+    "avg_latency_ms": 0.7,
+    "harness_passed": true,
+    "reference_thresholds_met": true,
+    "reference_threshold_details": {
       "scenario_count": {
         "measured": 32,
         "required": 30,
@@ -40,6 +41,9 @@
         "passed": true
       }
     },
+    "real_ai_quality_verified": false,
+    "gate_d_applicable": false,
+    "gate_d_status": "NOT_APPLICABLE",
     "type_breakdown": {
       "adversarial_injection": {
         "count": 2,
@@ -95,7 +99,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.71,
+      "latency_ms": 0.8,
       "answer": "According to verified enterprise policy, 7 years audit.",
       "error": null
     },
@@ -115,7 +119,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.7,
+      "latency_ms": 0.78,
       "answer": "According to verified enterprise policy, 30 days purged anonymized.",
       "error": null
     },
@@ -135,7 +139,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.65,
+      "latency_ms": 0.71,
       "answer": "According to verified enterprise policy, 90 days telemetry.",
       "error": null
     },
@@ -155,7 +159,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.72,
       "answer": "According to verified enterprise policy, 10 years financial.",
       "error": null
     },
@@ -175,7 +179,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.69,
+      "latency_ms": 0.71,
       "answer": "According to verified enterprise policy, legal hold General Counsel.",
       "error": null
     },
@@ -195,7 +199,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.64,
+      "latency_ms": 0.72,
       "answer": "According to verified enterprise policy, 16 characters.",
       "error": null
     },
@@ -215,7 +219,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.64,
+      "latency_ms": 0.7,
       "answer": "According to verified enterprise policy, 8 hours.",
       "error": null
     },
@@ -235,7 +239,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.68,
+      "latency_ms": 0.78,
       "answer": "According to verified enterprise policy, 90 days SSH.",
       "error": null
     },
@@ -255,7 +259,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.69,
+      "latency_ms": 0.78,
       "answer": "According to verified enterprise policy, multi-factor authentication FIDO2 hardware security keys.",
       "error": null
     },
@@ -275,7 +279,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.65,
+      "latency_ms": 0.8,
       "answer": "According to verified enterprise policy, 2 peer CODEOWNERS.",
       "error": null
     },
@@ -295,7 +299,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.7,
+      "latency_ms": 0.76,
       "answer": "According to verified enterprise policy, 85%.",
       "error": null
     },
@@ -304,8 +308,7 @@
       "scenario_type": "factual_single",
       "query": "What is the maximum allowed pull request size in lines of code changed?",
       "retrieved_chunk_ids": [
-        "eng-01#c2",
-        "eng-01#c1"
+        "eng-01#c2"
       ],
       "recall_at_k": 1.0,
       "hit": true,
@@ -315,7 +318,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.68,
       "answer": "According to verified enterprise policy, 400 lines.",
       "error": null
     },
@@ -335,7 +338,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.78,
       "answer": "According to verified enterprise policy, 15 minutes Sev-1.",
       "error": null
     },
@@ -355,7 +358,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.68,
+      "latency_ms": 0.74,
       "answer": "According to verified enterprise policy, 72 hours post-mortem.",
       "error": null
     },
@@ -375,7 +378,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.69,
+      "latency_ms": 0.86,
       "answer": "According to verified enterprise policy, 10:00 AM 3:00 PM.",
       "error": null
     },
@@ -395,7 +398,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.73,
+      "latency_ms": 0.83,
       "answer": "According to verified enterprise policy, $500.",
       "error": null
     },
@@ -415,7 +418,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.67,
+      "latency_ms": 0.75,
       "answer": "According to verified enterprise policy, 14 calendar days.",
       "error": null
     },
@@ -424,8 +427,7 @@
       "scenario_type": "semantic_paraphrase",
       "query": "For how long are we obligated to store security audit trails and sign-in logs?",
       "retrieved_chunk_ids": [
-        "sec-01#c1",
-        "sec-01#c0"
+        "sec-01#c1"
       ],
       "recall_at_k": 1.0,
       "hit": true,
@@ -435,7 +437,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.69,
+      "latency_ms": 0.76,
       "answer": "According to verified enterprise policy, 7 years.",
       "error": null
     },
@@ -455,7 +457,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.71,
       "answer": "According to verified enterprise policy, 16 characters 8 hours.",
       "error": null
     },
@@ -475,7 +477,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.67,
+      "latency_ms": 0.74,
       "answer": "According to verified enterprise policy, 2 peer 85% 400 lines.",
       "error": null
     },
@@ -495,7 +497,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.65,
+      "latency_ms": 0.72,
       "answer": "According to verified enterprise policy, 60 minutes cache.",
       "error": null
     },
@@ -515,7 +517,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.74,
+      "latency_ms": 0.75,
       "answer": "According to verified enterprise policy, 4096 tokens.",
       "error": null
     },
@@ -535,7 +537,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.16,
+      "latency_ms": 0.18,
       "answer": "According to verified enterprise policy, 7 years.",
       "error": null
     },
@@ -555,7 +557,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.16,
+      "latency_ms": 0.17,
       "answer": "According to verified enterprise policy, 16 characters.",
       "error": null
     },
@@ -575,7 +577,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.68,
+      "latency_ms": 0.76,
       "answer": "I do not have sufficient evidence in the knowledge base to answer this question.",
       "error": null
     },
@@ -595,7 +597,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.68,
+      "latency_ms": 0.75,
       "answer": "I do not have sufficient evidence in the knowledge base to answer this question.",
       "error": null
     },
@@ -615,7 +617,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.73,
+      "latency_ms": 0.79,
       "answer": "I do not have sufficient evidence in the knowledge base to answer this question.",
       "error": null
     },
@@ -624,8 +626,7 @@
       "scenario_type": "insufficient_evidence",
       "query": "What are the guidelines for parking passes at the corporate headquarters?",
       "retrieved_chunk_ids": [
-        "eng-01#c1",
-        "distractor-01#c1"
+        "eng-01#c1"
       ],
       "recall_at_k": 1.0,
       "hit": true,
@@ -635,7 +636,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.68,
+      "latency_ms": 0.73,
       "answer": "I do not have sufficient evidence in the knowledge base to answer this question.",
       "error": null
     },
@@ -655,7 +656,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.77,
       "answer": "I do not have sufficient evidence in the knowledge base to answer this question.",
       "error": null
     },
@@ -675,7 +676,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.66,
+      "latency_ms": 0.74,
       "answer": "According to verified enterprise policy, simulated adversarial.",
       "error": null
     },
@@ -695,7 +696,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.74,
+      "latency_ms": 0.77,
       "answer": "According to verified enterprise policy, 7 years 30 days 90 days.",
       "error": null
     },
@@ -715,7 +716,7 @@
       "grounded": true,
       "citation_accuracy": 1.0,
       "abstention_accurate": true,
-      "latency_ms": 0.23,
+      "latency_ms": 0.26,
       "answer": "According to verified enterprise policy, 15 minutes.",
       "error": null
     }

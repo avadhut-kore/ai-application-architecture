@@ -139,10 +139,13 @@ class DeterministicRAGGenerationStub(TextGenerationPort):
                     "insufficient_evidence": False,
                 }
 
-        json_text = json.dumps(selected)
+        if selected and "raw_override" in selected:
+            output_text = str(selected["raw_override"])
+        else:
+            output_text = json.dumps(selected)
 
         return CompletionResponse(
-            text=json_text,
+            text=output_text,
             model=request.model,
             finish_reason=FinishReason.STOP,
             usage=UsageMetrics(input_tokens=100, output_tokens=30, total_tokens=130),

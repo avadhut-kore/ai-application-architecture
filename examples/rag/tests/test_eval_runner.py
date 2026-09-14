@@ -1,9 +1,10 @@
-"""Unit tests for Gate D RAG Evaluation Runner."""
+"""Unit tests for Knowledge Intelligence & RAG Evaluation Runner."""
 
 from __future__ import annotations
 
 import asyncio
 import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,7 +33,7 @@ from rag.service import RAGResponse
 
 
 class TestEvalRunner(unittest.TestCase):
-    """Test suite verifying Gate D evaluation runner mechanics, dataset loading, and metrics."""
+    """Test suite verifying RAG evaluation runner mechanics, dataset loading, and metrics."""
 
     def setUp(self) -> None:
         self.rag_dir = Path(__file__).resolve().parent.parent
@@ -146,7 +147,11 @@ class TestEvalRunner(unittest.TestCase):
         self.assertGreaterEqual(summary.groundedness_rate, 0.85)
         self.assertGreaterEqual(summary.mean_context_relevance, 0.80)
         self.assertGreaterEqual(summary.schema_adherence_rate, 0.98)
-        self.assertTrue(summary.gate_d_passed)
+        self.assertTrue(summary.harness_passed)
+        self.assertTrue(summary.reference_thresholds_met)
+        self.assertFalse(summary.real_ai_quality_verified)
+        self.assertFalse(summary.gate_d_applicable)
+        self.assertEqual(summary.gate_d_status, "NOT_APPLICABLE")
 
     def test_save_and_print_report(self) -> None:
         with patch("sys.stdout", new_callable=io.StringIO):
@@ -163,12 +168,125 @@ class TestEvalRunner(unittest.TestCase):
             self.assertTrue(saved_path.is_file())
             self.assertIn("eval_report_", saved_path.name)
 
+            # Verify structured JSON semantics:
+            saved_data = json.loads(saved_path.read_text(encoding="utf-8"))
+            saved_summary = saved_data["summary"]
+            self.assertEqual(saved_summary["mode"], "fake")
+            self.assertTrue(saved_summary["harness_passed"])
+            self.assertTrue(saved_summary["reference_thresholds_met"])
+            self.assertFalse(saved_summary["real_ai_quality_verified"])
+            self.assertFalse(saved_summary["gate_d_applicable"])
+            self.assertEqual(saved_summary["gate_d_status"], "NOT_APPLICABLE")
+            self.assertNotIn("gate_d_passed", saved_summary)
 
-        # Ensure print_report does not crash
+        # Ensure print_report reflects Tier 2 voluntary evaluation semantics
         with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
             print_report(summary)
             output = mock_stdout.getvalue()
-            self.assertIn("GATE D VERDICT: PASS", output)
+            self.assertIn("Evaluation Harness Validation: [PASS]", output)
+            self.assertIn("Real AI RAG Quality:          [NOT VERIFIED]", output)
+            self.assertIn("Gate D Applicability:         [NOT APPLICABLE TO TIER 2]", output)
+            self.assertNotIn("AUTHORITATIVE GATE D VERDICT", output)
+            self.assertNotIn("gate_d_passed", output)
+
+    def test_external_output_dir_safe_display(self) -> None:
+        """Verify that saving report to an external directory outside REPO_ROOT does not crash."""
+        with tempfile.TemporaryDirectory() as td:
+            external_dir = Path(td) / "external_results"
+            with self.assertRaises(ValueError):
+                external_dir.relative_to(REPO_ROOT)
+
+            with patch("sys.stdout", new_callable=io.StringIO):
+                summary, results = asyncio.run(
+                    run_evaluation(
+                        dataset_path=self.dataset_path,
+                        corpus_dir=self.corpus_dir,
+                        mode="fake",
+                        top_k=2,
+                    )
+                )
+            report_path = save_report(summary, results, external_dir)
+            self.assertTrue(report_path.is_file())
+
+            try:
+                display_path = report_path.relative_to(REPO_ROOT)
+            except ValueError:
+                display_path = report_path
+            self.assertEqual(display_path, report_path)
+
+    def test_evaluate_single_scenario_malformed_output_records_schema_failure(self) -> None:
+        """Verify that malformed output is counted as schema failure even if citations are valid."""
+        sc = EvalScenario(
+            scenario_id="sc-malformed",
+            scenario_type="factual",
+            query="Audit retention?",
+            expected_chunk_ids=["sec-01#c1"],
+            expected_document_ids=["sec-01"],
+            expected_facts=["7 years"],
+            expected_abstention=False,
+            metadata_filter=None,
+            description="test",
+        )
+        chunk = Chunk(chunk_id="sec-01#c1", document_id="sec-01", chunk_index=1, text="Retention is 7 years.")
+        ret_res = RetrievalResult(chunk=chunk, score=0.95, rank=1)
+        cit = Citation(
+            chunk_id="sec-01#c1",
+            document_id="sec-01",
+            section_title="Retention",
+            source_title="Policy",
+            source_uri="sec-01.md",
+        )
+        val_res = CitationValidationResult(is_valid=True, verified_citations=[cit], rejected_citation_ids=[])
+
+        # RAGResponse with schema_valid=False and schema_error populated
+        resp = RAGResponse(
+            query="Audit retention?",
+            answer="Audit logs must be kept for 7 years according to sec-01#c1.",
+            citations=[cit],
+            retrieved_results=[ret_res],
+            insufficient_evidence=False,
+            context_build=ContextBuildResult("...", ["sec-01#c1"], 50, 1),
+            citation_validation=val_res,
+            latency_ms=10.0,
+            raw_model_output="Audit logs must be kept for 7 years according to sec-01#c1.",
+            schema_valid=False,
+            schema_error="JSONDecodeError: Expecting value: line 1 column 1",
+            metadata={"schema_valid": False, "schema_error": "JSONDecodeError: Expecting value: line 1 column 1"},
+        )
+
+        res = evaluate_single_scenario(sc, resp)
+        self.assertTrue(res.hit)
+        self.assertEqual(res.citation_accuracy, 1.0)  # Citation was extracted and valid
+        self.assertFalse(res.schema_valid)  # BUT schema validity MUST be False
+
+    def test_live_mode_print_report(self) -> None:
+        """Verify that live mode report indicates live execution without claiming Gate D mandatory pass."""
+        summary = RAGEvalSummary(
+            total_scenarios=32,
+            mode="live",
+            timestamp="2026-09-14T00:00:00Z",
+            hit_rate=1.0,
+            mean_recall_at_k=0.99,
+            mrr=0.938,
+            mean_context_relevance=0.859,
+            schema_adherence_rate=1.0,
+            groundedness_rate=1.0,
+            citation_accuracy_rate=1.0,
+            abstention_accuracy_rate=1.0,
+            avg_latency_ms=15.0,
+            harness_passed=True,
+            reference_thresholds_met=True,
+            reference_threshold_details={},
+            real_ai_quality_verified=True,
+            gate_d_applicable=False,
+            gate_d_status="NOT_APPLICABLE",
+            type_breakdown={},
+        )
+        with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            print_report(summary)
+            output = mock_stdout.getvalue()
+            self.assertIn("Real AI RAG Quality:          [PASS]", output)
+            self.assertIn("Gate D Applicability:         [NOT APPLICABLE TO TIER 2]", output)
 
 
 if __name__ == "__main__":

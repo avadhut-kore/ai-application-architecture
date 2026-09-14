@@ -111,15 +111,24 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 ---
 
 ## Phase 5: Knowledge Intelligence & RAG (IMPLEMENTED — PENDING INDEPENDENT REVIEW)
-* **Objective**: Build canonical enterprise knowledge intelligence reference implementations.
-
+* **Objective**: Establish foundational knowledge intelligence and retrieval-augmented generation architectures per ADR-0004 and ADR-0005.
 * **Scope**:
-  * Enterprise RAG reference application (Tier 1).
-  * Semantic chunking, dense vector search, hybrid search (dense + BM25), and reciprocal rank fusion.
-  * Grounded citation extraction and hallucination detection.
-  * Automated RAG evaluation dataset (`eval_dataset.jsonl`) and scoring harness.
+  * **Core Baseline Reference Implementation** (Tier 2 Pattern Example & Tier 3 Platform Component):
+    * Provider-neutral embedding boundary (`EmbeddingPort`) and local Ollama embedding adapter (`platform/ollama-embedding-adapter`).
+    * Markdown document ingestion, frontmatter parsing, and heading-aware structural chunking with deterministic identifiers.
+    * In-memory cosine vector index with metadata filtering and deterministic tie-breaking.
+    * Decoupled semantic retriever with two-tier evidence-sufficiency threshold policy.
+    * Defensive context construction with character budgeting and untrusted delimiter framing.
+    * Grounded generation consuming frozen Phase 4 `TextGenerationPort`.
+    * Application-level citation validation, spoofing rejection, and source attribution mapping.
+    * Automated reference evaluation harness and versioned 32-scenario ground-truth dataset (`eval_dataset.jsonl`).
+  * **Decision-Gated Enterprise Enhancements** (Progression Triggers documented in ADR-0005):
+    * Lexical search (BM25) and Reciprocal Rank Fusion (RRF) triggered upon demonstrated dense keyword retrieval failure.
+    * Persistent vector database storage (e.g., pgvector, Qdrant) triggered when corpus exceeds memory bounds.
+    * Cross-encoder reranking triggered upon large candidate set ranking inversions.
+    * Tier 1 Enterprise Knowledge Application packaging asynchronous ingestion, hybrid search, and persistent storage.
 * **Dependencies**: Phase 4.
-* **Exit Criteria**: Fully runnable local RAG application meeting Quality Gates A through J; evaluation achieving groundedness $\ge 0.85$.
+* **Exit Criteria**: Fully runnable local RAG pipeline with hermetic test suite; reference evaluation achieving groundedness $\ge 0.85$, context relevance $\ge 0.80$, schema adherence $\ge 0.98$, and zero citation spoofing.
 
 ---
 

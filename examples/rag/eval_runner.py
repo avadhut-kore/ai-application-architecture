@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Evaluation runner for Knowledge Intelligence & RAG.
 
-Meets Gate D requirements:
+Meets Tier 2 Reference Evaluation requirements:
 - Executes versioned dataset (32 scenarios across factual, semantic, distractor, metadata, insufficient evidence, adversarial).
 - Measures retrieval metrics (Recall@K, Hit Rate, MRR, Context Relevance).
 - Measures grounded generation metrics (Schema Adherence, Groundedness/Faithfulness, Citation Accuracy, Abstention Accuracy).
-- Assesses live model evaluation against authoritative Gate D thresholds in QUALITY-GATES.md:
+- Assesses metrics against Tier 1 reference thresholds in QUALITY-GATES.md:
   * Groundedness >= 0.85
   * Context Relevance >= 0.80
   * Schema Adherence >= 0.98
 - Supports offline deterministic evaluation (--mode fake) and live model evaluation (--mode live).
+- Distinguishes evaluation harness execution, real AI model quality, and Quality Gate tier applicability.
 """
 
 from __future__ import annotations
@@ -23,27 +24,25 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-# Ensure repository paths are importable
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-BUILDING_BLOCKS_PYTHON = REPO_ROOT / "building-blocks" / "python"
-PLATFORM_OLLAMA = REPO_ROOT / "platform" / "ollama-adapter"
-PLATFORM_EMBEDDING = REPO_ROOT / "platform" / "ollama-embedding-adapter"
+BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
+PLATFORM_OLLAMA_DIR = REPO_ROOT / "platform" / "ollama-adapter"
+PLATFORM_EMBEDDING_DIR = REPO_ROOT / "platform" / "ollama-embedding-adapter"
 RAG_DIR = Path(__file__).resolve().parent
 
-for p in (BUILDING_BLOCKS_PYTHON, PLATFORM_OLLAMA, PLATFORM_EMBEDDING, RAG_DIR):
+for p in (BUILDING_BLOCKS_DIR, PLATFORM_OLLAMA_DIR, PLATFORM_EMBEDDING_DIR, RAG_DIR):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-from contracts.models import CompletionRequest, EmbeddingRequest
+from contracts.models import EmbeddingRequest
 from contracts.ports import EmbeddingPort, TextGenerationPort
 from ollama_adapter.adapter import OllamaAdapter
 from ollama_embedding_adapter.adapter import OllamaEmbeddingAdapter
 from rag.citation_validator import CitationValidator
-from rag.context_builder import ContextBuilder
-from rag.document import Chunk, Document
 from rag.chunker import HeadingAwareChunker
+from rag.document import Chunk, Document
 from rag.ingestion import load_corpus_directory
 from rag.retriever import Retriever
 from rag.service import RAGResponse, RAGService
@@ -105,10 +104,14 @@ class RAGEvalSummary:
     citation_accuracy_rate: float
     abstention_accuracy_rate: float
     avg_latency_ms: float
-    # Gate D Compliance
-    gate_d_passed: bool
-    gate_d_details: Dict[str, Any]
-    type_breakdown: Dict[str, Dict[str, float]]
+    # Evaluation Harness & Governance Assessment
+    harness_passed: bool
+    reference_thresholds_met: bool
+    reference_threshold_details: Dict[str, Any]
+    real_ai_quality_verified: bool
+    gate_d_applicable: bool = False
+    gate_d_status: str = "NOT_APPLICABLE"
+    type_breakdown: Dict[str, Dict[str, float]] = field(default_factory=dict)
 
 
 def load_dataset(dataset_path: Path) -> List[EvalScenario]:
@@ -205,8 +208,12 @@ def evaluate_single_scenario(
         context_relevance = relevant_count / len(response.retrieved_results) if response.retrieved_results else 0.0
 
     # 2. Generation Metrics
-    # Schema adherence: check if raw model output parsed without fallback
-    schema_valid = response.citation_validation.is_valid and not response.metadata.get("schema_error")
+    # Schema adherence: check if model output satisfied the schema without fallback and has no schema_error
+    schema_valid = (
+        response.schema_valid
+        and response.citation_validation.is_valid
+        and not response.metadata.get("schema_error")
+    )
 
     # Abstention accuracy
     if scenario.expected_abstention:
@@ -353,15 +360,19 @@ async def run_evaluation(
     abstention_acc = sum(1 for r in results if r.abstention_accurate) / total
     avg_latency = sum(r.latency_ms for r in results) / total
 
-    # Gate D assessment against authoritative criteria
-    gate_d_details = {
+    # Reference threshold assessment against Tier 1 quantitative benchmarks
+    reference_threshold_details = {
         "scenario_count": {"measured": total, "required": GATE_D_MIN_SCENARIOS, "passed": total >= GATE_D_MIN_SCENARIOS},
         "groundedness": {"measured": round(groundedness, 4), "required": GATE_D_GROUNDEDNESS_THRESHOLD, "passed": groundedness >= GATE_D_GROUNDEDNESS_THRESHOLD},
         "context_relevance": {"measured": round(mean_context_rel, 4), "required": GATE_D_CONTEXT_RELEVANCE_THRESHOLD, "passed": mean_context_rel >= GATE_D_CONTEXT_RELEVANCE_THRESHOLD},
         "schema_adherence": {"measured": round(schema_adh, 4), "required": GATE_D_SCHEMA_ADHERENCE_THRESHOLD, "passed": schema_adh >= GATE_D_SCHEMA_ADHERENCE_THRESHOLD},
         "adversarial_handling": {"measured": True, "required": True, "passed": True},
     }
-    gate_d_passed = all(check["passed"] for check in gate_d_details.values())
+    reference_thresholds_met = all(check["passed"] for check in reference_threshold_details.values())
+    harness_passed = True  # Evaluation harness executed completely without unhandled errors
+    real_ai_quality_verified = (mode == "live") and reference_thresholds_met
+    gate_d_applicable = False  # Per QUALITY-GATES.md, Gate D applies to Tier 1 Reference Applications
+    gate_d_status = "NOT_APPLICABLE"
 
     # Type breakdown
     types = sorted(list(set(sc.scenario_type for sc in scenarios)))
@@ -387,8 +398,12 @@ async def run_evaluation(
         citation_accuracy_rate=round(citation_acc, 4),
         abstention_accuracy_rate=round(abstention_acc, 4),
         avg_latency_ms=round(avg_latency, 2),
-        gate_d_passed=gate_d_passed,
-        gate_d_details=gate_d_details,
+        harness_passed=harness_passed,
+        reference_thresholds_met=reference_thresholds_met,
+        reference_threshold_details=reference_threshold_details,
+        real_ai_quality_verified=real_ai_quality_verified,
+        gate_d_applicable=gate_d_applicable,
+        gate_d_status=gate_d_status,
         type_breakdown=type_breakdown,
     )
 
@@ -398,7 +413,7 @@ async def run_evaluation(
 def print_report(summary: RAGEvalSummary) -> None:
     """Print clean terminal report adhering to repository verification standards."""
     print("\n" + "=" * 70)
-    print("ai-application-architecture — Gate D Knowledge Intelligence & RAG Evaluation")
+    print("ai-application-architecture — Knowledge Intelligence & RAG Evaluation")
     print("=" * 70)
     print(f"Timestamp:          {summary.timestamp}")
     print(f"Evaluation Mode:    {summary.mode.upper()}")
@@ -421,12 +436,26 @@ def print_report(summary: RAGEvalSummary) -> None:
     for st, data in summary.type_breakdown.items():
         print(f"  {st:<28} (n={data['count']:<2}) Hit: {data['hit_rate']*100:>5.1f}% | Grounded: {data['groundedness']*100:>5.1f}%")
     print("-" * 70)
-    status_label = "PASS" if summary.gate_d_passed else "FAIL"
-    print(f"AUTHORITATIVE GATE D VERDICT: {status_label}")
-    if not summary.gate_d_passed:
-        for k, v in summary.gate_d_details.items():
-            if not v["passed"]:
-                print(f"  Deficiency: {k} (measured: {v['measured']}, required: {v['required']})")
+    print("QUALITY GOVERNANCE & EVALUATION ASSESSMENT:")
+    if summary.mode == "fake":
+        print("  Evaluation Harness Validation: [PASS]")
+        print("    -> Deterministic scenario execution, scoring mechanics, and threshold evaluation verified.")
+        print("  Real AI RAG Quality:          [NOT VERIFIED]")
+        print("    -> Offline test doubles cannot establish real probabilistic model compliance.")
+        print("  Gate D Applicability:         [NOT APPLICABLE TO TIER 2]")
+        print("    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications).")
+        print("       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark.")
+    else:
+        status_str = "PASS" if summary.real_ai_quality_verified else "FAIL"
+        print("  Evaluation Harness Validation: [PASS]")
+        print(f"  Real AI RAG Quality:          [{status_str}] (Live execution on {summary.total_scenarios} scenarios)")
+        print("  Gate D Applicability:         [NOT APPLICABLE TO TIER 2]")
+        print("    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications).")
+        print("       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark.")
+        if not summary.reference_thresholds_met:
+            for k, v in summary.reference_threshold_details.items():
+                if not v["passed"]:
+                    print(f"    Deficiency: {k} (measured: {v['measured']}, required: {v['required']})")
     print("=" * 70)
 
 
@@ -472,15 +501,18 @@ def main() -> int:
         )
     )
 
-
     if summary is None:
         return 0 if args.allow_unverified else 1
 
     print_report(summary)
     report_path = save_report(summary, results, output_dir)
-    print(f"Report saved to: {report_path.relative_to(REPO_ROOT)}")
+    try:
+        display_path = report_path.relative_to(REPO_ROOT)
+    except ValueError:
+        display_path = report_path
+    print(f"Report saved to: {display_path}")
 
-    return 0 if summary.gate_d_passed else 1
+    return 0 if (summary.harness_passed and summary.reference_thresholds_met) else 1
 
 
 if __name__ == "__main__":
