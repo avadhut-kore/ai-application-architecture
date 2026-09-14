@@ -32,7 +32,7 @@ After completing this guide, you will be able to:
 * **Inspect** and implement the canonical `TextGenerationPort` protocol using standard Python.
 * **Navigate** the domain error taxonomy (`AiError`) and distinguish transient from non-transient errors.
 * **Execute** the unified monorepo validator (`scripts/validate.py`) and explain each of its validation stages.
-* **Explain** how automated AST inspection (`test_boundaries.py`) prevents vendor SDK leakage into shared contracts.
+* **Explain** how automated AST inspection (`scripts/validate.py` via `check_contract_import_boundaries()`) prevents vendor SDK leakage into shared contracts.
 * **Defend** the architectural decision to deliberately defer speculative abstractions (`IAgent`, `ITool`, `IEmbeddingClient`).
 
 ---
@@ -93,7 +93,7 @@ graph TD
 | **Ports** | [`building-blocks/python/contracts/ports.py`](../../building-blocks/python/contracts/ports.py) | `TextGenerationPort` protocol definition. |
 | **Error Taxonomy** | [`building-blocks/python/contracts/errors.py`](../../building-blocks/python/contracts/errors.py) | `AiError`, `AiModelNotFoundError`, `AiTimeoutError`, `AiProviderUnavailableError`, `AiRateLimitError`, `AiInvalidRequestError`, `AiOutputValidationError`. |
 | **Unit Tests** | [`building-blocks/python/tests/`](../../building-blocks/python/tests/) | Hermetic tests verifying models, ports, errors, validation, and evaluation. |
-| **Boundary Enforcement** | [`scripts/validate.py`](../../scripts/validate.py) | AST inspection in `check_dependency_boundaries()` proving zero vendor SDK imports. |
+| **Boundary Enforcement** | [`scripts/validate.py`](../../scripts/validate.py) | AST inspection in `check_contract_import_boundaries()` proving zero vendor SDK imports. |
 | **Repo Validator** | [`scripts/validate.py`](../../scripts/validate.py) | Monorepo validation engine orchestrating all quality checks. |
 | **CI Workflow** | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) | Read-only GitHub Actions pipeline executing `validate.py`. |
 
@@ -149,7 +149,7 @@ scripts/
 ### Step 5: Study Automated Boundary Enforcement
 * **File**: [`scripts/validate.py`](../../scripts/validate.py)
 * **Why Read**: Discover how the repository mechanically enforces Gate A without external static analysis tools.
-* **What to Look For**: The Python `ast.walk` implementation in `check_dependency_boundaries()` scanning contract files for forbidden imports (`openai`, `anthropic`, `requests`).
+* **What to Look For**: The Python `ast.walk` implementation in `check_contract_import_boundaries()` scanning contract files for prohibited vendor AI SDK imports (`openai`, `anthropic`, `ollama`, `langchain`, `llamaindex`, `google.generativeai`, `cohere`) and inward imports from `apps`.
 
 ### Step 6: Study the Monorepo Validator
 * **File**: [`scripts/validate.py`](../../scripts/validate.py)
@@ -201,7 +201,7 @@ python3 scripts/validate.py
 | Test Category | Purpose | Dependencies | Execution Time | Gate Satisfied |
 | :--- | :--- | :--- | :---: | :---: |
 | **Contract Unit Tests** (`building-blocks/python/tests/`) | Verifies domain dataclasses, default values, error codes, and serialization. | Pure standard library; in-memory. | 0.002s | Gate B, Gate C |
-| **AST Boundary Enforcement** (`scripts/validate.py`) | Scans contract source files via AST to detect prohibited imports (`openai`, `requests`). | Python `ast` module; no external tools. | 0.003s | Gate A |
+| **AST Boundary Enforcement** (`scripts/validate.py`) | Scans contract source files via AST to detect prohibited vendor AI SDKs and inward app imports. | Python `ast` module; no external tools. | 0.003s | Gate A |
 
 ---
 
@@ -214,7 +214,7 @@ python3 scripts/validate.py
    ```bash
    python3 scripts/validate.py
    ```
-4. **Observe**: Step 2 fails with `Disallowed vendor SDK import 'openai' detected in building-blocks/python/contracts/ports.py`.
+4. **Observe**: Step 2 fails with `Prohibited vendor import 'openai' in contract definition.` (exit code 1).
 5. **Revert** the change immediately.
 
 ### Experiment 2: Verify Protocol Polymorphism

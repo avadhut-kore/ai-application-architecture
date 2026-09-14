@@ -55,7 +55,7 @@ The repository operates on a strict normative hierarchy. Lower layers must alway
 
 ```mermaid
 graph TD
-    Vision["VISION.md & SCOPE.md<br/>(What we build & what we reject)"] --> Principles["docs/architecture/principles.md<br/>(7 Architectural Principles)"]
+    Vision["VISION.md & SCOPE.md<br/>(What we build & what we reject)"] --> Principles["docs/architecture/principles.md<br/>(Architectural Principles)"]
     Principles --> Taxonomy["docs/architecture/taxonomy.md<br/>(5 Dimensions: Domains, Patterns, Capabilities)"]
     Taxonomy --> Gates["QUALITY-GATES.md<br/>(Gates A–J: Objective Verification Standard)"]
     Gates --> LocalFirst["docs/architecture/local-first.md<br/>(Modes A, B, C: Local-First Execution)"]
@@ -78,10 +78,10 @@ graph TD
 | **Lifecycle Roadmap** | [`ROADMAP.md`](../../ROADMAP.md) | 15 linear roadmap phases (Phase 0 through 14); phase freezing rules. |
 | **Agent Constitution** | [`AGENTS.md`](../../AGENTS.md) | Thirteen Non-Negotiable Directives; mandatory agent workflow protocol. |
 | **Verification Gates** | [`QUALITY-GATES.md`](../../QUALITY-GATES.md) | Gates A through J; evidence classification (Automated, Manual, Not Verified). |
-| **Design Principles** | [`docs/architecture/principles.md`](../architecture/principles.md) | 7 Principles: Untrusted Output, Local-First, Provider Neutrality, Observability, etc. |
+| **Design Principles** | [`docs/architecture/principles.md`](../architecture/principles.md) | Core design principles: Untrusted Output, Local-First, Provider Neutrality, Observability, etc. |
 | **System Taxonomy** | [`docs/architecture/taxonomy.md`](../architecture/taxonomy.md) | 5 Dimensions: Domains, Intelligence Patterns, Architecture, Production, Governance. |
 | **Execution Policy** | [`docs/architecture/local-first.md`](../architecture/local-first.md) | Three-Mode Policy: Mode A (Offline), Mode B (Local-First), Mode C (Cloud-Comparable). |
-| **Anti-Patterns** | [`docs/architecture/anti-patterns.md`](../architecture/anti-patterns.md) | 12 Explicit AI anti-patterns: Fake AI, Vendor Leakage, Speculative Hierarchy, etc. |
+| **Anti-Patterns** | [`docs/architecture/anti-patterns.md`](../architecture/anti-patterns.md) | Catalog of prohibited architecture anti-patterns: Fake AI, Vendor Leakage, Speculative Hierarchy, etc. |
 
 ---
 
@@ -97,7 +97,7 @@ ai-application-architecture/
 ├── QUALITY-GATES.md               # Objective verification standards (Gates A–J)
 └── docs/
     └── architecture/
-        ├── principles.md          # 7 Core architecture design principles
+        ├── principles.md          # Core architecture design principles
         ├── taxonomy.md            # 5-dimensional classification system
         ├── local-first.md         # Three-mode local-first execution policy
         ├── reference-standard.md  # 4 Reference implementation tiers
@@ -120,7 +120,7 @@ Follow this exact sequence to build an end-to-end understanding of repository go
 
 ### Step 2: The Core Invariants
 * **File**: [`docs/architecture/principles.md`](../architecture/principles.md)
-* **Why Read**: Learn the seven non-negotiable architectural rules that govern all code.
+* **Why Read**: Learn the non-negotiable architectural principles that govern all code. Read all architecture principles defined in [`docs/architecture/principles.md`](../architecture/principles.md).
 * **What to Look For**: The *Untrusted Model Output Principle* and *Decoupled Intelligence Principle*.
 
 ### Step 3: The Common Vocabulary
@@ -145,8 +145,8 @@ Follow this exact sequence to build an end-to-end understanding of repository go
 
 ### Step 7: Anti-Patterns
 * **File**: [`docs/architecture/anti-patterns.md`](../architecture/anti-patterns.md)
-* **Why Read**: Learn what NOT to do before writing or evaluating code.
-* **What to Look For**: Anti-pattern 1 (Fake AI), Anti-pattern 3 (Vendor Leakage), and Anti-pattern 6 (Speculative Abstraction).
+* **Why Read**: Learn what NOT to do before writing or evaluating code. Read all prohibited anti-patterns defined in [`docs/architecture/anti-patterns.md`](../architecture/anti-patterns.md).
+* **What to Look For**: Prohibited anti-patterns including *Toy Demos Presented as Enterprise Systems*, *Vendor SDKs Inside Domain Logic*, *Fake AI Responses*, and *Unnecessary Abstractions*.
 
 ---
 
@@ -206,7 +206,7 @@ Governance System
 ├── Core Intent
 │   ├── VISION.md (Why we build)
 │   └── SCOPE.md (What we include/exclude)
-├── Quality Measurement
+├── Quality Measurement (authoritatively governed by QUALITY-GATES.md)
 │   └── QUALITY-GATES.md
 │       ├── Gate A: Architecture & Structural Boundaries
 │       ├── Gate B: Code Quality & Type Safety

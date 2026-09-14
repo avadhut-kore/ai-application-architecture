@@ -116,8 +116,7 @@ platform/
     ├── verify.py                       # Standalone live verification CLI
     ├── ollama_adapter/
     │   ├── __init__.py
-    │   ├── adapter.py                  # OllamaAdapter (TextGenerationPort implementation)
-    │   └── client.py                   # Low-level HTTP communication & error mapping
+    │   └── adapter.py                  # OllamaAdapter (TextGenerationPort implementation)
     └── tests/
         └── test_adapter.py             # 15 hermetic unit tests (test doubles)
 
@@ -159,9 +158,9 @@ Follow this 10-step sequence to thoroughly master Phase 4:
 * **Why Read**: Refresh the contract interface that `OllamaAdapter` must satisfy.
 
 ### Step 3: Study the Platform Adapter
-* **Files**: [`platform/ollama-adapter/ollama_adapter/adapter.py`](../../platform/ollama-adapter/ollama_adapter/adapter.py) and [`client.py`](../../platform/ollama-adapter/ollama_adapter/client.py)
-* **Why Read**: Learn how raw HTTP calls are wrapped with timeouts, error mapping, and token extraction.
-* **What to Look For**: `urllib.request` in `asyncio.to_thread`, wrapped `URLError` unwrapping, and selective retry logic.
+* **File**: [`platform/ollama-adapter/ollama_adapter/adapter.py`](../../platform/ollama-adapter/ollama_adapter/adapter.py)
+* **Why Read**: Learn how raw HTTP calls are wrapped with timeouts, error mapping to the domain `AiError` taxonomy, and token extraction.
+* **What to Look For**: `urllib.request` executed inside `asyncio.to_thread(self._send_http_request, ...)`, wrapped `URLError` unwrapping, and transient retry orchestration in `generate()`.
 
 ### Step 4: Inspect Standalone Verification
 * **File**: [`platform/ollama-adapter/verify.py`](../../platform/ollama-adapter/verify.py)
@@ -174,7 +173,7 @@ Follow this 10-step sequence to thoroughly master Phase 4:
 ### Step 6: Study the Boundary Validation Service
 * **File**: [`examples/structured-generation/structured_generation/service.py`](../../examples/structured-generation/structured_generation/service.py)
 * **Why Read**: This is the heart of the *Untrusted Model Output Principle*.
-* **What to Look For**: Code fence stripping, `isinstance(confidence, bool)` rejection, unexpected field rejection (`set(payload.keys()) - allowed_fields`), and corrective retry loop.
+* **What to Look For**: Code fence stripping via `_extract_json_string()`, strict schema validation in `validate_output()`, `isinstance(confidence, bool)` rejection, unexpected field rejection (`set(payload.keys()) - allowed_fields`), and bounded corrective retry in `extract_feedback()`.
 
 ### Step 7: Inspect Structured Generation Unit Tests
 * **File**: [`examples/structured-generation/tests/test_service.py`](../../examples/structured-generation/tests/test_service.py)
@@ -183,7 +182,7 @@ Follow this 10-step sequence to thoroughly master Phase 4:
 ### Step 8: Study the Evaluation Runner
 * **File**: [`examples/ai-evaluation/runner.py`](../../examples/ai-evaluation/runner.py)
 * **Why Read**: Learn how Gate D evaluation is automated.
-* **What to Look For**: The strict separation between `--mode fake` (harness verification) and `--mode live` (probabilistic evaluation).
+* **What to Look For**: How `evaluate_service()` executes scenarios and computes summary metrics, and the strict separation between `--mode fake` (harness verification) and `--mode live` (probabilistic evaluation against authoritative Gate D criteria).
 
 ### Step 9: Inspect the Evaluation Golden Dataset
 * **File**: [`examples/ai-evaluation/eval_dataset.jsonl`](../../examples/ai-evaluation/eval_dataset.jsonl)
@@ -197,23 +196,98 @@ Follow this 10-step sequence to thoroughly master Phase 4:
 
 ## 8. Source-Code Reading Order
 
-To trace the code symbols step-by-step:
+Follow this 10-stage reading order to trace the actual symbols, contracts, and runtime execution paths across the codebase:
 
-1. Open [`platform/ollama-adapter/ollama_adapter/adapter.py`](../../platform/ollama-adapter/ollama_adapter/adapter.py):
-   - Find `class OllamaAdapter(TextGenerationPort)`.
-   - Inspect `__init__()`: notice `endpoint`, `default_model`, `timeout_seconds`, `max_retries`.
-   - Inspect `generate()`: observe how `AiOperationContext` is passed and wired into `CompletionResponse.metadata`.
-2. Open [`platform/ollama-adapter/ollama_adapter/client.py`](../../platform/ollama-adapter/ollama_adapter/client.py):
-   - Find `execute_request()`: notice the retry loop checking `error.is_transient`.
-   - Find `_map_urllib_error()`: notice how `socket.timeout` and `TimeoutError` inside `URLError.reason` are mapped to `AiTimeoutError`.
-3. Open [`examples/structured-generation/structured_generation/service.py`](../../examples/structured-generation/structured_generation/service.py):
-   - Find `class FeedbackExtractionService`.
-   - Find `extract()`: trace the prompt construction, model invocation, and call to `_parse_and_validate()`.
-   - Find `_parse_and_validate()`: notice markdown fence stripping, JSON parsing, explicit `isinstance(confidence, bool)` check, and unexpected-field check.
-   - Find `_extract_with_retry()`: see how validation error messages are sent back to the model.
-4. Open [`examples/ai-evaluation/runner.py`](../../examples/ai-evaluation/runner.py):
-   - Find `evaluate_scenario()`: observe metric collection per scenario.
-   - Find `compute_summary()`: notice Gate D criteria checking `total >= 30`, `schema_rate >= 98.0`, and presence of adversarial scenarios.
+```text
+1. Generation Contract (building-blocks/python/contracts/ports.py)
+        ↓
+2. Ollama Adapter (platform/ollama-adapter/ollama_adapter/adapter.py)
+        ↓
+3. Adapter Verification (platform/ollama-adapter/verify.py)
+        ↓
+4. Structured Generation Implementation (examples/structured-generation/structured_generation/service.py)
+        ↓
+5. Structured Generation Tests (examples/structured-generation/tests/test_service.py)
+        ↓
+6. Evaluation Runner (examples/ai-evaluation/runner.py)
+        ↓
+7. Evaluation Golden Dataset (examples/ai-evaluation/eval_dataset.jsonl)
+        ↓
+8. Evaluation Tests (examples/ai-evaluation/tests/test_runner.py)
+        ↓
+9. Architecture Decision Record (adr/0003-provider-neutral-model-adapter-and-ai-foundations.md)
+        ↓
+10. Repository Validation Engine (scripts/validate.py)
+```
+
+### Stage 1: The Generation Contract & Domain Models
+* **Exact Paths**: [`building-blocks/python/contracts/ports.py`](../../building-blocks/python/contracts/ports.py), [`models.py`](../../building-blocks/python/contracts/models.py), and [`errors.py`](../../building-blocks/python/contracts/errors.py)
+* **Exact Symbols**: `TextGenerationPort`, `CompletionRequest`, `CompletionResponse`, `UsageMetrics`, `AiError`, `AiTransientError`, `AiTimeoutError`.
+* **Why Read It**: Understand the abstract interface that decouples all domain consumers from runtime inference providers.
+* **Core Concept**: Hexagonal Port & Domain Error Taxonomy.
+
+### Stage 2: The Ollama Platform Adapter
+* **Exact Path**: [`platform/ollama-adapter/ollama_adapter/adapter.py`](../../platform/ollama-adapter/ollama_adapter/adapter.py)
+* **Exact Symbols**: `OllamaAdapter`, `generate()`, `_send_http_request()`, `_build_payload()`, `_map_response()`, `check_health()`, `get_installed_models()`.
+* **Why Read It**: Trace the full runtime flow:
+  1. `generate()`: Public entrypoint. Orchestrates the transient retry loop with exponential backoff on `AiTransientError`.
+  2. `_build_payload()`: Maps `CompletionRequest` to Ollama API payload (`/api/chat` or `/api/generate`).
+  3. `_send_http_request()`: Synchronous method executed inside worker thread via `await asyncio.to_thread(self._send_http_request, path, payload)` using Python standard library `urllib.request`. Maps HTTP status codes and socket timeouts to domain exceptions (`AiModelNotFoundError`, `AiInvalidRequestError`, `AiRateLimitError`, `AiProviderUnavailableError`, `AiTimeoutError`).
+  4. `_map_response()`: Parses raw Ollama JSON, extracts token counts into `UsageMetrics`, measures latency in milliseconds, and attaches telemetry metadata (`trace_id`, `span_id`, `operation_name`).
+* **Core Concept**: Hexagonal Adapter, Zero-Dependency HTTP Client, and Transient Error Backoff.
+
+### Stage 3: Adapter Verification Tooling
+* **Exact Path**: [`platform/ollama-adapter/verify.py`](../../platform/ollama-adapter/verify.py)
+* **Exact Symbols**: `verify_ollama()`, `main()`.
+* **Why Read It**: See how standalone live verification executes smoke checks and enforces strict exit code `1` when the daemon is unreachable or no models are installed.
+* **Core Concept**: Strict Non-Zero Exit Contracts for Automation.
+
+### Stage 4: Structured Generation Service
+* **Exact Paths**: [`examples/structured-generation/structured_generation/service.py`](../../examples/structured-generation/structured_generation/service.py) and [`models.py`](../../examples/structured-generation/structured_generation/models.py)
+* **Exact Symbols**: `FeedbackExtractionService`, `extract_feedback()`, `validate_output()`, `_extract_json_string()`, `CustomerFeedbackExtraction`, `FeedbackCategory`.
+* **Why Read It**: Trace the untrusted model output defense:
+  1. `extract_feedback()`: Calls `self.client.generate(request)` with `temperature=0.0` and `format="json"`.
+  2. `validate_output()`: Calls `_extract_json_string()` to strip markdown fences (````json ... ````) or find `{...}`. Decodes JSON, strictly rejects unexpected keys (`set(payload.keys()) - allowed_fields`), validates enums (`FeedbackCategory`, `FeedbackSentiment`, `FeedbackUrgency`), checks non-empty summary, and validates numeric float confidence (explicitly rejecting `isinstance(confidence, bool)`).
+  3. Corrective retry loop inside `extract_feedback()`: If validation fails, reflects error messages and raw text back to the model in a corrective prompt for bounded self-correction.
+* **Core Concept**: Untrusted Model Output Principle and Bounded Corrective Reflection.
+
+### Stage 5: Structured Generation Hermetic Tests
+* **Exact Path**: [`examples/structured-generation/tests/test_service.py`](../../examples/structured-generation/tests/test_service.py)
+* **Exact Symbols**: `TestFeedbackExtractionService`, `test_successful_feedback_extraction()`, `test_unexpected_fields_rejected()`, `test_boolean_confidence_rejected()`, `test_corrective_retry_succeeds_on_second_attempt()`.
+* **Why Read It**: See how all parser edge cases, security rejections, and corrective retry flows are tested hermetically in $< 0.01$s using in-memory `FakeLlmClient`.
+* **Core Concept**: Hermetic Domain Testing with Test Doubles.
+
+### Stage 6: AI Evaluation Runner
+* **Exact Path**: [`examples/ai-evaluation/runner.py`](../../examples/ai-evaluation/runner.py)
+* **Exact Symbols**: `evaluate_service()`, `load_dataset()`, `print_report()`, `run_evaluation()`, `DeterministicEvalStub`.
+* **Why Read It**:
+  1. `load_dataset()`: Loads benchmark scenarios from `eval_dataset.jsonl`.
+  2. `evaluate_service()`: Iterates through scenarios, executes `service.extract_feedback()`, measures latency, and builds `ScenarioResult` instances.
+  3. Aggregation logic inside `evaluate_service()`: Computes schema adherence rate, enum accuracies, and evaluates Gate D criteria (`total >= 30`, `schema_rate >= 98.0`, and presence of adversarial scenarios), returning `(EvaluationSummary, List[ScenarioResult])`.
+  4. `print_report()`: Formats results and prints explicit Gate D pass/fail status.
+* **Core Concept**: Quantitative Probabilistic Evaluation & Scorer Separation.
+
+### Stage 7: The Evaluation Golden Dataset
+* **Exact Path**: [`examples/ai-evaluation/eval_dataset.jsonl`](../../examples/ai-evaluation/eval_dataset.jsonl)
+* **Why Read It**: Inspect the 30 versioned scenarios categorized into normal (10), boundary (5), ambiguous (7), and adversarial (8) cases.
+* **Core Concept**: Benchmark Design & Adversarial Robustness.
+
+### Stage 8: Evaluation Runner Tests
+* **Exact Path**: [`examples/ai-evaluation/tests/test_runner.py`](../../examples/ai-evaluation/tests/test_runner.py)
+* **Exact Symbols**: `TestAiEvaluationRunner`, `test_evaluate_service_fake_mode_validates_harness()`, `test_gate_d_schema_threshold_boundary_failure()`, `test_gate_d_schema_threshold_boundary_success()`.
+* **Why Read It**: Verify that the evaluation scorer itself is tested against boundary conditions (e.g. failing when schema rate is 96.7% vs passing at 100.0%).
+* **Core Concept**: Meta-Evaluation (Testing the Evaluation Scorer).
+
+### Stage 9: Architecture Decision Record
+* **Exact Path**: [`adr/0003-provider-neutral-model-adapter-and-ai-foundations.md`](../../adr/0003-provider-neutral-model-adapter-and-ai-foundations.md)
+* **Why Read It**: Review the architectural justifications for zero-dependency standard library HTTP, local Ollama integration, and deferring Gateways/RAG.
+* **Core Concept**: Architectural Rationale & Scope Boundaries.
+
+### Stage 10: Monorepo Test Discovery Integration
+* **Exact Path**: [`scripts/validate.py`](../../scripts/validate.py)
+* **Exact Symbols**: `discover_all_test_suites()`, `run_template_and_artifact_validation()`, `check_contract_import_boundaries()`.
+* **Why Read It**: Learn how dynamic test discovery finds all 63 unit tests across 4 suites and enforces monorepo quality gates.
+* **Core Concept**: Automated Monorepo Quality Governance.
 
 ---
 
@@ -246,7 +320,11 @@ python3 examples/structured-generation/demo.py --mode live
 # 3. Run live 30-scenario Gate D evaluation against local model
 python3 examples/ai-evaluation/runner.py --mode live
 ```
-*Expected Output*: Exit code `0`. Standalone verification reports `PONG` response; live demo extracts typed entities; live evaluation reports Schema Adherence ($100\%$) and Category Accuracy ($73.33\%$).
+*Example recorded run*: Exit code `0`. Standalone verification reports `PONG` response; live demo extracts typed entities; live evaluation reports Schema Adherence ($100\%$) and Category Accuracy ($73.33\%$) on `llama3.2:3b`.
+
+> [!NOTE]
+> **Probabilistic Output & Quality Gate Authority**:
+> Live evaluation outputs are probabilistic and vary across model families, parameter sizes, quantized weights, runtime environments, and temperature. Numerical metrics from a recorded run are an illustrative benchmark, not guaranteed static outputs. Compare your live results against authoritative Gate D criteria defined in [`QUALITY-GATES.md`](../../QUALITY-GATES.md) ($\ge 98.0\%$ schema adherence across $\ge 30$ scenarios including adversarial handling).
 
 ---
 
@@ -430,10 +508,10 @@ Phase 4: AI Foundations
 
 ### Self-Check Answers
 
-1. *Answer*: It delegates blocking HTTP socket operations to Python's asynchronous thread pool using `asyncio.to_thread(self._client.execute_request, ...)`, ensuring the event loop remains unblocked.
+1. *Answer*: It delegates blocking HTTP socket operations in `_send_http_request()` to Python's asynchronous thread pool using `asyncio.to_thread(self._send_http_request, path, payload)`, ensuring the event loop remains unblocked.
 2. *Answer*: In Python, `bool` is a subclass of `int` (`isinstance(True, int) == True`). Without an explicit boolean check, `True` passes `0.0 <= confidence <= 1.0` as `1.0`, corrupting numerical domain validation.
 3. *Answer*: Non-transient errors (`AiInvalidRequestError`, `AiModelNotFoundError`) indicate programming bugs, malformed schemas, or missing models; retrying will produce identical errors. Transient errors (`AiTimeoutError`, `AiRateLimitError`) indicate temporary socket saturation or provider load; retrying with backoff allows recovery.
-4. *Answer*: When the parser catches malformed JSON or schema invalidity, it captures the exact validation exception message, appends it to an error-correction prompt, and requests a regenerated output from the model.
+4. *Answer*: In `extract_feedback()`, when `validate_output()` returns validation errors (e.g. malformed JSON or invalid enums), the service appends the exact error list and previous raw text to a corrective prompt with `metadata={"is_corrective_retry": True}` and invokes `generate()` again for bounded self-correction.
 5. *Answer*: High schema adherence on standard inputs does not prove safety. Adversarial scenarios verify that the system abstains on malicious instructions, resists prompt injections, and handles boundary inputs without crashing.
 6. *Answer*: To prevent automation and CI pipelines from misinterpreting missing infrastructure as successful passes. A failure or missing runtime must exit non-zero.
 7. *Answer*: Provider Portability is the ability to swap runtime vendors (Ollama, vLLM, Azure OpenAI) without changing application code. Model Portability is the ability of prompt templates and schemas to operate across different model families (Llama, Mistral, Claude) without prompt redesign.

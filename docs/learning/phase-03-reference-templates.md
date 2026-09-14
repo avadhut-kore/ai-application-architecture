@@ -131,13 +131,26 @@ scripts/
 
 ### Step 3: Inspect the Manifest Schema
 * **Files**: [`templates/pattern-example/artifact.json`](../../templates/pattern-example/artifact.json) and [`templates/platform-component/artifact.json`](../../templates/platform-component/artifact.json)
-* **Why Read**: Understand the required metadata keys for any repository deliverable.
-* **What to Look For**: `schema_version`, `name`, `tier`, `status`, `taxonomy` (with dimensions), and `quality_gates`.
+* **Why Read**: Understand the metadata schema required for every deliverable in the repository.
+* **What to Look For**: The flat, typed structure validated by `scripts/artifact_validator.py`: `name`, numeric integer `tier` (1–4), `status`, `languages`, `local_first_mode`, and flat taxonomy arrays (`application_domains`, `intelligence_patterns`, `architecture_patterns`):
+  ```json
+  {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "name": "template-pattern-example",
+    "tier": 2,
+    "status": "planned",
+    "languages": ["python"],
+    "local_first_mode": "B",
+    "application_domains": [],
+    "intelligence_patterns": ["structured-generation"],
+    "architecture_patterns": []
+  }
+  ```
 
 ### Step 4: Study the Manifest Validator
 * **File**: [`scripts/artifact_validator.py`](../../scripts/artifact_validator.py)
-* **Why Read**: Learn how manifest correctness and taxonomy compliance are automated.
-* **What to Look For**: The taxonomy validation logic reading `docs/architecture/taxonomy.md` to ensure declared categories exist.
+* **Why Read**: Learn how manifest correctness and taxonomy compliance are automated using pure Python standard library.
+* **What to Look For**: The authoritative taxonomy sets (`VALID_APPLICATION_DOMAINS`, `VALID_INTELLIGENCE_PATTERNS`, `VALID_ARCHITECTURE_PATTERNS`) and tier file structures (`TIER_REQUIRED_FILES`).
 
 ---
 
@@ -146,24 +159,36 @@ scripts/
 To understand how manifest validation works:
 
 1. Open [`scripts/artifact_validator.py`](../../scripts/artifact_validator.py).
-2. Find `extract_taxonomy_vocabularies()`. Notice how it parses Markdown headings from [`docs/architecture/taxonomy.md`](../architecture/taxonomy.md) to extract approved taxonomy terms dynamically.
+2. Inspect the authoritative taxonomy sets: `VALID_APPLICATION_DOMAINS`, `VALID_INTELLIGENCE_PATTERNS`, and `VALID_ARCHITECTURE_PATTERNS`, derived from [`docs/architecture/taxonomy.md`](../architecture/taxonomy.md).
 3. Find `validate_manifest()`. Inspect the checks:
-   - Valid JSON syntax.
-   - Required root keys: `schema_version`, `name`, `tier`, `status`, `taxonomy`.
-   - Tier validation: must be `tier-1`, `tier-2`, `tier-3`, or `tier-4`.
-   - Taxonomy validation: checks `application_domains`, `intelligence_patterns`, `architectural_patterns`.
-4. Run the validator from terminal.
+   - Valid JSON syntax and root dictionary structure.
+   - `name`: lowercase kebab-case regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
+   - `tier`: numeric integer in `{1, 2, 3, 4}`.
+   - `status`: one of `planned`, `experimental`, `implemented`, `validated`, `accepted`, `deprecated`.
+   - `languages`: list of strings (e.g. `["python"]`).
+   - `local_first_mode`: one of `["A", "B", "C", null]`.
+   - Flat taxonomy arrays: validates membership against `VALID_APPLICATION_DOMAINS`, `VALID_INTELLIGENCE_PATTERNS`, and `VALID_ARCHITECTURE_PATTERNS`.
+4. Find `validate_artifact_structure()`: verifies mandatory files per tier (`TIER_REQUIRED_FILES`).
+5. Run the validator from terminal.
 
 ---
 
 ## 9. Commands to Run
 
 ```bash
-# Run standalone manifest and taxonomy validation
+# 1. Run standalone validation of canonical templates (in templates/)
 python3 scripts/artifact_validator.py
+
+# 2. Or validate a single target artifact directory
+python3 scripts/artifact_validator.py platform/ollama-adapter
+
+# 3. Run monorepo-wide recursive artifact discovery and validation
+python3 scripts/validate.py
 ```
 
-* **What it tests**: Discovers all `artifact.json` files in `templates/`, `platform/`, `examples/`, and `apps/`; validates structure, tier names, and taxonomy membership against `docs/architecture/taxonomy.md`.
+* **What it tests**:
+  - `artifact_validator.py`: Standalone CLI that validates canonical templates in `templates/` (or a single targeted artifact path).
+  - `scripts/validate.py` (Step 4): Recursively discovers and validates all `artifact.json` files across approved artifact roots (`apps/`, `building-blocks/`, `platform/`, `examples/`) via `find_all_artifacts()`.
 * **Expected Output**: `PASS: Canonical templates validated successfully.` (Exit code `0`).
 
 ---
@@ -189,22 +214,22 @@ python3 scripts/artifact_validator.py
 
 ### Experiment 1: Induce an Invalid Tier Error
 1. Open [`templates/pattern-example/artifact.json`](../../templates/pattern-example/artifact.json).
-2. Change `"tier": "tier-2"` to `"tier": "tier-99"`.
+2. Change `"tier": 2` to `"tier": 99`.
 3. Run the validator:
    ```bash
    python3 scripts/artifact_validator.py
    ```
-4. **Observe**: The validator fails with `Invalid tier: 'tier-99'`.
+4. **Observe**: The validator fails with `Invalid 'tier': must be one of [1, 2, 3, 4], got 99`.
 5. **Revert** the change.
 
 ### Experiment 2: Induce a Taxonomy Membership Error
 1. Open [`templates/pattern-example/artifact.json`](../../templates/pattern-example/artifact.json).
-2. Under `"taxonomy" -> "intelligence_patterns"`, add `"quantum-neural-mind-reading"`.
+2. Under `"intelligence_patterns"`, add `"quantum-neural-mind-reading"`.
 3. Run the validator:
    ```bash
    python3 scripts/artifact_validator.py
    ```
-4. **Observe**: The validator catches the unapproved term and lists the valid intelligence patterns from `docs/architecture/taxonomy.md`.
+4. **Observe**: The validator catches the unapproved term and outputs: `Unknown intelligence pattern: 'quantum-neural-mind-reading'`.
 5. **Revert** the change.
 
 ---
@@ -282,8 +307,8 @@ Phase 3: Reference Implementation Templates
 
 1. *Answer*: Different deliverables have different architectural scopes. A platform adapter (Tier 3) needs OTel telemetry and ports, but does not need end-to-end user journeys or databases like a Tier 1 application.
 2. *Answer*: Tier defines architectural breadth (number of components, layers). Maturity defines verified quality (test coverage, security audits, resilience testing). A Tier 1 application with failing tests has lower maturity than a fully verified Tier 2 pattern example.
-3. *Answer*: `schema_version`, `name`, `tier`, `status`, `taxonomy` (with `application_domains`, `intelligence_patterns`, `architectural_patterns`), and `quality_gates`.
-4. *Answer*: It dynamically extracts approved terms from `docs/architecture/taxonomy.md` and fails validation if a manifest claims an unapproved pattern or domain.
+3. *Answer*: `name`, numeric integer `tier` (`1`, `2`, `3`, or `4`), `status`, `languages`, `local_first_mode`, and flat taxonomy arrays (`application_domains`, `intelligence_patterns`, `architecture_patterns`). Notice there is no `schema_version` or nested `taxonomy` object.
+4. *Answer*: It enforces taxonomy membership against authoritative identifier sets (`VALID_APPLICATION_DOMAINS`, `VALID_INTELLIGENCE_PATTERNS`, `VALID_ARCHITECTURE_PATTERNS`) derived directly from `docs/architecture/taxonomy.md`.
 5. *Answer*: Tier 1 applications simulate full enterprise systems requiring circuit breakers, timeouts, and fallbacks under provider failure. Tier 2 pattern examples focus on isolating an architectural pattern (e.g. structured generation) and only require basic error handling.
 6. *Answer*: It provides a verified, pre-scaffolded starting point for developers creating new implementations, ensuring consistency from day one.
 7. *Answer*: Canonical templates are validated by `scripts/artifact_validator.py` as part of `scripts/validate.py` on every CI run.
