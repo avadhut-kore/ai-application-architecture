@@ -1,10 +1,10 @@
 {
-  "name": "fixture-valid-tier1",
-  "tier": 1,
+  "name": "fixture-nested-valid",
+  "tier": 2,
   "status": "planned",
   "languages": ["python"],
   "local_first_mode": "B",
   "application_domains": ["structured-extraction"],
   "intelligence_patterns": ["structured-generation"],
-  "architecture_patterns": ["hexagonal"]
+  "architecture_patterns": ["modular-monolith"]
 }

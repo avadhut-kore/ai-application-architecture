@@ -27,6 +27,13 @@ To prevent both shallow documentation on complex systems and excessive ceremony 
 > * **Reference Artifact Templates**: The overall governance and archetype system defined in this `templates/` directory used to bootstrap Tier 1, 2, 3, or 4 implementations.  
 > * **Tier 4 — Template Artifact**: The specific artifact classification for a reusable project skeleton, archetype, or starter kit that does not itself represent a runnable production application.
 
+> [!NOTE]
+> **Artifact Tier vs. Maturity & Production Readiness**  
+> Artifact tier describes the artifact's purpose, scope, and expected architectural evidence/rigor. It is **not** a maturity, quality, or production-readiness ranking.  
+> * A **Tier 3 Platform Component** may be highly mature, hardened, and production-grade.  
+> * A **Tier 1 Reference Application** does not automatically satisfy Gate J (Production Readiness & Resilience).  
+> * **Roadmap Phase** describes *when* capabilities are introduced. **Artifact Tier** describes *what kind* of artifact is being produced. Roadmap phases do not map directly to artifact tiers.
+
 ---
 
 ## 2. Directory Structure
@@ -68,7 +75,7 @@ Every reference artifact in the repository must include a root `artifact.json` f
   "status": "planned",
   "languages": ["python"],
   "local_first_mode": "B",
-  "application_domains": ["horizontal-enterprise"],
+  "application_domains": ["structured-extraction"],
   "intelligence_patterns": ["structured-generation"],
   "architecture_patterns": ["hexagonal"]
 }
@@ -89,20 +96,20 @@ Every reference artifact in the repository must include a root `artifact.json` f
 
 ## 4. Quality Gate Applicability Matrix
 
-Authoritative quality gates are defined in [`QUALITY-GATES.md`](../QUALITY-GATES.md) (Gates A through J). The tier classification defines the expected scope and applicability of evidence:
+Authoritative quality gate names and definitions are defined exclusively in [`QUALITY-GATES.md`](../QUALITY-GATES.md) (Gates A through J). Templates interpret how each gate applies across the four reference implementation tiers:
 
-| Quality Gate | Tier 1 (Reference App) | Tier 2 (Pattern Example) | Tier 3 (Platform Component) | Tier 4 (Template Artifact) |
+| Authoritative Quality Gate | Tier 1 (Reference App) | Tier 2 (Pattern Example) | Tier 3 (Platform Component) | Tier 4 (Template Artifact) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Gate A: Architecture & Design Integrity** | **Mandatory** | Recommended / Scaled | **Mandatory** | **Mandatory** (Structure) |
-| **Gate B: Local-First Execution Integrity** | **Mandatory** (Mode A or B) | **Mandatory** (Mode A or B) | **Mandatory** (Zero cloud locks) | **Mandatory** (Safe defaults) |
-| **Gate C: Deterministic Software Quality** | **Mandatory** ($\ge 85\%$ coverage) | **Mandatory** (Focused tests) | **Mandatory** (Contracts/doubles) | Recommended (Syntax/lint) |
-| **Gate D: AI Quality & Evaluation** | **Mandatory if AI behavior exists** | **Applicable if AI demonstrated** | **Applicable if AI present**; else N/A | **Not Applicable** |
-| **Gate E: Security, Trust & Safety** | **Mandatory** (Threat model + controls) | Risk-based / Scaled | **Mandatory** (Boundary isolation) | **Mandatory** (Zero secrets) |
-| **Gate F: Observability & Telemetry** | **Mandatory** (OTel GenAI conventions) | Optional / Scaled | **Mandatory** if runtime middleware | **Not Applicable** |
-| **Gate G: Data Management & Hygiene** | **Mandatory if persistence exists** | Optional / Scaled | Applicable if managing storage | **Not Applicable** |
-| **Gate H: API Design & Interoperability** | **Mandatory** (REST/Streaming) | Recommended | **Mandatory** (Ports/protocols) | Optional |
-| **Gate I: Operational Excellence & Runbooks** | **Mandatory** (Demo $< 5$ min) | **Mandatory** (Runnable script) | **Mandatory** (Integration sample) | **Not Applicable** |
-| **Gate J: Governance & Acceptance Discipline**| **Mandatory** (Evidence record) | **Mandatory** (Evidence record) | **Mandatory** (Evidence record) | **Mandatory** (Evidence record) |
+| **Gate A — Architecture & Structural Boundaries** | **Mandatory** | Recommended / Scaled | **Mandatory** | **Mandatory** (Structure) |
+| **Gate B — Code Quality & Type Safety** | **Mandatory** (Strict typing & lint) | **Mandatory** (Strict typing & lint) | **Mandatory** (Strict typing & lint) | **Mandatory** (Clean scaffold) |
+| **Gate C — Software Testing** | **Mandatory** ($\ge 85\%$ coverage) | **Mandatory** (Hermetic unit tests) | **Mandatory** ($\ge 85\%$ coverage) | Recommended baseline |
+| **Gate D — AI Evaluation** | **Mandatory** (if AI behavior exists) | Scaled (if AI demonstrated) | Recommended (if probabilistic) | **Not Applicable** |
+| **Gate E — Security & Safety** | **Mandatory** (Threat model + audit) | Scaled / Risk-based | **Mandatory** (Boundary validation) | **Mandatory** (Zero secrets) |
+| **Gate F — Observability & Telemetry** | **Mandatory** (OTel GenAI spans) | Optional / Scaled | **Mandatory** (if runtime middleware) | **Not Applicable** |
+| **Gate G — Performance & Sizing** | **Mandatory** (TTFT, streaming, sizing)| Optional / Scaled | Recommended (Low overhead) | **Not Applicable** |
+| **Gate H — Documentation & Architectural Integrity** | **Mandatory** (Docs, C4, link check)| **Mandatory** (README, diagrams) | **Mandatory** (API docs, contracts) | **Mandatory** (Usage, non-prod notice) |
+| **Gate I — Demo & Operational Verification** | **Mandatory** (Mode A/B, demo $< 5$ min)| **Mandatory** (Mode A/B demo script) | Recommended (Integration sample) | **Not Applicable** |
+| **Gate J — Production Readiness & Resilience** | **Mandatory** (Resilience & fault injection)| Scaled (Basic error handling) | Recommended (Resilience support) | **Not Applicable** |
 
 ---
 

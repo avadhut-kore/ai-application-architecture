@@ -29,7 +29,11 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from artifact_validator import validate_all_templates, validate_artifact
+from artifact_validator import (
+    find_all_artifacts,
+    validate_all_templates,
+    validate_artifact,
+)
 
 # Mandatory governance files
 REQUIRED_GOVERNANCE_FILES = [
@@ -186,7 +190,7 @@ def run_contract_tests() -> Tuple[bool, List[str]]:
 
 
 def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:
-    """Validate canonical templates and any declared reference artifacts in apps/."""
+    """Validate canonical templates and any declared reference artifacts in approved roots."""
     errors: List[str] = []
 
     # 1. Validate canonical templates in templates/
@@ -195,14 +199,12 @@ def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:
     if not t_ok:
         errors.extend(t_errors)
 
-    # 2. Validate any declared reference artifacts in apps/
-    apps_root = REPO_ROOT / "apps"
-    if apps_root.is_dir():
-        for item in apps_root.iterdir():
-            if item.is_dir() and (item / "artifact.json").exists():
-                a_ok, a_errors = validate_artifact(item)
-                if not a_ok:
-                    errors.extend(a_errors)
+    # 2. Recursively discover and validate reference artifacts across approved roots
+    artifact_dirs = find_all_artifacts(REPO_ROOT)
+    for art_dir in artifact_dirs:
+        a_ok, a_errors = validate_artifact(art_dir)
+        if not a_ok:
+            errors.extend(a_errors)
 
     return len(errors) == 0, errors
 

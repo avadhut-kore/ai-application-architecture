@@ -72,9 +72,9 @@ Document all explicit exceptions raised by this component:
 
 ## 7. Quality Gate Checklist (Scaled for Tier 3)
 
-Per [QUALITY-GATES.md](../../QUALITY-GATES.md):
-- [ ] **Gate A (Architecture & Boundaries)**: Inward dependency direction maintained; zero reverse dependencies on apps.
-- [ ] **Gate B (Local-First)**: Operates without unneeded third-party cloud dependencies.
-- [ ] **Gate C (Software Quality)**: Unit tests verify all failure modes and contract behaviors.
-- [ ] **Gate F (Observability)**: Telemetry context propagated where component manages runtime invocations.
-- [ ] **Gate H (API & Documentation)**: Stable, documented public contracts with clean type annotations.
+Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, F, and H:
+- [ ] **Gate A — Architecture & Structural Boundaries**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
+- [ ] **Gate B — Code Quality & Type Safety**: Source code is strictly typed, linter clean, with zero compiler warnings.
+- [ ] **Gate C — Software Testing**: Hermetic unit tests achieve $\ge 85\%$ statement coverage using test doubles; integration tests verify wiring.
+- [ ] **Gate F — Observability & Telemetry**: OpenTelemetry GenAI semantic trace context propagated if component participates in runtime execution.
+- [ ] **Gate H — Documentation & Architectural Integrity**: Stable, documented public contracts, architecture specifications, and zero broken links.

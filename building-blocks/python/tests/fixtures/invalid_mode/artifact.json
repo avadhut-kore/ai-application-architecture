@@ -1,0 +1,10 @@
+{
+  "name": "fixture-invalid-mode",
+  "tier": 2,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": "D",
+  "application_domains": [],
+  "intelligence_patterns": ["structured-generation"],
+  "architecture_patterns": []
+}

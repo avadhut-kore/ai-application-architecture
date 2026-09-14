@@ -29,8 +29,8 @@ graph TD
     Client["Client / API Consumer"] -->|"HTTP / SSE"| InboundAdapter["Inbound Adapter (Controller / API)"]
     InboundAdapter --> Core["Application Use Cases (Domain & Orchestration)"]
     Core --> OutboundPort["Outbound Ports (Model, Storage, Messaging)"]
-    OutboundPort --> LocalInference["Local Model Runtime (e.g. Ollama)"]
-    OutboundPort --> Persistence["Persistence (e.g. PostgreSQL / Vector Store)"]
+    OutboundPort --> ModelRuntime["Model Runtime / Provider (e.g. local engine or provider adapter)"]
+    OutboundPort --> Persistence["Persistence / Knowledge Source (e.g. database or vector index)"]
 ```
 
 Key architectural tenets:
@@ -45,7 +45,7 @@ Key architectural tenets:
 ### Prerequisites
 * Operating System: macOS, Linux, or Windows (WSL2).
 * Local Runtime: Language baseline (e.g. Python 3.11+, .NET 8, Node 20+, or Java 21).
-* Local Model Engine: (e.g. Ollama running with target local model).
+* Model Runtime / Provider: (e.g. local engine such as Ollama running target open-weight model, or configured provider adapter).
 
 ### Setup & Execution
 ```bash

@@ -85,12 +85,14 @@ How should reference implementation archetypes be structured, documented, valida
      * `docs/quality.md`: Combines test strategy, AI evaluation plan (if probabilistic behavior exists), Gate A–J assessment, and structured evidence record.
    * Tiers 2, 3, and 4 use a single, rich `README.md`.
 
-4. **Quality Gate Applicability Matrix**:
+4. **Quality Gate Applicability & Tier Semantics**:
    * Gates A through J from [`QUALITY-GATES.md`](../QUALITY-GATES.md) remain the sole authoritative quality gates.
-   * Gate D (AI Quality & Evaluation) is marked **NOT APPLICABLE** for deterministic components.
-   * Gate G (Data & Persistence) is marked **NOT APPLICABLE** when no persistence exists.
-   * Gate F (Observability) is scaled to runnable services; static templates mark it **NOT APPLICABLE**.
-   * Gate J (Production Readiness) is evaluated strictly from evidence; Tier 1 does NOT imply automatic production readiness.
+   * Artifact tier describes the artifact's purpose, scope, and expected architectural evidence/rigor; it is **not** a maturity, quality, or production-readiness ranking. A Tier 3 platform component may be highly mature and production-grade; a Tier 1 reference application does not automatically satisfy Gate J.
+   * Roadmap phases describe *when* capabilities are introduced, whereas artifact tiers describe *what kind* of artifact is produced.
+   * Gate D (AI Evaluation) is marked **NOT APPLICABLE** for deterministic components.
+   * Gate F (Observability & Telemetry) is scaled to runnable services; static templates mark it **NOT APPLICABLE**.
+   * Gate G (Performance & Sizing) is scaled to applications with runtime serving constraints.
+   * Gate J (Production Readiness & Resilience) is evaluated strictly from evidence; Tier 1 does NOT imply automatic production readiness.
 
 5. **Strict Deferrals**:
    * All AI capabilities (Ollama, cloud SDKs, RAG, agents, MCP, tools, workflows) are deferred to Phase 4+.
@@ -114,7 +116,7 @@ How should reference implementation archetypes be structured, documented, valida
 
 ## 7. Compliance with Quality Gates
 
-* **Gate A (Architecture & Design Integrity)**: Formalizes the four-tier reference architecture, enforces clear component boundaries, and establishes the manifest schema.
-* **Gate B (Local-First Execution Integrity)**: Requires all templates to provide explicit configuration for Mode A (Offline Local) or Mode B (Local-First).
-* **Gate C (Software Testing)**: Validated via automated unit tests in `building-blocks/python/tests/test_templates.py` with hermetic test fixtures.
-* **Gate H (Documentation & Integrity)**: ADR-0002 documents drivers, decisions, consequences, and deferrals; verified via `scripts/validate-docs.py`.
+* **Gate A — Architecture & Structural Boundaries**: Formalizes the four-tier reference architecture, enforces clear component boundaries, and establishes the manifest schema.
+* **Gate B — Code Quality & Type Safety**: Source code of validators, templates, and tests adheres strictly to Python type safety and linting standards.
+* **Gate C — Software Testing**: Validated via automated unit tests in `building-blocks/python/tests/test_templates.py` with hermetic test fixtures.
+* **Gate H — Documentation & Architectural Integrity**: ADR-0002 documents drivers, decisions, consequences, and deferrals; verified via `scripts/validate-docs.py`.

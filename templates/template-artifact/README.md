@@ -38,6 +38,6 @@
 
 ## 4. Quality Gate Checklist (Scaled for Tier 4)
 
-Per [QUALITY-GATES.md](../../QUALITY-GATES.md):
-- [ ] **Gate B (Local-First)**: Contains safe, local defaults; zero hardcoded cloud URLs or credentials.
-- [ ] **Gate H (Documentation)**: Clear usage instructions, archetype layout, and prominent non-production notice.
+Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 4 template artifacts are evaluated against Gates B and H:
+- [ ] **Gate B — Code Quality & Type Safety**: Scaffolding passes static type checking and linters with zero errors or warnings out of the box.
+- [ ] **Gate H — Documentation & Architectural Integrity**: Clear usage instructions, archetype layout, zero broken links, and prominent non-production notice.

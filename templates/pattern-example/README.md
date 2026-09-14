@@ -69,9 +69,9 @@ Explain the step-by-step mechanism and how edge cases or malformed responses are
 
 ## 6. Quality Gate Checklist (Scaled for Tier 2)
 
-Per [QUALITY-GATES.md](../../QUALITY-GATES.md):
-- [ ] **Gate B (Local-First)**: Runs locally without paid external API keys.
-- [ ] **Gate C (Software Quality)**: Hermetic unit tests cover normal, boundary, and error cases.
-- [ ] **Gate D (AI Evaluation)**: Applicable if probabilistic behavior demonstrated; otherwise N/A.
-- [ ] **Gate H (API & Documentation)**: Clean interfaces, structured inputs/outputs, and comprehensive README.
-- [ ] **Gate I (Local Execution)**: Single runnable command demonstrates pattern in $< 1$ minute.
+Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 2 pattern examples are evaluated against Gates B, C, H, and I:
+- [ ] **Gate B — Code Quality & Type Safety**: Source code is strictly typed and passes linters without errors or warnings.
+- [ ] **Gate C — Software Testing**: Hermetic unit tests cover normal, boundary, and error cases using test doubles.
+- [ ] **Gate H — Documentation & Architectural Integrity**: Clean interfaces, structured inputs/outputs, renderable diagrams, and zero broken links.
+- [ ] **Gate I — Demo & Operational Verification**: Single runnable command bootstraps locally under Mode A or Mode B without paid external API keys in $< 1$ minute.
+- [ ] *Gate D — AI Evaluation (Scaled)*: Applicable if probabilistic AI behavior is demonstrated; otherwise Not Applicable.

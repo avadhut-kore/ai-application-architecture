@@ -1,0 +1,10 @@
+{
+  "name": "fixture-invalid-taxonomy",
+  "tier": 2,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": "B",
+  "application_domains": ["not-a-real-domain"],
+  "intelligence_patterns": ["structured-generation"],
+  "architecture_patterns": []
+}

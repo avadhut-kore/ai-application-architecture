@@ -1,0 +1,10 @@
+{
+  "name": "fixture-nested-invalid",
+  "tier": 1,
+  "status": "planned",
+  "languages": ["python"],
+  "local_first_mode": "D",
+  "application_domains": ["bogus-domain"],
+  "intelligence_patterns": [],
+  "architecture_patterns": []
+}

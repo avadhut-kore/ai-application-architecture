@@ -12,13 +12,17 @@ C4Context
     title System Context Diagram — [Application Name]
     Person(user, "User / Client", "Initiates requests or triggers workflows")
     System(app, "[Application Name]", "Executes business orchestration, prompt construction, and validation")
-    System_Ext(ollama, "Local Model Engine (Ollama)", "Executes local open-weight model inference")
-    SystemDb_Ext(storage, "Persistence / Vector Store", "Stores domain entities and retrieval indices")
+    System_Ext(model_runtime, "Model Runtime / Provider", "Executes model inference (e.g. local runtime or cloud provider adapter)")
+    SystemDb_Ext(storage, "Persistence / Knowledge Source", "Stores domain entities, state, or retrieval indices")
 
     Rel(user, app, "Sends requests", "HTTP / REST / SSE")
-    Rel(app, ollama, "Invokes inference", "HTTP / Ports")
+    Rel(app, model_runtime, "Invokes inference", "HTTP / Ports")
     Rel(app, storage, "Reads / Writes state", "SQL / Native Driver")
 ```
+
+> [!NOTE]
+> **Provider & Runtime Neutrality**  
+> Model runtimes (such as local engines like Ollama or managed provider endpoints) and storage backends (such as relational databases or vector indices) are modular implementation details. The application core interacts exclusively through architectural ports, ensuring vendor and framework neutrality.
 
 ---
 
@@ -35,7 +39,7 @@ src/[package_name]/
 │   ├── ports/               # Outbound ports (e.g. TextGenerationPort, StoragePort)
 │   └── use_cases/           # Inbound business workflow orchestration
 └── infrastructure/          # Concrete adapters implementing ports
-    ├── adapters/            # Ollama client adapter, DB repository, HTTP clients
+    ├── adapters/            # Model runtime adapter (e.g. local/provider adapter), DB repository
     └── web/                 # Inbound controllers, API routers, middleware
 ```
 
@@ -50,7 +54,7 @@ sequenceDiagram
     participant Controller as Inbound Controller
     participant Service as Application Use Case
     participant Port as Outbound Port
-    participant Model as Inference Engine (Ollama)
+    participant Model as Model Runtime / Provider
 
     Client->>Controller: POST /api/v1/process (Payload)
     Controller->>Service: Execute(Command)

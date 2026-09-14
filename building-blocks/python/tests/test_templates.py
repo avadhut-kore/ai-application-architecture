@@ -13,6 +13,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from artifact_validator import (  # noqa: E402
+    find_all_artifacts,
     validate_all_templates,
     validate_artifact,
     validate_manifest,
@@ -73,6 +74,39 @@ class TestTemplatesAndManifests(unittest.TestCase):
         ok, errors = validate_artifact(fixture_dir)
         self.assertFalse(ok)
         self.assertTrue(any("Invalid 'status'" in err for err in errors))
+
+    def test_invalid_taxonomy_domain_rejected(self) -> None:
+        fixture_dir = FIXTURES_DIR / "invalid_taxonomy"
+        ok, errors = validate_artifact(fixture_dir)
+        self.assertFalse(ok)
+        self.assertTrue(any("Unknown application domain: 'not-a-real-domain'" in err for err in errors))
+
+    def test_invalid_local_first_mode_rejected(self) -> None:
+        fixture_dir = FIXTURES_DIR / "invalid_mode"
+        ok, errors = validate_artifact(fixture_dir)
+        self.assertFalse(ok)
+        self.assertTrue(any("Invalid 'local_first_mode'" in err for err in errors))
+
+    def test_nested_valid_artifact_passes(self) -> None:
+        nested_dir = FIXTURES_DIR / "nested_discovery" / "patterns" / "nested_valid"
+        ok, errors = validate_artifact(nested_dir)
+        self.assertTrue(ok, f"Valid nested artifact failed validation: {errors}")
+        self.assertEqual(len(errors), 0)
+
+    def test_nested_invalid_artifact_rejected(self) -> None:
+        nested_dir = FIXTURES_DIR / "nested_discovery" / "patterns" / "nested_invalid"
+        ok, errors = validate_artifact(nested_dir)
+        self.assertFalse(ok)
+        self.assertTrue(any("Unknown application domain: 'bogus-domain'" in err for err in errors))
+        self.assertTrue(any("Invalid 'local_first_mode'" in err for err in errors))
+        self.assertTrue(any("Tier 1 artifact missing required file: docs/requirements.md" in err for err in errors))
+
+    def test_artifact_discovery_finds_nested_manifests(self) -> None:
+        discovered = find_all_artifacts(FIXTURES_DIR, approved_roots=["nested_discovery"])
+        discovered_names = [p.name for p in discovered]
+        self.assertIn("nested_valid", discovered_names)
+        self.assertIn("nested_invalid", discovered_names)
+        self.assertEqual(len(discovered), 2)
 
     def test_malformed_json_rejected(self) -> None:
         bad_manifest = FIXTURES_DIR / "non_existent" / "artifact.json"

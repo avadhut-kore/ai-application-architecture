@@ -35,16 +35,16 @@ The testing portfolio adheres to the testing pyramid defined in [`docs/engineeri
 
 | Quality Gate | Applicability | Verification Method | Status | Verifiable Evidence |
 | :--- | :---: | :--- | :---: | :--- |
-| **Gate A: Architecture & Design Integrity** | Mandatory | Architecture review & diagram inspection | PASS / FAIL | Mermaid diagrams verified; hexagonal boundaries enforced; zero circular imports. |
-| **Gate B: Local-First Execution Integrity** | Mandatory | Air-gapped test execution | PASS / FAIL | Verified execution under Mode A/B with zero cloud API keys. |
-| **Gate C: Deterministic Software Quality** | Mandatory | Automated unit & integration test runner | PASS / FAIL | [Test command output; coverage percentage]. |
-| **Gate D: AI Quality & Evaluation** | Mandatory if AI exists; else N/A | Automated evaluation runner | PASS / N/A | [Eval runner output; metric scores]. |
-| **Gate E: Security, Trust & Safety** | Mandatory | Static analysis & threat model review | PASS / FAIL | Zero secrets in repo; input sanitization verified. |
-| **Gate F: Observability & Telemetry** | Mandatory | Trace log inspection | PASS / FAIL | OpenTelemetry GenAI semantic attributes verified in trace logs. |
-| **Gate G: Data Management & Hygiene** | Mandatory if DB exists; else N/A | Schema migration check | PASS / N/A | Migrations reversible; zero raw unhashed PII in DB. |
-| **Gate H: API Design & Interoperability** | Mandatory | Schema validation | PASS / FAIL | OpenAPI spec generated; structured errors returned. |
-| **Gate I: Operational Excellence** | Mandatory | Automated demo script | PASS / FAIL | Interactive demo runs cleanly in $< 5$ minutes. |
-| **Gate J: Governance & Acceptance** | Mandatory | Independent audit review | PENDING | Evidence record compiled for independent reviewer. |
+| **Gate A — Architecture & Structural Boundaries** | Mandatory | Static dependency analysis & architectural review | PASS / FAIL | Automated import scan proving zero vendor SDKs in `domain/` and `application/`; approved ADRs. |
+| **Gate B — Code Quality & Type Safety** | Mandatory | Static type checking & linter (`mypy --strict`, `ruff`) | PASS / FAIL | Clean CI/CD terminal execution logs: 0 errors, 0 warnings. |
+| **Gate C — Software Testing** | Mandatory | Automated unit & integration test runner | PASS / FAIL | Test execution log showing $\ge 85\%$ statement coverage for domain modules; 100% passing tests. |
+| **Gate D — AI Evaluation** | Mandatory if AI exists; else N/A | Automated evaluation harness (`eval_dataset.jsonl`) | PASS / N/A | Evaluation report (`eval_report.json`) meeting Gate D metric thresholds ($\ge 30$ scenarios). |
+| **Gate E — Security & Safety** | Mandatory | Security scanners (`gitleaks`, `pip-audit`) & threat model | PASS / FAIL | Clean security scan logs (0 secrets, 0 High/Critical CVEs); documented STRIDE/OWASP threat model. |
+| **Gate F — Observability & Telemetry** | Mandatory | OpenTelemetry trace span inspection | PASS / FAIL | JSON trace span dump asserting presence of required `gen_ai.*` semantic attributes. |
+| **Gate G — Performance & Sizing** | Mandatory | Local benchmark script execution | PASS / FAIL | Benchmark report demonstrating TTFT $\le 2.0\text{s}$, chunked streaming, and zero memory leaks. |
+| **Gate H — Documentation & Architectural Integrity** | Mandatory | Automated link checker & review | PASS / FAIL | `python3 scripts/validate-docs.py` exit code 0; renderable Mermaid diagrams; documented trade-offs. |
+| **Gate I — Demo & Operational Verification** | Mandatory | Clean workstation single-command trial | PASS / FAIL | Execution log demonstrating local cold-bootstrap under Mode A or B without cloud API keys ($< 5$ min). |
+| **Gate J — Production Readiness & Resilience** | Mandatory | Automated fault injection & resilience tests | PASS / FAIL | Passing resilience test logs demonstrating timeouts, backoff retries, circuit breaking, and fallback. |
 
 ---
 
