@@ -1,6 +1,6 @@
 # Architecture Principles
 
-This document establishes the non-negotiable architectural principles governing all systems, platform capabilities, and reference implementations within this repository. 
+This document establishes the non-negotiable architectural principles governing all systems, platform capabilities, and reference implementations within this repository.
 
 Every design decision, pull request, and Architecture Decision Record (ADR) must align with these principles.
 

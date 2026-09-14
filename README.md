@@ -12,13 +12,13 @@ An architectural reference standard, taxonomy, and implementation repository for
 
 The purpose of **`ai-application-architecture`** is to establish an architectural foundation for designing, building, evaluating, securing, observing, and operating AI applications in enterprise software environments.
 
-Modern AI engineering frequently suffers from structural anti-patterns: simple prompt scripts marketed as autonomous agents, brittle prompt chains mistaken for deterministic workflows, hardcoded vendor SDKs creating deep lock-in, unobservable model calls, and an absence of formal evaluation harnesses. 
+Modern AI engineering frequently suffers from structural anti-patterns: simple prompt scripts marketed as autonomous agents, brittle prompt chains mistaken for deterministic workflows, hardcoded vendor SDKs creating deep lock-in, unobservable model calls, and an absence of formal evaluation harnesses.
 
 This repository exists to replace ad-hoc AI scripting with **disciplined software architecture**.
 
 ```
                            AI Application System Topology
-                           
+
  ┌────────────────────────────────────────────────────────────────────────┐
  │                      Client & Consumption Layer                        │
  │        Web / Mobile UI  │  Enterprise APIs  │  Async Event Triggers     │
@@ -86,6 +86,7 @@ To avoid forcing a single monolithic standard across disparate components, this 
 | **[`AGENTS.md`](AGENTS.md)** | Agent Constitution | Operating instructions, coding standards, and quality gates for AI coding agents. |
 | **[`QUALITY-GATES.md`](QUALITY-GATES.md)** | Quality Gates | Gates A through J establishing objective release criteria for all deliverables. |
 | **[`docs/architecture/`](docs/architecture/)** | Architecture Core | Lean, authoritative architectural standards, principles, taxonomy, and policies. |
+| **[`docs/engineering/`](docs/engineering/README.md)** | Engineering Standards | Enforceable engineering standards, testing, evaluation, security, and DoD. |
 | **[`adr/`](adr/)** | Decision Records | Formal Architecture Decision Records (ADRs) and standardized templates. |
 
 ---
@@ -108,5 +109,5 @@ Consult the authoritative standards in `docs/architecture/`:
 ## 6. Current Phase Status
 
 > [!IMPORTANT]
-> **Current Phase: Phase 0 — Vision, Scope & Architecture Governance**  
-> In accordance with Phase 0 constraints, **no application code or infrastructure is currently implemented**. This repository establishes the governance foundation, architectural principles, taxonomies, and quality gates required to support future reference implementations. Consult [ROADMAP.md](ROADMAP.md) for future phase schedules.
+> **Current Phase: Phase 1 — Engineering Standards & Governance (Completed — Ready for Independent Review)**  
+> In accordance with Phase 0 and Phase 1 constraints, **no application code or speculative infrastructure is currently implemented**. This repository establishes the governance foundation, architectural principles, taxonomies, quality gates, and enforceable engineering standards required to support future reference implementations. Consult [ROADMAP.md](ROADMAP.md) for future phase schedules.

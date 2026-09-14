@@ -31,7 +31,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 0: Vision, Scope & Architecture Governance (CURRENT)
+## Phase 0: Vision, Scope & Architecture Governance (COMPLETED)
 * **Objective**: Establish the architectural vision, operational scope, core principles, application taxonomy, local-first execution policy, reference tiers, quality gates, and AI coding agent constitution.
 * **Scope**: Foundational markdown governance documentation, standards in `docs/architecture/`, and ADR framework.
 * **Expected Deliverables**: Governance constitution; zero application code or premature infrastructure.
@@ -41,15 +41,21 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 1: Engineering Standards & Governance
-* **Objective**: Define actionable coding, testing, security, and documentation standards across supported languages.
+## Phase 1: Engineering Standards & Governance (COMPLETED — READY FOR REVIEW)
+* **Objective**: Establish the repository's engineering constitution covering coding, testing, AI evaluation, security, reliability, observability, data, APIs, documentation, Git workflows, and Definition of Done.
 * **Scope**:
-  * Coding and type-safety standards for Python (`mypy --strict`, `ruff`), .NET (`dotnet format`, nullable references), and TypeScript (`tsc --strict`).
-  * Testing standards (deterministic unit test requirements, coverage metrics, mocking rules).
-  * Security scanning rules (pre-commit secret detection, dependency vulnerability audits).
-  * Branching, PR review checklists, and evidence expectations for pull requests.
+  * General engineering standards and the Architecture Complexity Rule.
+  * Primary language standards: Python (`mypy --strict`, `ruff`, `pytest`), .NET 8 LTS / modern C# (`dotnet format`, analyzers, nullable references), and TypeScript (`tsc --strict`, `eslint`, `vitest`).
+  * Secondary enterprise language standard: Java 21 LTS / Spring Boot (conventions, JPA/transactions, JUnit 5).
+  * Testing standards (risk-based portfolio, deterministic vs. probabilistic eval separation, test doubles policy, mature coverage policy).
+  * AI evaluation standards (metrics, `eval_dataset.jsonl` schema, golden benchmarks, regression gating).
+  * Security engineering standards (OWASP Top 10 for LLMs mitigations, untrusted boundaries, least privilege, secrets policy).
+  * Reliability and observability standards (conditional retries, circuit breaking, OpenTelemetry GenAI semantic conventions, correlation).
+  * API design, data persistence principles, and AI-generated data provenance rules.
+  * Tier-aware Definition of Done, evidence record standards, and Git/PR workflows.
+  * Executable documentation quality and link validation baseline (`scripts/validate-docs.py`).
 * **Dependencies**: Phase 0.
-* **Exit Criteria**: Unified engineering standards documented; automated linting and formatting configs operational.
+* **Exit Criteria**: Authoritative engineering standards documented in `docs/engineering/`; executable documentation validation script operational with passing verification.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## 1. Purpose of ADRs
 
-Architectural choices in AI systems frequently involve complex trade-offs between latency, model capabilities, deterministic guarantees, operational costs, and vendor independence. 
+Architectural choices in AI systems frequently involve complex trade-offs between latency, model capabilities, deterministic guarantees, operational costs, and vendor independence.
 
 To maintain an immutable historical record of these decisions, this repository enforces the use of **Architecture Decision Records (ADRs)**. An ADR captures a significant architectural decision along with its context, evaluated alternatives, consequences, and compliance with the repository's core principles.
 

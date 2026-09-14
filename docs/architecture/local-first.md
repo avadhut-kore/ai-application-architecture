@@ -2,7 +2,7 @@
 
 ## 1. Executive Policy
 
-This repository rejects the false dichotomy between "cloud-only AI development" and "mandating that every capability must run 100% disconnected on a laptop". 
+This repository rejects the false dichotomy between "cloud-only AI development" and "mandating that every capability must run 100% disconnected on a laptop".
 
 We do **not** enforce an absolute dogma that every single application must run completely offline without internet connectivity. Such a rule would artificially prohibit realistic enterprise patterns like live telephony integration, web research, external SaaS webhooks, or hybrid enterprise deployments.
 

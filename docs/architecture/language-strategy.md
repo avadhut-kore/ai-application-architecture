@@ -17,7 +17,7 @@ The repository categorizes supported languages into **Primary Implementation Lan
 
 ```
                        Language Governance Classification
-                       
+
  ┌────────────────────────────────────────────────────────────────────────┐
  │ PRIMARY IMPLEMENTATION LANGUAGES                                       │
  │ Formally governed across core templates and Phase 1 engineering rules │
@@ -73,8 +73,7 @@ The repository categorizes supported languages into **Primary Implementation Lan
   * Spring-based enterprise architectures (e.g., Spring AI).
   * Enterprise integration patterns with legacy message backbones or ERP/ESB connectors.
   * Polyglot architectural comparison against .NET or Python baselines.
-* **No Universal Java Requirement**: Java coverage is **not** required for every repository standard, reference application, or building block.
-* **Just-in-Time Governance**: Detailed Java engineering standards, linting rules, and CI configs do not belong in Phase 1; they will be defined just-in-time when the first reference implementation requiring the JVM ecosystem is formally proposed via an approved ADR.
+* **Baseline Standard**: Phase 1 establishes a concise, baseline Java / Spring Boot engineering standard in [`docs/engineering/java.md`](../engineering/java.md), governing modern Java (Java 21 LTS), Spring Boot conventions, JPA/transactions, and testing, while preserving Java's role as an approved secondary enterprise language.
 
 ---
 
