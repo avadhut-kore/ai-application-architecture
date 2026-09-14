@@ -164,7 +164,7 @@ Follow this 10-step sequence to thoroughly master Phase 4:
 
 ### Step 4: Inspect Standalone Verification
 * **File**: [`platform/ollama-adapter/verify.py`](../../platform/ollama-adapter/verify.py)
-* **Why Read**: See how live runtime availability is checked with strict exit codes.
+* **Why Read**: See how live runtime availability is checked with strict exit codes via `run_verification()`.
 
 ### Step 5: Study Structured Generation Domain Models
 * **File**: [`examples/structured-generation/structured_generation/models.py`](../../examples/structured-generation/structured_generation/models.py)
@@ -238,8 +238,10 @@ Follow this 10-stage reading order to trace the actual symbols, contracts, and r
 
 ### Stage 3: Adapter Verification Tooling
 * **Exact Path**: [`platform/ollama-adapter/verify.py`](../../platform/ollama-adapter/verify.py)
-* **Exact Symbols**: `verify_ollama()`, `main()`.
-* **Why Read It**: See how standalone live verification executes smoke checks and enforces strict exit code `1` when the daemon is unreachable or no models are installed.
+* **Exact Symbols**: `run_verification()`, `main()`.
+* **Why Read It**: Trace the standalone verification entrypoint:
+  1. `run_verification(endpoint, model, allow_unverified)`: First tests daemon reachability using `adapter.check_health()`. If unreachable, outputs `Status: NOT VERIFIED` and returns exit code `1` (or `0` if `--allow-unverified` is passed). Next queries `adapter.get_installed_models()`. If no models are installed, reports `Status: NOT VERIFIED` and returns exit code `1`. Finally dispatches a generation test using `CompletionRequest(prompt="Reply with the exact word 'PONG' and nothing else.", model=target_model, temperature=0.0, max_tokens=10)`. If successful, prints response, latency, token metrics, and `RESULT: PASS`, returning exit code `0`. If an exception occurs, outputs `Status: FAIL` and returns exit code `1`.
+  2. `main()`: CLI argument parsing configuring `--endpoint`, `--model`, and `--allow-unverified`.
 * **Core Concept**: Strict Non-Zero Exit Contracts for Automation.
 
 ### Stage 4: Structured Generation Service

@@ -32,7 +32,7 @@ After completing this guide, you will be able to:
 * **Explain** the purpose and structure of the Ten Enterprise Quality Gates (Gates A through J).
 * **Locate** the authoritative definition for any AI pattern within the repository taxonomy.
 * **Distinguish** between the Three Local-First Execution Modes (Mode A, Mode B, and Mode C).
-* **Identify** the Seven Core Architectural Principles that govern all subsequent implementation phases.
+* **Identify** the core architectural principles defined in [`docs/architecture/principles.md`](../architecture/principles.md) that govern all subsequent implementation phases.
 * **Critique** enterprise AI proposals for common anti-patterns like "Fake AI", vendor leakage, and speculative framework abstraction.
 * **Navigate** the repository governance hierarchy to resolve potential conflicts between specifications.
 
@@ -131,7 +131,7 @@ Follow this exact sequence to build an end-to-end understanding of repository go
 ### Step 4: Objective Quality Standards
 * **File**: [`QUALITY-GATES.md`](../../QUALITY-GATES.md)
 * **Why Read**: This is the single most important document for quality assurance.
-* **What to Look For**: The exact criteria for Gates A through J, especially Gate A (Structural Boundaries), Gate C (Software Testing), Gate D (AI Evaluation), and Gate G (Local-First).
+* **What to Look For**: The exact criteria for Gates A through J, especially Gate A (Architecture & Structural Boundaries), Gate C (Software Testing), Gate D (AI Evaluation), and Gate G (Performance & Sizing). Notice that the Three-Mode Local-First AI Policy is an execution policy governed separately in [`docs/architecture/local-first.md`](../architecture/local-first.md), not a Quality Gate.
 
 ### Step 5: The Execution Policy
 * **File**: [`docs/architecture/local-first.md`](../architecture/local-first.md)
@@ -215,7 +215,7 @@ Governance System
 │       ├── Gate E: Security & Safety (Zero secrets)
 │       ├── Gate F: Observability & Telemetry
 │       ├── Gate G: Performance & Sizing (Local benchmarks)
-│       ├── Gate H: Documentation & Integrity
+│       ├── Gate H: Documentation & Architectural Integrity
 │       ├── Gate I: Demo & Operational Verification
 │       └── Gate J: Production Readiness & Resilience
 └── Architectural Invariants

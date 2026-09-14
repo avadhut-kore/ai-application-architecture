@@ -197,16 +197,16 @@ python3 scripts/validate.py
 
 | Quality Gate | Tier 1 (Ref App) | Tier 2 (Pattern Example) | Tier 3 (Platform Component) | Tier 4 (Template) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Gate A — Architecture Boundaries** | **Mandatory** | Scaled | **Mandatory** | Structure |
+| **Gate A — Architecture & Structural Boundaries** | **Mandatory** | Scaled | **Mandatory** | Structure |
 | **Gate B — Code Quality & Type Safety**| **Mandatory** | **Mandatory** | **Mandatory** | **Mandatory** |
 | **Gate C — Software Testing** | **Mandatory** ($\ge 85\%$) | **Mandatory** (Hermetic) | **Mandatory** ($\ge 85\%$) | Baseline |
 | **Gate D — AI Evaluation** | **Mandatory** (if AI) | Scaled (if AI) | Recommended | N/A |
 | **Gate E — Security & Safety** | **Mandatory** | Scaled | **Mandatory** | Zero Secrets |
 | **Gate F — Observability & Telemetry** | **Mandatory** | Scaled | **Mandatory** (if runtime) | N/A |
 | **Gate G — Performance & Sizing** | **Mandatory** | Scaled | Recommended | N/A |
-| **Gate H — Documentation & Integrity** | **Mandatory** | **Mandatory** | **Mandatory** | **Mandatory** |
-| **Gate I — Demo & Verification** | **Mandatory** ($< 5$m) | **Mandatory** ($< 1$m) | Recommended | N/A |
-| **Gate J — Production Resilience** | **Mandatory** | Scaled | Recommended | N/A |
+| **Gate H — Documentation & Architectural Integrity** | **Mandatory** | **Mandatory** | **Mandatory** | **Mandatory** |
+| **Gate I — Demo & Operational Verification** | **Mandatory** ($< 5$m) | **Mandatory** ($< 1$m) | Recommended | N/A |
+| **Gate J — Production Readiness & Resilience** | **Mandatory** | Scaled | Recommended | N/A |
 
 ---
 
