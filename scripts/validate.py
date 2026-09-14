@@ -169,24 +169,41 @@ def run_doc_validation() -> Tuple[bool, List[str]]:
 
 
 def run_contract_tests() -> Tuple[bool, List[str]]:
-    """Run hermetic contract test suite."""
-    test_dir = REPO_ROOT / "building-blocks" / "python" / "tests"
-    top_dir = REPO_ROOT / "building-blocks" / "python"
+    """Run hermetic unit test suites across contracts, platform adapters, and pattern examples."""
+    test_targets = [
+        ("Contracts", REPO_ROOT / "building-blocks" / "python" / "tests", REPO_ROOT / "building-blocks" / "python"),
+        ("Ollama Adapter", REPO_ROOT / "platform" / "ollama-adapter" / "tests", REPO_ROOT / "platform" / "ollama-adapter"),
+        ("Structured Generation", REPO_ROOT / "examples" / "structured-generation" / "tests", REPO_ROOT / "examples" / "structured-generation"),
+        ("AI Evaluation", REPO_ROOT / "examples" / "ai-evaluation" / "tests", REPO_ROOT / "examples" / "ai-evaluation"),
+    ]
 
-    loader = unittest.TestLoader()
-    suite = loader.discover(start_dir=str(test_dir), top_level_dir=str(top_dir))
-    runner = unittest.TextTestRunner(verbosity=1)
-    result = runner.run(suite)
+    all_errors: List[str] = []
+    passed_labels: List[str] = []
 
-    if not result.wasSuccessful():
-        errors = [f"Test failures: {len(result.failures)}", f"Test errors: {len(result.errors)}"]
-        for failure in result.failures:
-            errors.append(f"FAIL: {failure[0]}: {failure[1]}")
-        for error in result.errors:
-            errors.append(f"ERROR: {error[0]}: {error[1]}")
-        return False, errors
+    for label, test_dir, top_dir in test_targets:
+        if not test_dir.is_dir():
+            continue
+        env = os.environ.copy()
+        pythonpath = f"{top_dir}:{REPO_ROOT / 'building-blocks' / 'python'}:{REPO_ROOT / 'examples' / 'structured-generation'}"
+        if "PYTHONPATH" in env:
+            pythonpath = f"{pythonpath}:{env['PYTHONPATH']}"
+        env["PYTHONPATH"] = pythonpath
 
-    return True, [f"Ran {result.testsRun} unit tests successfully."]
+        proc = subprocess.run(
+            [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-t", str(top_dir)],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if proc.returncode != 0:
+            all_errors.append(f"[{label}] Tests failed:\n{proc.stderr}\n{proc.stdout}")
+        else:
+            passed_labels.append(label)
+
+    if all_errors:
+        return False, all_errors
+
+    return True, [f"Passed {len(passed_labels)} component test suites: {', '.join(passed_labels)}."]
 
 
 def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:

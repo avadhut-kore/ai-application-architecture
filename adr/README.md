@@ -83,3 +83,4 @@ Every ADR must include:
 | *Template* | [ADR Standard Template](template.md) | Standard | 2026-09-14 |
 | **[ADR-0001](0001-minimum-core-contracts-and-repository-foundation.md)** | [Minimum Core Contracts & Repository Foundation](0001-minimum-core-contracts-and-repository-foundation.md) | Accepted | 2026-09-14 |
 | **[ADR-0002](0002-tiered-reference-implementation-templates.md)** | [Tiered Reference Implementation Templates](0002-tiered-reference-implementation-templates.md) | Accepted | 2026-09-14 |
+| **[ADR-0003](0003-provider-neutral-model-adapter-and-ai-foundations.md)** | [Provider-Neutral Model Adapter & AI Foundations](0003-provider-neutral-model-adapter-and-ai-foundations.md) | Accepted | 2026-09-14 |
