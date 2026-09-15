@@ -66,8 +66,9 @@ Phase 5: Knowledge Intelligence & RAG [ACCEPTED & FREEZE-READY]
   "How will the LLM securely ground reasoning in private enterprise knowledge?"
   → [Phase 05 Learning Guide](phase-05-knowledge-intelligence-rag.md)
         ↓
-Phase 6: Agentic Task Execution [PLANNED — GUIDE NOT YET AVAILABLE]
+Phase 6: Agentic Task Execution [ACCEPTED & FREEZE-READY]
   "How will AI safely invoke enterprise tools and execute stateful actions?"
+  → [Phase 06 Learning Guide](phase-06-agentic-task-execution.md)
         ↓
 Phase 7: Agentic Workflow Orchestration [PLANNED — GUIDE NOT YET AVAILABLE]
   "How will multi-step, human-in-the-loop workflows be coordinated?"
@@ -81,14 +82,14 @@ Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE
 ## 3. Curriculum Phase Index
 
 | Phase | Title | Focus Area | Status | Learning Guide |
-| :---: | :--- | :--- | :---: | :---: |
+| :---: | :--- | :--- | :--- | :---: |
 | **00** | **Architecture Governance** | Vision, Scope, Taxonomy, 10 Quality Gates, Local-First Policy | `FROZEN` | [Phase 00 Guide](phase-00-governance.md) |
 | **01** | **Engineering Standards** | Definition of Done, Testing Strategy, AI Eval Standards, Security | `FROZEN` | [Phase 01 Guide](phase-01-engineering-standards.md) |
 | **02** | **Repository Foundation** | Monorepo Structure, Core Contracts (`models.py`, `ports.py`, `errors.py`) | `FROZEN` | [Phase 02 Guide](phase-02-repository-foundation.md) |
 | **03** | **Reference Templates** | Four Reference Tiers, Manifests, Taxonomy Validation, Governance | `FROZEN` | [Phase 03 Guide](phase-03-reference-templates.md) |
 | **04** | **AI Foundations** | Provider-Neutral Ports, `OllamaAdapter`, Structured Generation, Gate D Eval | `FROZEN` | [Phase 04 Guide](phase-04-ai-foundations.md) |
 | **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `ACCEPTED` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
-| **06** | **Agentic Task Execution** | Tool Calling, ReAct Loops, Policy Enforcement, Rollback Hooks | `PLANNED` | *Available after Phase 6 freeze* |
+| **06** | **Agentic Task Execution** | Tool Proposals, Capability Registry, Policy Enforcement, Mandatory HITL, MCP | `ACCEPTED` | [Phase 06 Guide](phase-06-agentic-task-execution.md) |
 | **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `PLANNED` | *Available after Phase 7 freeze* |
 | **08–14** | **Enterprise AI Systems** | Multi-Agent, Gateways, Telemetry, Multimodal, Edge & Reference Apps | `PLANNED` | *Available after respective phase freeze* |
 
