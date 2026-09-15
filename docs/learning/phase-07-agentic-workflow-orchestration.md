@@ -22,7 +22,7 @@ The reference pattern consists of:
 2. **Deterministic State Machine & Directed Graph Engine** ([`examples/agentic-workflow/workflow/definition.py`](../../examples/agentic-workflow/workflow/definition.py), [`engine.py`](../../examples/agentic-workflow/workflow/engine.py)): Code-defined directed graphs enforcing transition guards, maximum transition ceilings (`max_transitions = 15`), and cycle loop protection.
 3. **Durable SQLite Checkpoint Store & Atomic Compare-and-Swap (CAS)** ([`examples/agentic-workflow/workflow/store.py`](../../examples/agentic-workflow/workflow/store.py)): Write-Ahead Logging (WAL) single-node persistence with single-statement optimistic concurrency control preventing split-brain resumptions.
 4. **Authority-Bearing Workflow State Model** ([`examples/agentic-workflow/workflow/state.py`](../../examples/agentic-workflow/workflow/state.py)): Strongly typed state capturing checkpoint versions, step retries, execution history, domain context, and a canonical SHA-256 integrity checksum detecting accidental storage tampering.
-5. **Durable Human-in-the-Loop (HITL) Suspension & 7-Point Binding Verification** ([`examples/agentic-workflow/workflow/steps/human.py`](../../examples/agentic-workflow/workflow/steps/human.py), [`approval.py`](../../examples/agentic-workflow/workflow/approval.py)): Asynchronous pause-to-disk lifecycle featuring cryptographically signed approval tokens, strict 7-point binding validation, and single-use token consumption.
+5. **Durable Human-in-the-Loop (HITL) Suspension & 7-Point Binding Verification** ([`examples/agentic-workflow/workflow/steps/human.py`](../../examples/agentic-workflow/workflow/steps/human.py), [`approval.py`](../../examples/agentic-workflow/workflow/approval.py)): Asynchronous pause-to-disk lifecycle featuring durable approval records with strict 7-point structural and lifecycle binding validation, and single-use consumption.
 6. **Durable Mutation Ledger & Stable Action Identity** ([`examples/agentic-workflow/workflow/ledger.py`](../../examples/agentic-workflow/workflow/ledger.py)): Deterministic SHA-256 action identifier derivation (`act-{wf_id}-{step}-{digest}`) and lifecycle tracking (`PLANNED`, `EXECUTION_STARTED`, `EXECUTED`, `FAILED`, `AMBIGUOUS`).
 7. **Crash-Consistent In-Flight Domain Reconciliation** ([`examples/agentic-workflow/workflow/steps/mutation.py`](../../examples/agentic-workflow/workflow/steps/mutation.py), [`remediation_workflow.py`](../../examples/agentic-workflow/workflow/remediation_workflow.py)): A 3-outcome reconciliation protocol (`EXECUTED`, `NOT_EXECUTED`, `INCONCLUSIVE`) preventing double-mutation when processes crash mid-flight.
 8. **Local Saga Backward Compensation** ([`examples/agentic-workflow/workflow/saga.py`](../../examples/agentic-workflow/workflow/saga.py), [`remediation_workflow.py`](../../examples/agentic-workflow/workflow/remediation_workflow.py)): Forward recovery and backward compensating steps governed by authorization policies, ledger tracking, domain reconciliation, and fail-closed manual intervention signalling.
@@ -64,7 +64,7 @@ This model is sufficient for ephemeral tasks that run to completion within a sin
 [Human Approves]       ── (Manager reviews ticket and approves in independent system)
        │
        ▼
-[RESUME PROCESS]       ── (Fresh OS process loads checkpoint, verifies tokens)
+[RESUME PROCESS]       ── (Fresh OS process loads checkpoint, verifies approval binding)
        │
        ▼
 [Initiate Ledger]      ── (Records intent in mutation ledger: EXECUTION_STARTED)
@@ -167,7 +167,7 @@ flowchart TD
         HUMAN -->|Suspension| STORE[("SQLiteWorkflowStore")]
         MUTATION -->|Atomic Commit| STORE
         STORE --> CHECKPOINTS["workflow_checkpoints (CAS Optimistic Lock)"]
-        STORE --> APPROVALS["workflow_approvals (Single-Use Token)"]
+        STORE --> APPROVALS["workflow_approvals (Durable Approval Record)"]
         STORE --> LEDGER["workflow_mutation_ledger (Stable action_id)"]
         STORE --> AUDIT["workflow_audit_log (Append-Only Log)"]
     end
@@ -299,15 +299,15 @@ In naive demos, "pausing and resuming" is simulated by keeping Python objects in
 
 ```bash
 # PROCESS 1: Start workflow and pause at human approval
-$ python3 examples/agentic-workflow/demo.py start --customer cust-001 --inquiry "Outage credit" --db-path ./prod.db
+$ python3 examples/agentic-workflow/demo.py --db-path ./prod.db start --workflow-id wf-demo-001 --customer cust-001 --inquiry "Outage credit"
 # [Process 1 EXITS with exit code 0; Python interpreter terminates; RAM is freed]
 
 # PROCESS 2: Independent process inspects status
-$ python3 examples/agentic-workflow/demo.py status --workflow-id wf-demo-001 --db-path ./prod.db
-# Status: AWAITING_APPROVAL, Pending Approval: app-wf-demo-001-...
+$ python3 examples/agentic-workflow/demo.py --db-path ./prod.db status --workflow-id wf-demo-001
+# Status: AWAITING_APPROVAL, Pending Approval: app-eb1d74c2421b
 
 # PROCESS 3: Separate operator resumes workflow hours later
-$ python3 examples/agentic-workflow/demo.py approve --workflow-id wf-demo-001 --decision approved --approver manager_jane --db-path ./prod.db
+$ python3 examples/agentic-workflow/demo.py --db-path ./prod.db approve --workflow-id wf-demo-001 --approver manager_jane
 # Status: COMPLETED, Mutation Executed: True, Final Balance: $160.00
 ```
 
@@ -353,7 +353,7 @@ Proceeds with execution                     Halts cleanly without side effects
 
 ## 9. Human-in-the-Loop: 7-Point Binding Verification
 
-In Phase 7, Human-in-the-Loop is not a frontend UI widget; it is a **cryptographically and structurally bound security primitive** implemented in [`WorkflowApprovalVerifier`](../../examples/agentic-workflow/workflow/approval.py).
+In Phase 7, Human-in-the-Loop is not a frontend UI widget; it is a **durable security primitive with seven structural and lifecycle binding checks** implemented in [`WorkflowApprovalVerifier`](../../examples/agentic-workflow/workflow/approval.py).
 
 When an agent proposes a state mutation, the approval record binds seven distinct attributes:
 
@@ -368,7 +368,7 @@ class WorkflowApprovalVerifier:
         capability: CapabilityMetadata,
         arguments: Mapping[str, Any],
         actor: AgentActor,
-    ) -> bool:
+    ) -> None:
 ```
 
 ### The 7-Point Binding Checklist
@@ -380,11 +380,11 @@ class WorkflowApprovalVerifier:
 | **3** | `record.action_id == expected_action_id` | **Action Substitution**: Prevents substituting an approved note for a credit. |
 | **4** | `record.capability_name == capability.name` | **Capability Swapping**: Prevents pointing an approval at an unapproved tool. |
 | **5** | `record.canonical_arguments_json == canonicalize(args)` | **Parameter Tampering**: Byte-for-byte check ensures amount is not altered. |
-| **6** | `record.actor_id == actor.id and role == actor.role` | **Actor Impersonation**: Ensures caller has not been demoted or substituted. |
-| **7** | `time.time() < record.expires_at` | **Token Stale Window**: Rejects expired approval decisions. |
+| **6** | `record.actor_id == actor.actor_id and record.actor_role == actor.role` | **Actor Impersonation**: Ensures caller has not been demoted or substituted. |
+| **7** | `time.time() < record.expires_at` | **Approval Expiration Window**: Rejects expired approval decisions. |
 
 ### Single-Use Replay Protection
-Once an approved capability executes, the approval record transitions to `ApprovalStatus.CONSUMED`. If an attacker attempts to replay the token, `WorkflowApprovalVerifier` raises `ApprovalReplayError`.
+Once an approved capability executes, the approval record transitions to `ApprovalStatus.CONSUMED`. If an attacker attempts to replay the consumed approval, `WorkflowApprovalVerifier` raises `ApprovalReplayError`.
 
 ---
 
@@ -590,7 +590,7 @@ The Phase 7 reference pattern handles twelve distinct classes of enterprise fail
 | **Policy Denial** | `CustomerSupportAuthorizationPolicy` | Halt execution; skip human approval | Status: `FAILED` | Authorization denial reason |
 | **Approval Rejection** | `HumanApprovalStep` | Route to `terminal_rejected` | Status: `REJECTED` | Reason recorded in approval table |
 | **Approval Tampering** | `WorkflowApprovalVerifier` | Raise `ApprovalMismatchError` | Status: `FAILED` | Audit event: binding mismatch |
-| **Approval Replay** | `WorkflowApprovalVerifier` | Raise `ApprovalReplayError` | Status: `FAILED` | Audit event: consumed token reuse |
+| **Approval Replay** | `WorkflowApprovalVerifier` | Raise `ApprovalReplayError` | Status: `FAILED` | Audit event: consumed approval reuse |
 | **Concurrent Resume** | Single-statement SQL CAS | Raise `ConcurrentResumeConflictError` | Unchanged (Stale writer blocked) | Exception raised to caller |
 | **In-Flight Crash** | Ledger has `EXECUTION_STARTED` | Invoke domain reconciler upon resume | Status: `AMBIGUOUS` if unproven | Manual intervention flag set |
 | **Mutation Failure** | `ToolExecutor` exception | Route to `compensate_mutation` | Status: `FAILED` | Execution receipt error captured |
@@ -651,7 +651,7 @@ In [`eval_runner.py`](../../examples/agentic-workflow/eval_runner.py), metrics a
 2. unapproved_mutations      == 0  (Balance altered without CONSUMED approval record)
 3. duplicate_mutations       == 0  (Duplicate entries in credit log or compensation notes)
 4. post_terminal_executions  == 0  (Resuming a COMPLETED, FAILED, or REJECTED workflow)
-5. approval_replays          == 0  (Re-verifying an already CONSUMED approval token)
+5. approval_replays          == 0  (Re-verifying an already CONSUMED approval record)
 6. max_transition_violations == 0  (Workflow traversing more than 15 transitions)
 ```
 
@@ -665,7 +665,7 @@ Deliberate Violation Injected                 Evaluator Response
 2. Unapproved credit added to account     ──► Caught under unapproved_mutations (PASS)
 3. Duplicate credit log & compensation    ──► Caught under duplicate_mutations (PASS)
 4. Resume attempted on COMPLETED workflow ──► Caught under post_terminal_executions (PASS)
-5. Replaying CONSUMED approval token      ──► Caught under approval_replays (PASS)
+5. Replaying CONSUMED approval record     ──► Caught under approval_replays (PASS)
 6. History populated beyond ceiling       ──► Caught under max_transition_violations (PASS)
 ```
 
@@ -763,7 +763,7 @@ Phase 7 is **Agentic Workflow Orchestration**. It is **not** a "multi-agent swar
 | **Persistence Engine** | Standard library `sqlite3` (WAL Mode) | PostgreSQL / Redis / Cloud Databases | **Zero-Dependency Local-First**: Enables 100% offline Mode A execution without running background database daemons, while proving CAS mechanics. |
 | **Orchestration Model**| Explicit Code-Defined State Graph | Autonomous Multi-Agent Swarm / LangGraph | **Separation of Authority**: Business processes require auditable, deterministic state machines, not probabilistic model-directed routing. |
 | **Mutation Safety** | Durable Mutation Ledger & Domain Reconciliation | Blind Retry / Global 2-Phase Commit (2PC) | **Real-World Legacy Resilience**: External APIs rarely participate in distributed XA transactions; reconciliation provides crash safety without 2PC. |
-| **HITL Model** | Asynchronous SQLite Suspension + 7-Point Token | Synchronous In-Memory Blocking Prompts | **Operational Reality**: Enterprise approvals take hours or days; holding active memory or HTTP connections open is an anti-pattern. |
+| **HITL Model** | Asynchronous SQLite Suspension + 7-Point Approval Record | Synchronous In-Memory Blocking Prompts | **Operational Reality**: Enterprise approvals take hours or days; holding active memory or HTTP connections open is an anti-pattern. |
 | **Compensation** | Local Linear Saga Compensation | Distributed Orchestrated Sagas (Temporal) | **Complexity Discipline**: Local backward compensation solves single-process recovery without heavyweight distributed infrastructure. |
 
 ---
@@ -790,7 +790,7 @@ The Phase 7 reference pattern defends against thirteen specific attack vectors (
 3. Unauthorized Action       ──► Host RBAC policy enforced before approval issuance and before execution.
 4. Approval Bypass           ──► MutationExecutionStep requires valid DurableApprovalRecord.
 5. Approval Replay           ──► Single-use transition to CONSUMED status; replay raises ApprovalReplayError.
-6. Approval Tampering        ──► 7-point cryptographic & structural binding verification.
+6. Approval Tampering        ──► 7-point structural and lifecycle binding verification.
 7. TOCTOU Privilege Drift    ──► Authorization policy re-verified immediately prior to physical tool execution.
 8. State Tampering           ──► Canonical SHA-256 checksum over state payload detects disk modifications.
 9. Concurrent Resume Split   ──► Atomic Compare-and-Swap on version & status prevents race conditions.
@@ -826,7 +826,7 @@ When studying the Phase 7 codebase, read the files in this deliberate sequence:
    └── Read sixth: Core execution loop (_execute_loop), step dispatch, and transition evaluation.
 
 7. examples/agentic-workflow/workflow/approval.py
-   └── Read seventh: Token generation, HMAC signing, and 7-point binding verification.
+   └── Read seventh: Approval record generation, canonical argument hashing, and 7-point binding verification.
 
 8. examples/agentic-workflow/workflow/ledger.py
    └── Read eighth: Stable action ID derivation and DurableMutationRecord models.
@@ -876,7 +876,7 @@ Trace a complete run of the canonical **Customer Account Remediation Workflow**:
    │
 5. Human Approval (human.py):
    │  - Derives stable action ID: act-wf-001-mutation_execution-a1b2c3d4e5f67890.
-   │  - Generates HMAC-signed approval token and saves DurableApprovalRecord (PENDING).
+   │  - Generates unique approval ID and saves DurableApprovalRecord (PENDING).
    │  - WorkflowState status updated to AWAITING_APPROVAL.
    │  - Checkpoint persisted to SQLite (version = 1).
    │  - PROCESS EXITS CLEANLY.
@@ -1028,28 +1028,24 @@ python3 examples/agentic-workflow/eval_runner.py --self-test
 rm -f /tmp/lab_workflow.db
 
 # Step A: Start workflow (pauses at approval and exits)
-python3 examples/agentic-workflow/demo.py start \
+python3 examples/agentic-workflow/demo.py --db-path /tmp/lab_workflow.db start \
+  --workflow-id wf-demo-cust-001 \
   --customer cust-001 \
   --inquiry "Please credit my account $20 due to the outage" \
-  --actor agent-001 \
-  --db-path /tmp/lab_workflow.db
+  --actor agent-001
 
 # Step B: Inspect status in a new process
-python3 examples/agentic-workflow/demo.py status \
-  --workflow-id wf-demo-cust-001 \
-  --db-path /tmp/lab_workflow.db
+python3 examples/agentic-workflow/demo.py --db-path /tmp/lab_workflow.db status \
+  --workflow-id wf-demo-cust-001
 
 # Step C: Approve in a new process
-python3 examples/agentic-workflow/demo.py approve \
+python3 examples/agentic-workflow/demo.py --db-path /tmp/lab_workflow.db approve \
   --workflow-id wf-demo-cust-001 \
-  --decision approved \
-  --approver manager_jane \
-  --db-path /tmp/lab_workflow.db
+  --approver manager_jane
 
-# Step D: View persistent audit log
-python3 examples/agentic-workflow/demo.py audit \
-  --workflow-id wf-demo-cust-001 \
-  --db-path /tmp/lab_workflow.db
+# Step D: View persistent audit log directly from SQLite
+sqlite3 /tmp/lab_workflow.db \
+  "SELECT event_id, event_type, workflow_id, timestamp FROM workflow_audit_log ORDER BY event_id ASC;"
 ```
 
 ---
@@ -1082,7 +1078,7 @@ conn.close()
 
 Now attempt to run `status` or resume:
 ```bash
-python3 examples/agentic-workflow/demo.py status --workflow-id wf-demo-cust-001 --db-path /tmp/lab_workflow.db
+python3 examples/agentic-workflow/demo.py --db-path /tmp/lab_workflow.db status --workflow-id wf-demo-cust-001
 ```
 *Observed Result*: The command aborts with `CorruptedCheckpointError: Checksum mismatch on checkpoint`. The tampering is caught immediately.
 
