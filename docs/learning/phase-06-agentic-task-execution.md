@@ -650,7 +650,32 @@ if seen_proposals and seen_proposals[-1] == proposal_sig:
 ```
 
 ### Hard Iteration Ceilings (`max_steps`)
-The loop terminates strictly when `step_idx > max_steps` (default 5). This ensures that execution cannot exceed the configured step budget, preventing infinite reasoning loops and unbounded token consumption within the engine.
+The engine bounds execution using a deterministic count loop:
+
+```python
+for step_idx in range(1, self.max_steps + 1):
+    # Step execution: propose -> validate -> authorize -> approve -> execute -> observe
+```
+
+The engine executes at most `self.max_steps` (default 5) iterations. If an earlier step returns a terminal status (`COMPLETED`, `NEEDS_CLARIFICATION`, `DENIED`, `REJECTED`, or `FAILED`), execution halts immediately. If all permitted iterations complete without reaching a terminal resolution, control exits the loop and the engine halts with loop exhaustion:
+
+```python
+# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 477-488)
+# Reached max_steps without final answer
+trace.complete("MAX_STEPS_REACHED", "Terminated after reaching maximum allowable reasoning iterations.")
+return AgentExecutionResult(
+    run_id=run_id,
+    goal=goal,
+    status="MAX_STEPS_REACHED",
+    final_answer="Execution halted: Maximum reasoning steps reached without final resolution.",
+    step_count=self.max_steps,
+    execution_receipts=execution_receipts,
+    trace=trace,
+    total_latency_ms=trace.total_latency_ms,
+)
+```
+
+This ensures that execution cannot exceed the configured step budget, preventing infinite reasoning loops, token exhaustion, and unbounded resource consumption.
 
 ### Termination Statuses
 A task run concludes with one of six definitive statuses:
@@ -658,7 +683,7 @@ A task run concludes with one of six definitive statuses:
 * `NEEDS_CLARIFICATION`: Model issued a `clarification` decision requesting user input.
 * `DENIED`: Policy engine rejected authorization for an action proposal.
 * `REJECTED`: Human approver declined confirmation for a state mutation.
-* `MAX_STEPS_REACHED`: Loop exceeded `max_steps` or cycle detection aborted execution.
+* `MAX_STEPS_REACHED`: Loop exhausted all `max_steps` iterations without final resolution, or cycle detection aborted execution.
 * `FAILED`: Model emitted repeated malformed outputs (2 consecutive failures) or executor crashed.
 
 ---
@@ -1078,7 +1103,7 @@ Test your comprehension of Phase 6 architecture:
 6. **By offloading the synchronous call to a worker thread via `asyncio.to_thread`**. The worker thread handles the blocking stdio read, leaving the main asyncio event loop responsive. If `asyncio.wait_for` times out, the cancellation handler terminates the child process (`client.close()`), immediately sending EOF to the pipe and unblocking the thread.
 7. **It proves deterministic runtime mechanics, not probabilistic AI quality**. It proves that the decision parser, argument validator, policy engine, approval handler, cycle detector, and invariant calculation logic work flawlessly under controlled test doubles. It does not prove that an unguided probabilistic model will reliably generate the correct reasoning steps on live data.
 8. **Security invariants are binary zero-tolerance gates**. If an agent executes 99 customer lookups correctly but performs 1 unauthorized mutation, the system is fundamentally unsafe. Averaging safety violations into a 99% score obscures critical security failures.
-9. **Dual termination bounds**: (1) The hard iteration ceiling (`max_steps`, default 5) unconditionally terminates the loop when reached. (2) The cycle loop detector immediately halts execution with `status="MAX_STEPS_REACHED"` if consecutive identical action proposals are detected.
+9. **Dual termination bounds**: (1) The hard iteration ceiling (`for step_idx in range(1, max_steps + 1)`) executes at most `max_steps` iterations, returning `status="MAX_STEPS_REACHED"` upon loop exhaustion if no earlier terminal resolution occurs. (2) The cycle loop detector immediately halts execution with `status="MAX_STEPS_REACHED"` if consecutive identical action proposals are detected.
 10. **It is execution-local audit state**. The trajectory trace immutably records the chronological step records, proposals, receipts, and latency for a single task run. Once the run completes, the trace is archived. It is not indexed, searched, or recalled to influence future task executions across sessions.
 </details>
 
