@@ -86,3 +86,6 @@ Every ADR must include:
 | **[ADR-0003](0003-provider-neutral-model-adapter-and-ai-foundations.md)** | [Provider-Neutral Model Adapter & AI Foundations](0003-provider-neutral-model-adapter-and-ai-foundations.md) | Accepted | 2026-09-14 |
 | **[ADR-0004](0004-knowledge-intelligence-and-rag-architecture.md)** | [Knowledge Intelligence & RAG Architecture](0004-knowledge-intelligence-and-rag-architecture.md) | Proposed | 2026-09-14 |
 | **[ADR-0005](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md)** | [Roadmap Reconciliation for Knowledge Intelligence & RAG](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md) | Accepted | 2026-09-14 |
+| **[ADR-0006](0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md)** | [Bounded Agentic Task Execution & Roadmap Reconciliation](0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md) | Accepted | 2026-09-15 |
+| **[ADR-0007](0007-capability-safety-boundaries-and-human-in-the-loop-approval.md)** | [Capability Safety Boundaries and Human-in-the-Loop Approval](0007-capability-safety-boundaries-and-human-in-the-loop-approval.md) | Accepted | 2026-09-15 |
+| **[ADR-0008](0008-model-context-protocol-as-external-capability-adapter.md)** | [Model Context Protocol as External Capability Adapter](0008-model-context-protocol-as-external-capability-adapter.md) | Accepted | 2026-09-15 |

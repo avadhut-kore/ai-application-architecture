@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "agent-execution-pattern",
+  "tier": 2,
+  "status": "implemented",
+  "languages": ["python"],
+  "local_first_mode": "A",
+  "application_domains": ["agentic-task-execution"],
+  "intelligence_patterns": ["tool-calling", "react"],
+  "architecture_patterns": ["hexagonal", "human-in-the-loop"]
+}

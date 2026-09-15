@@ -132,15 +132,26 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 6: Agentic Task Execution
-* **Objective**: Implement bounded, tool-using autonomous agents with explicit authorization controls.
+## Phase 6: Agentic Task Execution (COMPLETED)
+* **Objective**: Implement bounded, tool-using autonomous agents with explicit authorization controls, capability sandboxing, and Human-in-the-Loop safety boundaries.
 * **Scope**:
-  * Agent task execution reference application (Tier 1).
-  * ReAct reasoning loops, typed tool calling, parameter schema validation.
-  * Hard execution boundaries (iteration caps, timeouts, cycle detection).
-  * State-mutating tool authorization checks and audit logging.
+  * **Core Baseline Reference Implementation** (Tier 2 Pattern Example & Tier 3 Platform Component, documented in ADR-0006):
+    * Bounded reasoning control loop with strict iteration ceilings (`max_steps`) and cycle detection.
+    * Strongly typed action proposals (`AgentDecision`) parsed defensively from model output.
+    * Capability registry with parameter JSON schema validation and allowlist enforcement.
+    * Application-controlled authorization policy (`CustomerSupportAuthorizationPolicy`) enforcing RBAC, transaction ceilings, and security hold rules.
+    * Mandatory Human-in-the-Loop (HITL) approval gate (`ApprovalPort`) for state-mutating operations with interactive CLI and deterministic test doubles.
+    * Centralized tool executor (`ToolExecutor`) enforcing asynchronous timeouts, exception sandboxing, and idempotency caching on `action_id`.
+    * Auditable execution traces (`AgentTrajectoryTrace`) recording verified execution receipts without persisting unredacted chain-of-thought monologues.
+    * Standard-library JSON-RPC 2.0 Model Context Protocol adapter (`platform/mcp-adapter`) over stdio with capability allowlisting.
+    * Versioned 32-scenario evaluation dataset (`eval_dataset.jsonl`) measuring zero-tolerance safety invariants.
+  * **Decision-Gated Enterprise Enhancements** (Progression Triggers documented in ADR-0006):
+    * Multi-agent collaborative swarms and negotiation protocols (deferred to Phase 7+).
+    * Durable workflow engine integration (Temporal/Camunda) with persistent state machines (deferred to Phase 7+).
+    * Long-term persistent vector memory stores across sessions (deferred to Phase 7+).
+    * Tier 1 Enterprise Agent Application integrating persistent CRM and enterprise identity providers.
 * **Dependencies**: Phase 5.
-* **Exit Criteria**: Autonomous agent successfully completes multi-step diagnostics within bounded iterations; full trajectory captured in traces.
+* **Exit Criteria**: Fully runnable local agentic execution engine with hermetic test suite; standalone verification script; zero-tolerance safety invariants passed (0 unauthorized mutations, 0 unapproved required mutations, 0 unknown capabilities, 0 post-rejection executions, 0 max-step violations); complete audit trajectory recorded.
 
 ---
 

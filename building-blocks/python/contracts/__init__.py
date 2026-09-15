@@ -1,5 +1,18 @@
 """Bounded minimum core contracts for enterprise AI applications."""
 
+from .agent import (
+    AgentActor,
+    AgentDecision,
+    AgentDecisionType,
+    ApprovalDecision,
+    ApprovalPort,
+    AuthorizationDecision,
+    AuthorizationPort,
+    CapabilityMetadata,
+    CapabilityPort,
+    ExecutionReceipt,
+    SideEffectLevel,
+)
 from .errors import (
     AiAuthenticationError,
     AiContentFilterError,
@@ -66,6 +79,18 @@ __all__ = [
     "ILlmClient",
     "EmbeddingPort",
     "IEmbeddingClient",
+    # Agent Contracts
+    "SideEffectLevel",
+    "CapabilityMetadata",
+    "CapabilityPort",
+    "AgentDecisionType",
+    "AgentDecision",
+    "AgentActor",
+    "AuthorizationDecision",
+    "AuthorizationPort",
+    "ApprovalDecision",
+    "ApprovalPort",
+    "ExecutionReceipt",
     # Telemetry
     "AiOperationContext",
     "GEN_AI_OPERATION_NAME",
