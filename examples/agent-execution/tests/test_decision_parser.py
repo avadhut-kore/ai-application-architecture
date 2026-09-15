@@ -88,12 +88,55 @@ Hope this helps!"""
         self.assertIsNotNone(err)
         self.assertIn("Unknown decision type", err)
 
-    def test_parse_action_missing_action_name(self) -> None:
-        raw = '{"type": "action", "arguments": {}}'
+    def test_parse_rejects_admin_override_field(self) -> None:
+        raw = '{"type": "action", "action_name": "get_customer", "arguments": {}, "admin_override": true}'
         decision, err = self.engine._parse_decision(raw)
         self.assertIsNone(decision)
         self.assertIsNotNone(err)
-        self.assertIn("missing valid 'action_name'", err)
+        self.assertIn("unexpected or conflicting field(s)", err or "")
+        self.assertIn("admin_override", err or "")
+
+    def test_parse_rejects_approval_not_required_field(self) -> None:
+        raw = '{"type": "action", "action_name": "apply_fee_credit", "arguments": {}, "approval_not_required": true}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("approval_not_required", err or "")
+
+    def test_parse_rejects_authorized_field(self) -> None:
+        raw = '{"type": "action", "action_name": "apply_fee_credit", "arguments": {}, "authorized": true}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("authorized", err or "")
+
+    def test_parse_rejects_unexpected_field(self) -> None:
+        raw = '{"type": "action", "action_name": "get_customer", "arguments": {}, "unexpected": "payload"}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("unexpected", err or "")
+
+    def test_parse_rejects_conflicting_final_answer_on_action(self) -> None:
+        raw = '{"type": "action", "action_name": "get_customer", "arguments": {}, "final_answer": "Done"}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("final_answer", err or "")
+
+    def test_parse_rejects_action_fields_on_final_decision(self) -> None:
+        raw = '{"type": "final", "final_answer": "Done with task", "action_name": "get_customer"}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("action_name", err or "")
+
+    def test_parse_rejects_action_fields_on_clarification(self) -> None:
+        raw = '{"type": "clarification", "clarification_question": "Which ID?", "arguments": {}}'
+        decision, err = self.engine._parse_decision(raw)
+        self.assertIsNone(decision)
+        self.assertIsNotNone(err)
+        self.assertIn("arguments", err or "")
 
 
 if __name__ == "__main__":

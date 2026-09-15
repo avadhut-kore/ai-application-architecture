@@ -101,8 +101,12 @@ class AgentExecutionEngine:
             return cleaned[start : end + 1].strip()
         return cleaned
 
+    ACTION_ALLOWED_KEYS = {"type", "action_name", "arguments", "explanation"}
+    FINAL_ALLOWED_KEYS = {"type", "final_answer", "explanation"}
+    CLARIFICATION_ALLOWED_KEYS = {"type", "clarification_question", "explanation"}
+
     def _parse_decision(self, raw_text: str) -> Tuple[Optional[AgentDecision], Optional[str]]:
-        """Parse untrusted model text into a strongly typed AgentDecision."""
+        """Parse untrusted model text into a strongly typed AgentDecision with strict schema validation."""
         try:
             json_str = self._extract_json(raw_text)
             data = json.loads(json_str)
@@ -111,8 +115,13 @@ class AgentExecutionEngine:
 
             raw_type = str(data.get("type", "")).lower()
             explanation = data.get("explanation")
+            data_keys = set(data.keys())
 
             if raw_type == "action":
+                extra_keys = data_keys - self.ACTION_ALLOWED_KEYS
+                if extra_keys:
+                    return None, f"Action decision contains unexpected or conflicting field(s): {sorted(extra_keys)}"
+
                 action_name = data.get("action_name")
                 args = data.get("arguments", {})
                 if not action_name or not isinstance(action_name, str):
@@ -130,6 +139,10 @@ class AgentExecutionEngine:
                 )
 
             elif raw_type == "final":
+                extra_keys = data_keys - self.FINAL_ALLOWED_KEYS
+                if extra_keys:
+                    return None, f"Final decision contains unexpected or conflicting field(s): {sorted(extra_keys)}"
+
                 answer = data.get("final_answer")
                 if not answer or not str(answer).strip():
                     return None, "Final decision missing non-empty 'final_answer'"
@@ -143,6 +156,10 @@ class AgentExecutionEngine:
                 )
 
             elif raw_type == "clarification":
+                extra_keys = data_keys - self.CLARIFICATION_ALLOWED_KEYS
+                if extra_keys:
+                    return None, f"Clarification decision contains unexpected or conflicting field(s): {sorted(extra_keys)}"
+
                 question = data.get("clarification_question")
                 if not question or not str(question).strip():
                     return None, "Clarification decision missing non-empty 'clarification_question'"
@@ -395,8 +412,11 @@ class AgentExecutionEngine:
                 )
 
             # Approval Gate Check (Human-in-the-Loop)
+            # Mandatory Phase 6 Governance Invariant: ALL state-mutating capabilities require affirmative approval
+            is_state_mutating = (capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING)
+            requires_approval = capability.metadata.requires_approval or is_state_mutating
             approval_res: Optional[ApprovalDecision] = None
-            if capability.metadata.requires_approval:
+            if requires_approval:
                 approval_res = await self.approval_handler.request_approval(actor, capability.metadata, args)
                 if not approval_res.approved:
                     obs_approval_rejected = (

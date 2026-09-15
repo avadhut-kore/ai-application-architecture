@@ -169,6 +169,7 @@ async def run_demo(
     mode: str,
     interactive: bool,
     model: str,
+    endpoint: str = "http://localhost:11434",
 ) -> None:
     if scenario_name not in SCENARIOS:
         print(f"Unknown scenario '{scenario_name}'. Available: {list(SCENARIOS.keys())}")
@@ -205,7 +206,7 @@ async def run_demo(
     if mode == "fake":
         llm_client = ScriptedGenerationStub(sc["canned_responses"])
     else:
-        llm_client = OllamaAdapter(base_url="http://localhost:11434")
+        llm_client = OllamaAdapter(endpoint=endpoint, default_model=model)
 
     engine = AgentExecutionEngine(
         llm_client=llm_client,
@@ -259,6 +260,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=["fake", "live"], default="fake", help="Execution mode (fake or live)")
     parser.add_argument("--interactive", action="store_true", help="Prompt human operator on stdin for approvals")
     parser.add_argument("--model", default="llama3.2", help="Model name for live Ollama mode")
+    parser.add_argument("--endpoint", default="http://localhost:11434", help="Ollama daemon HTTP endpoint")
 
     args = parser.parse_args()
     asyncio.run(run_demo(
@@ -266,6 +268,7 @@ def main() -> None:
         mode=args.mode,
         interactive=args.interactive,
         model=args.model,
+        endpoint=args.endpoint,
     ))
 
 

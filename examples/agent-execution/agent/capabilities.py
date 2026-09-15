@@ -187,7 +187,7 @@ class UpdateCustomerNoteCapability(CapabilityPort):
                 "additionalProperties": False,
             },
             side_effect_level=SideEffectLevel.STATE_MUTATING,
-            requires_approval=False,  # Default note appending is permissible unless customer risk demands approval
+            requires_approval=True,  # Mandatory Phase 6 HITL governance: all mutations require approval
         )
 
     @property

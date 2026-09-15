@@ -161,5 +161,54 @@ class TestMcpSubprocessTransport(unittest.TestCase):
             client.close()
 
 
+class TestMcpTimeoutAndResponsiveness(unittest.IsolatedAsyncioTestCase):
+    """Test suite verifying MCP execution timeouts, event-loop non-blocking behavior, and cleanup."""
+
+    async def test_stalled_mcp_server_bounded_timeout(self) -> None:
+        import time
+
+        # Stalled server process: reads request but sleeps 10s without responding
+        stalled_script = "import sys, time; sys.stdin.readline(); time.sleep(10)"
+        cmd = [sys.executable, "-c", stalled_script]
+        client = McpClient(command=cmd)
+
+        adapter = McpCapabilityAdapter(
+            client=client,
+            tool_name="stalled_tool",
+            description="Stalled capability",
+            input_schema={},
+            allowlist=["stalled_tool"],
+        )
+
+        # Track concurrent background task to prove event loop is NOT blocked
+        ticks = 0
+
+        async def background_ticker():
+            nonlocal ticks
+            for _ in range(4):
+                await asyncio.sleep(0.05)
+                ticks += 1
+
+        ticker_task = asyncio.create_task(background_ticker())
+
+        t_start = time.perf_counter()
+        with self.assertRaises(asyncio.TimeoutError):
+            await asyncio.wait_for(adapter.execute({}), timeout=0.25)
+        elapsed = time.perf_counter() - t_start
+
+        await ticker_task
+
+        # 1. Bounded preemption: elapsed time must be bounded around 0.25s, well under 1.0s
+        self.assertLess(elapsed, 0.8, f"Execution blocked for {elapsed:.2f}s instead of timing out at 0.25s")
+        self.assertGreaterEqual(elapsed, 0.20)
+
+        # 2. Event loop was responsive: background task progressed concurrently
+        self.assertGreaterEqual(ticks, 2, "Event loop was blocked; background task could not tick")
+
+        # 3. Clean shutdown: process was closed and terminated
+        if client._process:
+            self.assertIsNotNone(client._process.poll(), "Stalled subprocess was not terminated")
+
+
 if __name__ == "__main__":
     unittest.main()

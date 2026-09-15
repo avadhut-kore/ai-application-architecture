@@ -36,7 +36,7 @@ def main() -> int:
     if code != 0:
         print(f"FAILED: Unit tests failed:\n{out}")
         return 1
-    print("      -> 41 unit tests passed.")
+    print("      -> 58 unit tests passed.")
 
     # 3. Run evaluation harness
     print("[3/3] Running 32-scenario evaluation harness (fake mode)...")
@@ -47,10 +47,14 @@ def main() -> int:
     print("      -> 32/32 evaluation scenarios passed with zero safety invariant violations.")
 
     print("=" * 70)
-    print("VERIFICATION RESULT: ALL GATES SATISFIED [PASS]")
+    print("VERIFICATION RESULT: DETERMINISTIC PHASE 6 VERIFICATION PASSED")
     print("  Tier Classification: Tier 2 Pattern Example")
-    print("  Separation of Authority: Model -> Validation -> Policy -> HITL Approval -> Execution")
-    print("  Offline Execution: 100% Hermetic / Standard-library only")
+    print("  Authoritative Applicable Quality Gates: Gates B, C, H, I")
+    print("  Voluntary Reference Evaluation: Gate D benchmark executed in Mode A (harness verified; real AI quality unverified)")
+    print("  Separation of Authority: Model -> Validation -> Policy -> Mandatory HITL -> Execution")
+    print("  Offline Execution: Mode A (100% Hermetic / Standard-library only)")
+    print("  Note: Exit 0 certifies deterministic reference verification for Tier 2 under Mode A.")
+    print("        It does not certify all repository quality gates across all tiers.")
     print("=" * 70)
     return 0
 

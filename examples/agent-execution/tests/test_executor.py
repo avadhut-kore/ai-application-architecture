@@ -145,6 +145,38 @@ class TestToolExecutor(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.get("error"))
         self.assertIn("timed out", result.get("message", ""))
 
+    async def test_mcp_adapter_timeout_handling(self) -> None:
+        import time
+        MCP_DIR = REPO_ROOT / "platform" / "mcp-adapter"
+        if str(MCP_DIR) not in sys.path:
+            sys.path.insert(0, str(MCP_DIR))
+        from mcp_adapter.client import McpClient
+        from mcp_adapter.adapter import McpCapabilityAdapter
+
+        stalled_cmd = [sys.executable, "-c", "import sys, time; sys.stdin.readline(); time.sleep(10)"]
+        client = McpClient(command=stalled_cmd)
+        adapter = McpCapabilityAdapter(
+            client=client,
+            tool_name="stalled_tool",
+            description="Stalled tool",
+            input_schema={},
+            allowlist=["stalled_tool"],
+        )
+
+        try:
+            executor = ToolExecutor(timeout_seconds=0.2)
+            t0 = time.time()
+            receipt, result = await executor.execute_tool(adapter, {}, action_id="act-mcp-timeout")
+            elapsed = time.time() - t0
+
+            self.assertLess(elapsed, 0.8)
+            self.assertEqual(receipt.status, "failed")
+            self.assertEqual(receipt.error_message, "Operation timed out")
+            self.assertTrue(result.get("error"))
+            self.assertIn("timed out", result.get("message", ""))
+        finally:
+            client.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -121,14 +121,23 @@ class McpClient:
         """Terminate connection and clean up resources."""
         if self._process:
             try:
-                if self._process.stdin:
-                    self._process.stdin.close()
-                if self._process.stdout:
-                    self._process.stdout.close()
-                if self._process.stderr:
-                    self._process.stderr.close()
+                # Terminate child process first so kernel signals EOF to any blocked readline()
                 self._process.terminate()
-                self._process.wait(timeout=2.0)
+                try:
+                    self._process.wait(timeout=0.5)
+                except subprocess.TimeoutExpired:
+                    self._process.kill()
+                    self._process.wait(timeout=0.5)
             except Exception:
-                self._process.kill()
+                try:
+                    self._process.kill()
+                except Exception:
+                    pass
+
+            for pipe in (self._process.stdin, self._process.stdout, self._process.stderr):
+                if pipe:
+                    try:
+                        pipe.close()
+                    except Exception:
+                        pass
             self._process = None

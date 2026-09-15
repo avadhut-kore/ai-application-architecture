@@ -360,6 +360,133 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.status, "FAILED")
         self.assertIn("repeatedly emitted malformed", result.final_answer)
 
+    async def test_update_customer_note_requires_approval_and_succeeds_when_approved(self) -> None:
+        """Verify update_customer_note requires approval and executes when approved."""
+        approval_handler = DeterministicApprovalHandler(default_approved=True)
+        canned = [
+            json.dumps({
+                "type": "action",
+                "action_name": "update_customer_note",
+                "arguments": {
+                    "customer_id": "cust-001",
+                    "note": "Verified customer identity via passport",
+                    "action_id": "act-note-001",
+                },
+            }),
+            json.dumps({
+                "type": "final",
+                "final_answer": "Note added to customer record.",
+            }),
+        ]
+        stub = ScriptedGenerationStub(canned)
+        engine = AgentExecutionEngine(
+            llm_client=stub,
+            registry=self.registry,
+            policy=self.policy,
+            approval_handler=approval_handler,
+            executor=self.executor,
+        )
+
+        result = await engine.run("Add passport note for cust-001", actor=self.junior_agent)
+        self.assertEqual(result.status, "COMPLETED")
+        self.assertEqual(len(result.execution_receipts), 1)
+        self.assertEqual(result.execution_receipts[0].status, "succeeded")
+        self.assertEqual(len(approval_handler.recorded_requests), 1)
+        self.assertEqual(approval_handler.recorded_requests[0]["capability_name"], "update_customer_note")
+
+        acc = self.store.get_account("cust-001")
+        self.assertIsNotNone(acc)
+        self.assertIn("Verified customer identity via passport", acc.notes)
+
+    async def test_update_customer_note_blocked_when_approval_rejected(self) -> None:
+        """Verify update_customer_note halts with REJECTED and zero mutation when human declines."""
+        approval_handler = DeterministicApprovalHandler(default_approved=False)
+        canned = [
+            json.dumps({
+                "type": "action",
+                "action_name": "update_customer_note",
+                "arguments": {
+                    "customer_id": "cust-001",
+                    "note": "Unverified note",
+                    "action_id": "act-note-002",
+                },
+            })
+        ]
+        stub = ScriptedGenerationStub(canned)
+        engine = AgentExecutionEngine(
+            llm_client=stub,
+            registry=self.registry,
+            policy=self.policy,
+            approval_handler=approval_handler,
+            executor=self.executor,
+        )
+
+        result = await engine.run("Add unverified note for cust-001", actor=self.junior_agent)
+        self.assertEqual(result.status, "REJECTED")
+        self.assertEqual(len(result.execution_receipts), 0)
+        self.assertEqual(len(approval_handler.recorded_requests), 1)
+
+        acc = self.store.get_account("cust-001")
+        self.assertIsNotNone(acc)
+        self.assertNotIn("Unverified note", acc.notes)
+
+    async def test_misconfigured_state_mutating_capability_forces_approval(self) -> None:
+        """Finding 14: A capability declaring STATE_MUTATING with requires_approval=False must force approval."""
+        from contracts.agent import AuthorizationDecision, AuthorizationPort, CapabilityMetadata, CapabilityPort, SideEffectLevel
+
+        class DummyMutatingTool(CapabilityPort):
+            def __init__(self) -> None:
+                self.executed = False
+                self._meta = CapabilityMetadata(
+                    name="unsafe_mutation",
+                    description="Misconfigured tool",
+                    input_schema={"type": "object", "properties": {"target": {"type": "string"}}},
+                    side_effect_level=SideEffectLevel.STATE_MUTATING,
+                    requires_approval=False,  # Intentionally misconfigured!
+                )
+
+            @property
+            def metadata(self) -> CapabilityMetadata:
+                return self._meta
+
+            async def execute(self, arguments, context=None):
+                self.executed = True
+                return {"status": "mutated"}
+
+        class AllowPolicy(AuthorizationPort):
+            def authorize(self, actor, capability, arguments):
+                return AuthorizationDecision(allowed=True, reason="Permitted for test")
+
+        tool = DummyMutatingTool()
+        self.registry.register(tool)
+
+        # Approver will reject
+        approval_handler = DeterministicApprovalHandler(default_approved=False)
+        canned = [
+            json.dumps({
+                "type": "action",
+                "action_name": "unsafe_mutation",
+                "arguments": {"target": "data"},
+                "explanation": "Attempt unapproved mutation",
+            })
+        ]
+        stub = ScriptedGenerationStub(canned)
+        engine = AgentExecutionEngine(
+            llm_client=stub,
+            registry=self.registry,
+            policy=AllowPolicy(),
+            approval_handler=approval_handler,
+            executor=self.executor,
+        )
+
+        result = await engine.run("Run unsafe mutation", actor=self.senior_agent)
+        self.assertEqual(result.status, "REJECTED")
+        self.assertFalse(tool.executed, "Misconfigured state-mutating tool must NOT execute without approval!")
+        self.assertEqual(len(result.execution_receipts), 0)
+        # Verify approval handler WAS invoked despite requires_approval=False in metadata
+        self.assertEqual(len(approval_handler.recorded_requests), 1)
+        self.assertEqual(approval_handler.recorded_requests[0]["capability_name"], "unsafe_mutation")
+
 
 if __name__ == "__main__":
     unittest.main()

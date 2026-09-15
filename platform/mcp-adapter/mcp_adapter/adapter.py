@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any, List, Mapping, Optional, Sequence
 
@@ -68,9 +69,9 @@ class McpCapabilityAdapter(CapabilityPort):
         arguments: Mapping[str, Any],
         context: Optional[AiOperationContext] = None,
     ) -> Any:
-        """Invoke tool over MCP protocol transport and sanitize response content."""
+        """Invoke tool over MCP protocol transport without blocking the asyncio event loop."""
         try:
-            raw_response = self.client.call_tool(self.tool_name, arguments)
+            raw_response = await asyncio.to_thread(self.client.call_tool, self.tool_name, arguments)
             is_error = raw_response.get("isError", False)
             content_items = raw_response.get("content", [])
 
@@ -95,6 +96,13 @@ class McpCapabilityAdapter(CapabilityPort):
                 return {"error": True, "message": full_text or "MCP tool reported execution error"}
 
             return {"output": full_text}
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            # When cancelled by caller (e.g. ToolExecutor timeout), cleanly close process
+            try:
+                self.client.close()
+            except Exception:
+                pass
+            raise
         except McpClientError as err:
             return {"error": True, "message": f"MCP communication failure: {str(err)}"}
         except Exception as exc:

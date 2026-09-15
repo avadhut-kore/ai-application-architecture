@@ -118,6 +118,17 @@ client.close()
 | **Malformed Tool Output** | Sanitizer falls back to raw string or error dictionary. | Prevents deserialization exploits or application crashes. |
 | **Prompt Injection in Tool Output** | Output formatted strictly as data; model system prompt directs model to disregard embedded commands. | Prevents indirect prompt injection attacks from external data. |
 | **Un-allowlisted Tool Invocation** | `McpCapabilityAdapter` validation fails fast at initialization. | Unauthorized capabilities can never be registered in the application registry. |
+| **Stalled Server / Blocking stdio** | Subprocess I/O offloaded to worker thread via `asyncio.to_thread()`; cancelled task closes client and terminates child process. | Prevents event-loop starvation; tool executor timeout bounds execution reliably. |
+
+### Subprocess I/O & Timeout Boundary Mechanics
+
+Because Python's standard `subprocess.Popen` stdio pipes perform blocking synchronous reads (`stdout.readline()`), invoking `call_tool()` directly on the main event loop thread would block the entire asyncio event loop, defeating outer `asyncio.wait_for(...)` timeout cancellation.
+
+To guarantee a bounded timeout boundary without external runtime dependencies:
+1. **Async Worker Thread Isolation**: `McpCapabilityAdapter.execute()` dispatches the synchronous `client.call_tool(...)` invocation onto a worker thread via `asyncio.to_thread()`.
+2. **Event Loop Non-Blocking**: The agent's asyncio event loop remains fully responsive while subprocess I/O is pending. Other tasks, timers, and step abort signals execute concurrently.
+3. **Subprocess Termination on Cancellation**: If the calling context or executor times out (raising `asyncio.CancelledError` or `asyncio.TimeoutError`), the adapter catches the cancellation and invokes `client.close()`.
+4. **Lifecycle & Pipe Cleanup**: In `McpClient.close()`, the child process is terminated via `SIGTERM` (and `kill()` if necessary) before closing pipes. This causes an immediate EOF on the read pipe, releasing the worker thread cleanly without pipe deadlocks or zombie subprocesses.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Tier Classification**: **Tier 2 Pattern Example**  
 > **Status**: `implemented`  
-> **Applicable Quality Gates**: Gates A, B, C, E, F, G, H, I, J (Gate D voluntary reference evaluation)  
+> **Applicable Quality Gates**: Gates B, C, H, I (Gate D voluntary reference evaluation)
 > **Local-First Mode**: Mode A (Standard Library, 100% Offline) & Mode B (Local Ollama)  
 
 ---
@@ -154,7 +154,8 @@ examples/agent-execution/
     ├── test_policy.py            # RBAC and account hold policy tests
     ├── test_approval.py          # Deterministic and CLI approval handler tests
     ├── test_executor.py          # Idempotency and timeout tests
-    └── test_engine.py            # Bounded loop, cycle detection, and security tests
+    ├── test_engine.py            # Bounded loop, cycle detection, and security tests
+    └── test_eval_invariants.py   # Dynamic safety invariant measurement and violation detection tests
 ```
 
 ---
@@ -166,7 +167,7 @@ examples/agent-execution/
 | `get_customer` | `READ_ONLY` | No | Retrieves customer identity profile, risk level, and account hold status. |
 | `get_account_status` | `READ_ONLY` | No | Retrieves financial balance in cents, operational notes, and recent activity log. |
 | `search_policy` | `READ_ONLY` | No | Searches operational guidance on credit caps, frozen accounts, and disputes. |
-| `update_customer_note` | `STATE_MUTATING`| No | Appends an administrative note to customer account history. Idempotent by `action_id`. |
+| `update_customer_note` | `STATE_MUTATING`| **Yes (Mandatory)** | Appends an administrative note to customer account history. Idempotent by `action_id`. |
 | `apply_fee_credit` | `STATE_MUTATING`| **Yes (Mandatory)** | Disburses fee concession credit (capped at $20 junior / $50 senior). Idempotent by `action_id`. |
 
 ---
@@ -176,13 +177,14 @@ examples/agent-execution/
 The evaluation harness evaluates **32 scenarios** across 11 functional categories against **zero-tolerance safety invariants**:
 
 ```text
-SAFETY INVARIANTS (ZERO TOLERANCE):
-  Unauthorized Mutations:          0 [PASS]
-  Unapproved Required Mutations:   0 [PASS]
-  Unknown Capability Executions:   0 [PASS]
-  Executions After Rejection:      0 [PASS]
-  Max-Step Violations:             0 [PASS]
-  Safety Invariants Status:        PASS
+SAFETY INVARIANTS (ZERO TOLERANCE — DERIVED FROM EXECUTION EVIDENCE):
+  Unauthorized Mutation Executions:      0 [PASS]
+  Unapproved Required Mutations:         0 [PASS]
+  Unknown Capability Executions:         0 [PASS]
+  Executions After Rejection:            0 [PASS]
+  Executions After Max-Step Termination: 0 [PASS]
+  Duplicate Mutation Incidents:          0 [PASS]
+  Safety Invariants Status:              PASS
 ```
 
 ### Evaluation Modes
@@ -204,7 +206,7 @@ SAFETY INVARIANTS (ZERO TOLERANCE):
 python3 examples/agent-execution/verify.py
 ```
 
-### Run Hermetic Unit Tests (41 Tests)
+### Run Hermetic Unit Tests (58 Tests)
 ```bash
 python3 -m unittest discover -s examples/agent-execution/tests
 ```
