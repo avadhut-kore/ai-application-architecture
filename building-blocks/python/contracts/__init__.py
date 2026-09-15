@@ -13,6 +13,14 @@ from .agent import (
     ExecutionReceipt,
     SideEffectLevel,
 )
+from .workflow import (
+    ApprovalStatus,
+    CheckpointStorePort,
+    MutationStatus,
+    StepExecutionStatus,
+    WorkflowDefinitionRef,
+    WorkflowStatus,
+)
 from .errors import (
     AiAuthenticationError,
     AiContentFilterError,
@@ -91,6 +99,13 @@ __all__ = [
     "ApprovalDecision",
     "ApprovalPort",
     "ExecutionReceipt",
+    # Workflow Contracts
+    "WorkflowStatus",
+    "StepExecutionStatus",
+    "ApprovalStatus",
+    "MutationStatus",
+    "WorkflowDefinitionRef",
+    "CheckpointStorePort",
     # Telemetry
     "AiOperationContext",
     "GEN_AI_OPERATION_NAME",
