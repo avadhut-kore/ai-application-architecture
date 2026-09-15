@@ -252,10 +252,14 @@ class DeterministicWorkflowEvaluator:
                         self.metrics.unapproved_mutations += 1
 
                 # Invariant 3: duplicate_mutations
-                # Check customer activity log for duplicate credit entries
+                # Check customer activity log for duplicate credit entries and notes for duplicate compensation
                 if acc:
                     credit_logs = [log for log in acc.activity_log if "Credit applied:" in log]
                     if len(credit_logs) > 1 and len(credit_logs) != len(set(credit_logs)):
+                        self.metrics.duplicate_mutations += 1
+
+                    comp_notes = [note for note in acc.notes if "COMPENSATION:" in note]
+                    if len(comp_notes) > 1 and len(comp_notes) != len(set(comp_notes)):
                         self.metrics.duplicate_mutations += 1
 
                 # Invariant 4: post_terminal_executions
@@ -405,7 +409,7 @@ async def run_evaluator_self_tests() -> bool:
         print("FAIL: Evaluator failed to detect injected unapproved_mutation.")
         all_passed = False
 
-    # Injection 3: Injected duplicate mutation (duplicate identical entries in activity log)
+    # Injection 3: Injected duplicate mutation (duplicate identical entries in activity log and compensation notes)
     m3 = SafetyInvariantMetrics()
     acc.activity_log.append("Credit applied: +$10.00 (Reason: duplicate credit)")
     acc.activity_log.append("Credit applied: +$10.00 (Reason: duplicate credit)")
@@ -413,8 +417,16 @@ async def run_evaluator_self_tests() -> bool:
     if len(credit_logs) > 1 and len(credit_logs) != len(set(credit_logs)):
         m3.duplicate_mutations += 1
 
-    if m3.duplicate_mutations > 0:
-        print("PASS: Evaluator detected injected duplicate_mutation.")
+    # Also test duplicate compensation side-effect detection
+    m3_comp = SafetyInvariantMetrics()
+    acc.notes.append("COMPENSATION: Fee credit disbursement failed for workflow wf-test. Concession note voided.")
+    acc.notes.append("COMPENSATION: Fee credit disbursement failed for workflow wf-test. Concession note voided.")
+    comp_notes = [note for note in acc.notes if "COMPENSATION:" in note]
+    if len(comp_notes) > 1 and len(comp_notes) != len(set(comp_notes)):
+        m3_comp.duplicate_mutations += 1
+
+    if m3.duplicate_mutations > 0 and m3_comp.duplicate_mutations > 0:
+        print("PASS: Evaluator detected injected duplicate_mutation (credit activity log and compensation notes).")
     else:
         print("FAIL: Evaluator failed to detect injected duplicate_mutation.")
         all_passed = False

@@ -47,7 +47,7 @@ examples/agentic-workflow/
 │       ├── agentic.py             # AgenticInvestigationStep (strictly read-only)
 │       ├── human.py               # HumanApprovalStep (durable suspension)
 │       └── mutation.py            # MutationExecutionStep (pre-verified tool execution)
-└── tests/                         # 53 hermetic unit and integration tests
+└── tests/                         # 56 hermetic unit and integration tests
 ```
 
 ---
@@ -167,6 +167,7 @@ In multi-step remediation flows where an operational note is logged prior to cre
   `"COMPENSATION: Fee credit disbursement failed for workflow ... Concession note voided."`
 * If compensation succeeds, the workflow completes in `FAILED` status with `compensation_applied = True`.
 * If compensation itself fails, the system logs `manual_intervention_required` and halts safely.
+* **Compensation Crash Recovery & Reconciliation**: Compensating actions derive stable action IDs (`act-{wf_id}-compensate_mutation-...`) and enforce the same in-flight reconciliation semantics as primary mutations. If a crash occurs after `EXECUTION_STARTED`, resumption reconciles customer notes: if the compensating note already physically exists, duplicate invocation is suppressed (`duplicate_suppressed = True`) and ledger is committed to `EXECUTED`; if unexecuted, it executes safely; if inconclusive, it fails closed to `AMBIGUOUS` with `manual_intervention_required = True`.
 
 ---
 
@@ -176,7 +177,7 @@ In multi-step remediation flows where an operational note is logged prior to cre
 ```bash
 python3 -m unittest discover -s examples/agentic-workflow/tests
 ```
-Executes 53 hermetic unit and integration tests across 11 test modules.
+Executes 56 hermetic unit and integration tests across 11 test modules.
 
 ### Run 30-Scenario Deterministic Evaluation
 ```bash

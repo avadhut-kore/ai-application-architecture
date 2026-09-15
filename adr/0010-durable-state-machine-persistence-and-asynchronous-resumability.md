@@ -40,7 +40,7 @@ We implement `SQLiteWorkflowStore` using standard library `sqlite3` in Write-Ahe
 * **`workflow_checkpoints`**: Stores serialized `WorkflowState`, monotonic `checkpoint_version`, definition reference, and SHA-256 checksum.
 * **`workflow_approvals`**: Persists durable approval records with explicit lifecycle states (`PENDING`, `APPROVED`, `CONSUMED`, `REJECTED`, `EXPIRED`).
 * **`workflow_mutation_ledger`**: Records stable action IDs, canonical argument representations, and execution lifecycle statuses (`PLANNED`, `EXECUTION_STARTED`, `EXECUTED`, `FAILED`, `AMBIGUOUS`).
-* **`workflow_audit_log`**: Appends structured, immutable transition and execution events.
+* **`workflow_audit_log`**: Best-effort append-only table recording structured state transition and execution audit events.
 
 ### 4.2 Optimistic Concurrency Control (Compare-and-Swap)
 To prevent split-brain execution when multiple processes attempt concurrent resumption:

@@ -107,25 +107,119 @@ def build_customer_remediation_workflow(
             permissions=list(state.initiator_actor.permissions),
         )
 
-        # 1. Check ledger for prior execution
+        # 1. Check ledger for prior execution & ambiguous in-flight recovery
         existing = workflow_store.load_mutation(action_id)
-        if existing and existing.status == MutationStatus.EXECUTED:
-            receipt = existing.execution_receipt or ExecutionReceipt(
-                action_id=action_id,
-                capability_name=note_capability.metadata.name,
-                status="succeeded",
-                result_summary="Compensation replayed from durable mutation ledger (duplicate suppressed).",
-            )
-            return StepOutcome(
-                status=StepExecutionStatus.SUCCEEDED,
-                outcome_type="compensation_completed",
-                context_updates={
-                    "compensation_applied": True,
-                    "duplicate_suppressed": True,
-                    "compensating_receipt_id": receipt.action_id,
-                },
-                receipts=(receipt,),
-            )
+        if existing:
+            if existing.status == MutationStatus.EXECUTED:
+                receipt = existing.execution_receipt or ExecutionReceipt(
+                    action_id=action_id,
+                    capability_name=note_capability.metadata.name,
+                    status="succeeded",
+                    result_summary="Compensation replayed from durable mutation ledger (duplicate suppressed).",
+                )
+                return StepOutcome(
+                    status=StepExecutionStatus.SUCCEEDED,
+                    outcome_type="compensation_completed",
+                    context_updates={
+                        "compensation_applied": True,
+                        "duplicate_suppressed": True,
+                        "compensating_receipt_id": receipt.action_id,
+                    },
+                    receipts=(receipt,),
+                )
+            elif existing.status == MutationStatus.EXECUTION_STARTED:
+                # Ambiguous in-flight compensation recovery after crash
+                # Invariant: Never blindly re-execute! Reconcile domain state before any tool invocation.
+                reconciliation_result = "inconclusive"
+                try:
+                    res = reconcile_note_mutation(action_id, note_capability.metadata.name, comp_args)
+                    reconciliation_result = str(res)
+                except Exception:
+                    reconciliation_result = "inconclusive"
+
+                if reconciliation_result == "executed":
+                    now = time.time()
+                    receipt = ExecutionReceipt(
+                        action_id=action_id,
+                        capability_name=note_capability.metadata.name,
+                        status="succeeded",
+                        result_summary="Compensation reconciled from domain state: side effect physically occurred prior to crash.",
+                    )
+                    reconciled_record = DurableMutationRecord(
+                        action_id=action_id,
+                        workflow_id=state.workflow_id,
+                        step_name="compensate_mutation",
+                        capability_name=note_capability.metadata.name,
+                        canonical_args=canonical_comp_args,
+                        status=MutationStatus.EXECUTED,
+                        execution_receipt=receipt,
+                        created_at=existing.created_at,
+                        updated_at=now,
+                    )
+                    workflow_store.save_mutation(reconciled_record)
+                    return StepOutcome(
+                        status=StepExecutionStatus.SUCCEEDED,
+                        outcome_type="compensation_completed",
+                        context_updates={
+                            "compensation_applied": True,
+                            "duplicate_suppressed": True,
+                            "reconciled_after_restart": True,
+                            "compensating_receipt_id": receipt.action_id,
+                        },
+                        receipts=(receipt,),
+                    )
+                elif reconciliation_result == "not_executed":
+                    # Confirmed by domain state that physical side effect did not occur.
+                    # Proceed with safe execution below under original action_id.
+                    pass
+                else:
+                    now = time.time()
+                    ambiguous_record = DurableMutationRecord(
+                        action_id=action_id,
+                        workflow_id=state.workflow_id,
+                        step_name="compensate_mutation",
+                        capability_name=note_capability.metadata.name,
+                        canonical_args=canonical_comp_args,
+                        status=MutationStatus.AMBIGUOUS,
+                        created_at=existing.created_at,
+                        updated_at=now,
+                    )
+                    workflow_store.save_mutation(ambiguous_record)
+                    return StepOutcome(
+                        status=StepExecutionStatus.FAILED,
+                        outcome_type="ambiguous_compensation",
+                        error_message=(
+                            f"Ambiguous in-flight compensation detected for action '{action_id}'. "
+                            "Domain reconciliation was inconclusive. Manual intervention required to prevent duplicate compensation side effects."
+                        ),
+                        context_updates={
+                            "compensation_applied": False,
+                            "compensation_failed": True,
+                            "manual_intervention_required": True,
+                        },
+                    )
+            elif existing.status == MutationStatus.AMBIGUOUS:
+                return StepOutcome(
+                    status=StepExecutionStatus.FAILED,
+                    outcome_type="ambiguous_compensation",
+                    error_message=f"Compensation action '{action_id}' is marked AMBIGUOUS in mutation ledger. Manual intervention required.",
+                    context_updates={
+                        "compensation_applied": False,
+                        "compensation_failed": True,
+                        "manual_intervention_required": True,
+                    },
+                )
+            elif existing.status == MutationStatus.FAILED:
+                return StepOutcome(
+                    status=StepExecutionStatus.FAILED,
+                    outcome_type="compensation_failed",
+                    error_message=f"Compensation action '{action_id}' previously failed. Manual intervention required.",
+                    context_updates={
+                        "compensation_applied": False,
+                        "compensation_failed": True,
+                        "manual_intervention_required": True,
+                    },
+                )
 
         # 2. Re-validate authorization for compensation action
         auth_decision = auth_policy.authorize(actor, note_capability.metadata, comp_args)

@@ -1,6 +1,7 @@
 """Hermetic unit and integration tests for Local Saga backward compensation."""
 
 import sys
+import time
 import unittest
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -32,12 +33,18 @@ from contracts.agent import (
     SideEffectLevel,
 )
 from contracts.workflow import StepExecutionStatus, WorkflowStatus
+from workflow.approval import canonicalize_arguments
 from workflow.engine import WorkflowEngine
 from workflow.errors import SagaCompensationError
+from workflow.ledger import generate_stable_action_id
 from workflow.remediation_workflow import build_customer_remediation_workflow
 from workflow.saga import SagaCompensationCoordinator
 from workflow.state import WorkflowActorSnapshot
-from workflow.store import InMemoryWorkflowStore
+from workflow.store import (
+    DurableMutationRecord,
+    InMemoryWorkflowStore,
+    MutationStatus,
+)
 
 
 class FailingCapability(CapabilityPort):
@@ -224,6 +231,283 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertEqual(len(comp_mutations), 1)
         self.assertEqual(comp_mutations[0].status, "failed")
+
+    async def test_compensation_executed_before_commit_reconciled_without_duplicate(self) -> None:
+        """Adversarial probe: when crash occurs after compensation note was physically added
+        but before durable EXECUTED ledger record was committed (ledger has EXECUTION_STARTED),
+        resume reconciles against customer notes, suppresses duplicate tool execution,
+        and keeps note count at 2 (not 3).
+        """
+        failing_credit = FailingCapability("apply_fee_credit")
+        note_cap = UpdateCustomerNoteCapability(self.customer_store)
+        read_only_caps = [
+            GetCustomerCapability(self.customer_store),
+            GetAccountStatusCapability(self.customer_store),
+            SearchPolicyCapability(),
+        ]
+        executor = ToolExecutor()
+
+        class StubAgentEngine:
+            async def run(self, task: str, actor: AgentActor) -> Any:
+                class Res:
+                    final_answer = '{"proposal_type": "fee_credit", "summary": "Fee refund", "suggested_arguments": {"amount_cents": 1000, "reason": "test"}}'
+                    status = "COMPLETED"
+                    execution_receipts = []
+                    run_id = "stub-probe"
+                return Res()
+
+        workflow_def = build_customer_remediation_workflow(
+            customer_store=self.customer_store,
+            agent_engine=StubAgentEngine(),
+            read_only_registry=CapabilityRegistry(read_only_caps),
+            credit_capability=failing_credit,
+            note_capability=note_cap,
+            tool_executor=executor,
+            workflow_store=self.store,
+            auth_policy=self.auth_policy,
+        )
+
+        engine = WorkflowEngine(definition=workflow_def, store=self.store)
+        wf_id = "wf-saga-probe-comp"
+        actor = WorkflowActorSnapshot("operator_bob", "senior_agent")
+
+        account = self.customer_store.get_account("cust-001")
+        self.assertEqual(len(account.notes), 1)
+
+        # Plant the expected compensation note (simulating physical execution prior to crash)
+        expected_comp_note = f"COMPENSATION: Fee credit disbursement failed for workflow {wf_id}. Concession note voided."
+        account.notes.append(expected_comp_note)
+        self.assertEqual(len(account.notes), 2)  # pre-executed count: 2
+
+        # Compute stable action_id for compensation
+        comp_args = {
+            "customer_id": "cust-001",
+            "note": expected_comp_note,
+        }
+        canonical_comp_args = canonicalize_arguments(comp_args)
+        action_id = generate_stable_action_id(
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+        )
+
+        # Plant in-flight ledger record simulating crash before durable EXECUTED record
+        in_flight_record = DurableMutationRecord(
+            action_id=action_id,
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+            status=MutationStatus.EXECUTION_STARTED,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+        self.store.save_mutation(in_flight_record)
+
+        # Start workflow with prior note flag
+        await engine.start_workflow(
+            workflow_id=wf_id,
+            actor=actor,
+            domain_context={"customer_id": "cust-001", "has_prior_note": True},
+        )
+
+        # Resume with approval; credit fails and transitions to compensate_mutation
+        final_state = await engine.resume_workflow(
+            workflow_id=wf_id,
+            decision="approved",
+            approver_id="manager_jane",
+        )
+
+        self.assertEqual(final_state.status, WorkflowStatus.FAILED)
+
+        # VERIFY NO DUPLICATE MUTATION:
+        # Pre-executed note count was 2. Resume count MUST REMAIN 2, NOT 3!
+        self.assertEqual(len(account.notes), 2)
+        matching_notes = [n for n in account.notes if expected_comp_note in n]
+        self.assertEqual(len(matching_notes), 1)
+
+        # Verify mutation ledger was reconciled to EXECUTED
+        reconciled_mut = self.store.load_mutation(action_id)
+        self.assertIsNotNone(reconciled_mut)
+        self.assertEqual(reconciled_mut.status, MutationStatus.EXECUTED)
+        self.assertTrue(final_state.domain_context.get("duplicate_suppressed"))
+
+    async def test_compensation_in_flight_unexecuted_retries_safely(self) -> None:
+        """When crash occurred while ledger was EXECUTION_STARTED but note was not physically written,
+        reconciliation confirms not_executed and safely executes the compensation note once.
+        """
+        failing_credit = FailingCapability("apply_fee_credit")
+        note_cap = UpdateCustomerNoteCapability(self.customer_store)
+        read_only_caps = [
+            GetCustomerCapability(self.customer_store),
+            GetAccountStatusCapability(self.customer_store),
+            SearchPolicyCapability(),
+        ]
+        executor = ToolExecutor()
+
+        class StubAgentEngine:
+            async def run(self, task: str, actor: AgentActor) -> Any:
+                class Res:
+                    final_answer = '{"proposal_type": "fee_credit", "summary": "Fee refund", "suggested_arguments": {"amount_cents": 1000, "reason": "test"}}'
+                    status = "COMPLETED"
+                    execution_receipts = []
+                    run_id = "stub-unexec"
+                return Res()
+
+        workflow_def = build_customer_remediation_workflow(
+            customer_store=self.customer_store,
+            agent_engine=StubAgentEngine(),
+            read_only_registry=CapabilityRegistry(read_only_caps),
+            credit_capability=failing_credit,
+            note_capability=note_cap,
+            tool_executor=executor,
+            workflow_store=self.store,
+            auth_policy=self.auth_policy,
+        )
+
+        engine = WorkflowEngine(definition=workflow_def, store=self.store)
+        wf_id = "wf-saga-unexec-comp"
+        actor = WorkflowActorSnapshot("operator_bob", "senior_agent")
+
+        account = self.customer_store.get_account("cust-001")
+        self.assertEqual(len(account.notes), 1)
+
+        expected_comp_note = f"COMPENSATION: Fee credit disbursement failed for workflow {wf_id}. Concession note voided."
+        comp_args = {
+            "customer_id": "cust-001",
+            "note": expected_comp_note,
+        }
+        canonical_comp_args = canonicalize_arguments(comp_args)
+        action_id = generate_stable_action_id(
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+        )
+
+        # Plant in-flight ledger record WITHOUT writing to account.notes
+        in_flight_record = DurableMutationRecord(
+            action_id=action_id,
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+            status=MutationStatus.EXECUTION_STARTED,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+        self.store.save_mutation(in_flight_record)
+
+        await engine.start_workflow(
+            workflow_id=wf_id,
+            actor=actor,
+            domain_context={"customer_id": "cust-001", "has_prior_note": True},
+        )
+
+        final_state = await engine.resume_workflow(
+            workflow_id=wf_id,
+            decision="approved",
+            approver_id="manager_jane",
+        )
+
+        self.assertEqual(final_state.status, WorkflowStatus.FAILED)
+        # Note count should be exactly 2 (1 default + 1 compensation)
+        self.assertEqual(len(account.notes), 2)
+        matching_notes = [n for n in account.notes if expected_comp_note in n]
+        self.assertEqual(len(matching_notes), 1)
+
+        reconciled_mut = self.store.load_mutation(action_id)
+        self.assertIsNotNone(reconciled_mut)
+        self.assertEqual(reconciled_mut.status, MutationStatus.EXECUTED)
+
+    async def test_compensation_in_flight_inconclusive_halts_closed(self) -> None:
+        """When compensation reconciliation is inconclusive, workflow fails closed
+        with manual_intervention_required and ledger status AMBIGUOUS without duplicate tool calls.
+        """
+        failing_credit = FailingCapability("apply_fee_credit")
+        note_cap = UpdateCustomerNoteCapability(self.customer_store)
+        read_only_caps = [
+            GetCustomerCapability(self.customer_store),
+            GetAccountStatusCapability(self.customer_store),
+            SearchPolicyCapability(),
+        ]
+        executor = ToolExecutor()
+
+        class StubAgentEngine:
+            async def run(self, task: str, actor: AgentActor) -> Any:
+                class Res:
+                    final_answer = '{"proposal_type": "fee_credit", "summary": "Fee refund", "suggested_arguments": {"amount_cents": 1000, "reason": "test"}}'
+                    status = "COMPLETED"
+                    execution_receipts = []
+                    run_id = "stub-inconc"
+                return Res()
+
+        workflow_def = build_customer_remediation_workflow(
+            customer_store=self.customer_store,
+            agent_engine=StubAgentEngine(),
+            read_only_registry=CapabilityRegistry(read_only_caps),
+            credit_capability=failing_credit,
+            note_capability=note_cap,
+            tool_executor=executor,
+            workflow_store=self.store,
+            auth_policy=self.auth_policy,
+        )
+
+        engine = WorkflowEngine(definition=workflow_def, store=self.store)
+        wf_id = "wf-saga-inconc-comp"
+        actor = WorkflowActorSnapshot("operator_bob", "senior_agent")
+
+        # Compute stable action_id for compensation under cust-001
+        expected_comp_note = f"COMPENSATION: Fee credit disbursement failed for workflow {wf_id}. Concession note voided."
+        comp_args = {
+            "customer_id": "cust-001",
+            "note": expected_comp_note,
+        }
+        canonical_comp_args = canonicalize_arguments(comp_args)
+        action_id = generate_stable_action_id(
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+        )
+
+        in_flight_record = DurableMutationRecord(
+            action_id=action_id,
+            workflow_id=wf_id,
+            step_name="compensate_mutation",
+            capability_name="update_customer_note",
+            canonical_args=canonical_comp_args,
+            status=MutationStatus.EXECUTION_STARTED,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+        self.store.save_mutation(in_flight_record)
+
+        # Start workflow with valid customer so intake passes
+        await engine.start_workflow(
+            workflow_id=wf_id,
+            actor=actor,
+            domain_context={"customer_id": "cust-001", "has_prior_note": True},
+        )
+
+        # Remove account from store to simulate an outage or missing record,
+        # making domain reconciliation inconclusive during compensation
+        self.customer_store._accounts.pop("cust-001", None)
+
+        final_state = await engine.resume_workflow(
+            workflow_id=wf_id,
+            decision="approved",
+            approver_id="manager_jane",
+        )
+
+        self.assertEqual(final_state.status, WorkflowStatus.FAILED)
+        self.assertTrue(final_state.domain_context.get("manual_intervention_required"))
+        self.assertTrue(final_state.domain_context.get("compensation_failed"))
+
+        mut_record = self.store.load_mutation(action_id)
+        self.assertIsNotNone(mut_record)
+        self.assertEqual(mut_record.status, MutationStatus.AMBIGUOUS)
 
 
 if __name__ == "__main__":
