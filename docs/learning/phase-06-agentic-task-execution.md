@@ -21,7 +21,7 @@ It establishes a **governed, bounded, provider-neutral agent architecture** cons
 3. **The Application Capability Registry** ([`examples/agent-execution/agent/registry.py`](../../examples/agent-execution/agent/registry.py)): An application-controlled structural firewall enforcing strict capability allowlisting and deterministic JSON Schema parameter validation.
 4. **Application-Controlled Authorization Policy** ([`examples/agent-execution/agent/policy.py`](../../examples/agent-execution/agent/policy.py)): Host-enforced Role-Based Access Control (RBAC), operational transaction limits ($20.00 junior / $50.00 senior), and security account holds independent of model claims.
 5. **Mandatory Human-in-the-Loop (HITL) Approval Boundary** ([`examples/agent-execution/agent/approval.py`](../../examples/agent-execution/agent/approval.py)): An unbypassable gate ensuring that all `STATE_MUTATING` operations require explicit human confirmation.
-6. **Centralized Tool Executor & Sandboxing** ([`examples/agent-execution/agent/executor.py`](../../examples/agent-execution/agent/executor.py)): Centralized execution boundary enforcing asynchronous timeouts, exception isolation, idempotency caching on unique `action_id` keys, and cryptographically verified [`ExecutionReceipt`](../../building-blocks/python/contracts/agent.py) records.
+6. **Centralized Tool Executor & Sandboxing** ([`examples/agent-execution/agent/executor.py`](../../examples/agent-execution/agent/executor.py)): Centralized execution boundary enforcing asynchronous timeouts, exception isolation, idempotency caching on unique `action_id` keys, and structured, application-generated [`ExecutionReceipt`](../../building-blocks/python/contracts/agent.py) records.
 7. **Model Context Protocol (MCP) Platform Adapter** ([`platform/mcp-adapter/`](../../platform/mcp-adapter/)): A Tier 3 Platform Component implementing the standard-library JSON-RPC 2.0 protocol over `stdio`, offloading blocking subprocess I/O via `asyncio.to_thread` and enforcing capability allowlisting.
 8. **Automated Evaluation Harness & Safety Invariant Engine** ([`examples/agent-execution/eval_runner.py`](../../examples/agent-execution/eval_runner.py)): A versioned 32-scenario evaluation dataset ([`eval_dataset.jsonl`](../../examples/agent-execution/eval_dataset.jsonl)) measuring 6 zero-tolerance safety invariants derived strictly from execution receipts and trace records.
 9. **ADR-0006** ([`adr/0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md`](../../adr/0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md)): Reconciling early speculative roadmap notes to deliver a production-grade Tier 2 Pattern Example and Tier 3 Platform Component without third-party agent frameworks.
@@ -217,11 +217,14 @@ class Account:
     credits_applied_cents: int = 0
 ```
 
-The synthetic baseline provides four distinct test customers:
-1. `cust-001` (Alice Smith): Active, low risk, balance $150.00.
-2. `cust-002` (Bob Jones): Active, high risk (high chargeback velocity), balance $42.50.
-3. `cust-003` (Carol White): **Frozen** under security hold (all mutations prohibited), balance $1,200.00.
-4. `cust-004` (David Miller): Active, new account, balance $0.00.
+The synthetic baseline in [`domain.py`](../../examples/agent-execution/agent/domain.py) provides four distinct test customer records and associated accounts:
+
+| Customer ID | Name | Risk Level | Status | Balance | Notes | Activity Highlights |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `cust-001` | Alice Smith | `low` | `active` | $150.00 (15,000¢) | `"Account opened via mobile app."` | Subscription charge $15.00, late fee $10.00 |
+| `cust-002` | Bob Jones | `high` | `active` | $20.00 (2,000¢) | `"Flagged for high transaction velocity."` | Disputed transaction $45.00, chargeback request |
+| `cust-003` | Carol White | `high` | `frozen` | $500.00 (50,000¢) | `"Account frozen pending identity verification."` | Multiple failed MFA attempts, administrative freeze |
+| `cust-004` | David Miller | `low` | `active` | $0.00 (0¢) | `"New account with no billing issues."` | Welcome credit applied |
 
 ---
 
@@ -464,14 +467,16 @@ The [`CapabilityRegistry`](../../examples/agent-execution/agent/registry.py) act
 When the model proposes `action_name`, the registry performs strict dictionary resolution. If the capability is not registered, execution halts before touching policy or executor:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/registry.py (lines 56-66)
+# REAL SOURCE EXCERPT: examples/agent-execution/agent/registry.py (lines 56-67)
 def validate_arguments(self, capability_name: str, arguments: Mapping[str, Any]) -> ValidationResult:
-    capability = self._capabilities.get(capability_name)
+    """Perform strict deterministic schema validation on model-proposed capability arguments."""
+    capability = self.get(capability_name)
     if not capability:
         return ValidationResult(
             is_valid=False,
-            errors=[f"Tool '{capability_name}' not found in registry. Allowed tools: {sorted(self._capabilities.keys())}"],
+            errors=[f"Unknown capability '{capability_name}'. Tool is not present in registered allowlist."],
         )
+    # ... checks required parameters, schema properties, and unexpected extra keys
 ```
 
 ### Argument Validation vs. Decision Schema Validation
@@ -550,11 +555,17 @@ The [`ApprovalPort`](../../building-blocks/python/contracts/agent.py) supports t
 * [`DeterministicApprovalHandler`](../../examples/agent-execution/agent/approval.py#L16): Used in unit tests and automated evaluations (`eval_runner.py`). Configured with `default_approved=True/False` or per-action canned decisions.
 * [`CliApprovalHandler`](../../examples/agent-execution/agent/approval.py#L58): Used in interactive demonstration (`demo.py --interactive`). Pauses execution and prompts the operator on standard input:
   ```text
-  [HITL APPROVAL REQUIRED]
-  Actor:      agent-alice (Role: junior_agent)
-  Capability: apply_fee_credit
-  Approve this action? [y/N]:
+  ============================================================
+  ⚠️  HUMAN-IN-THE-LOOP APPROVAL REQUIRED
+  ============================================================
+  Proposed Capability: apply_fee_credit
+  Side-Effect Level:   STATE_MUTATING
+  Initiating Actor:    agent-alice (Role: junior_agent)
+  Target Arguments:    {'customer_id': 'cust-001', 'amount_cents': 1500, 'reason': 'Late fee dispute', 'action_id': 'act-001'}
+  ============================================================
+  Approve this state mutation? [y/N]:
   ```
+  If confirmed (`y` or `yes`), the handler emits `>> Operation APPROVED by human operator.` and returns `ApprovalDecision(approved=True, approver="cli_human_operator")`. If declined or if Enter is pressed without typing `y`, execution defaults to rejection (`[y/N]`), emitting `>> Operation REJECTED by human operator.` and returning `ApprovalDecision(approved=False)`.
 
 ---
 
@@ -582,6 +593,10 @@ class ExecutionReceipt:
     error_message: Optional[str] = None
 ```
 
+> [!NOTE]
+> **Application-Generated Evidence vs. Cryptographic Attestation**:
+> An `ExecutionReceipt` is an application-generated structured record (`@dataclass(frozen=True)`) representing execution evidence within the application runtime boundary. Python object immutability (`frozen=True`) prevents accidental runtime attribute mutation within memory, but Phase 6 does **not** implement cryptographic signatures, hash verification, MACs, digital certificates, or external attestation chains. Its security value is architectural: receipts are produced solely by deterministic application code within `ToolExecutor`, proving execution to the engine independently of untrusted model text assertions.
+
 > **Known Low Residual Limitation Note**: In `eval_runner.py`, `compute_safety_metrics()` contains a fallback referencing `mr.timestamp` if `mr.action_id` is missing, whereas `ExecutionReceipt` declares `executed_at`. Because Phase 6 capabilities always generate a valid `action_id`, this fallback branch is not exercised during standard operation.
 
 ---
@@ -601,7 +616,7 @@ obs_formatted = (
     "=== BEGIN TOOL OBSERVATION (UNTRUSTED DATA) ===\n"
     f"Tool: {action_name}\n"
     f"Execution Receipt: {receipt.action_id} (Status: {receipt.status})\n"
-    f"Output:\n{obs_output_str}\n"
+    f"Result:\n{obs_output_str}\n"
     "=== END TOOL OBSERVATION ==="
 )
 ```
@@ -635,7 +650,7 @@ if seen_proposals and seen_proposals[-1] == proposal_sig:
 ```
 
 ### Hard Iteration Ceilings (`max_steps`)
-The loop terminates strictly when `step_idx > max_steps` (default 5). This guarantees that infinite loops, runaway costs, and token exhaustion are physically impossible.
+The loop terminates strictly when `step_idx > max_steps` (default 5). This ensures that execution cannot exceed the configured step budget, preventing infinite reasoning loops and unbounded token consumption within the engine.
 
 ### Termination Statuses
 A task run concludes with one of six definitive statuses:
@@ -696,15 +711,48 @@ if self.allowlist is not None and self.tool_name not in self.allowlist:
 Standard Python `subprocess.Popen` streams perform blocking synchronous reads (`stdout.readline()`). If called directly on the asyncio event-loop thread, **blocking I/O freezes the event loop**, preventing `asyncio.wait_for` from interrupting the execution.
 
 Phase 6.1 remediated this defect:
-1. **Thread Offloading**: Synchronous RPC is offloaded to a worker thread via `asyncio.to_thread`:
+1. **Thread Offloading & Content Normalization**: Synchronous stdio RPC is offloaded to a worker thread via `asyncio.to_thread`, and the raw MCP response is normalized into a capability result:
    ```python
-   # REAL SOURCE EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (lines 86-96)
-   try:
-       res = await asyncio.to_thread(self.client.call_tool, self.tool_name, dict(arguments))
-       return res
-   except (asyncio.CancelledError, asyncio.TimeoutError):
-       self.client.close()
-       raise
+   # REAL SOURCE EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (lines 67-105)
+   async def execute(
+       self,
+       arguments: Mapping[str, Any],
+       context: Optional[AiOperationContext] = None,
+   ) -> Any:
+       """Invoke tool over MCP protocol transport without blocking the asyncio event loop."""
+       try:
+           raw_response = await asyncio.to_thread(self.client.call_tool, self.tool_name, arguments)
+           is_error = raw_response.get("isError", False)
+           content_items = raw_response.get("content", [])
+
+           extracted_texts: List[str] = []
+           for item in content_items:
+               if isinstance(item, dict) and item.get("type") == "text":
+                   extracted_texts.append(item.get("text", ""))
+
+           full_text = "\n".join(extracted_texts).strip()
+
+           # Attempt to decode JSON content if structured
+           if full_text.startswith("{") or full_text.startswith("["):
+               try:
+                   parsed_payload = json.loads(full_text)
+                   if is_error:
+                       return {"error": True, "detail": parsed_payload}
+                   return parsed_payload
+               except json.JSONDecodeError:
+                   pass
+
+           if is_error:
+               return {"error": True, "message": full_text or "MCP tool reported execution error"}
+
+           return {"output": full_text}
+       except (asyncio.CancelledError, asyncio.TimeoutError):
+           # When cancelled by caller (e.g. ToolExecutor timeout), cleanly close process
+           try:
+               self.client.close()
+           except Exception:
+               pass
+           raise
    ```
 2. **Subprocess Termination**: In `McpClient.close()`, the child process is terminated via `SIGTERM`/`kill()` *before* closing pipe file handles. This sends an immediate EOF to `readline()`, unblocking the worker thread without pipe deadlocks or zombie processes.
 
@@ -798,9 +846,9 @@ Per authoritative [`QUALITY-GATES.md`](../../QUALITY-GATES.md#L7):
 * **Authoritative Applicable Quality Gates**:
   * **Gate B (Code Quality & Type Safety)**: Strict Python typing, zero unhandled syntax exceptions.
   * **Gate C (Software Testing)**: 58 hermetic unit tests passed in $< 0.5$s.
-  * **Gate H (Standardized Documentation)**: Complete architecture docs, sequence flows, and threat models.
-  * **Gate I (Local-First Execution)**: 100% executable under Mode A (offline standard library) and Mode B (local Ollama).
-* **Gate D (AI Evaluation)**: In Tier 2, running `eval_runner.py` is a **voluntary reference benchmark**, not a mandatory tier requirement (Gate D is mandatory for Tier 1 Reference Applications).
+  * **Gate H (Documentation & Architectural Integrity)**: Complete architecture docs, sequence flows, threat models, and clean internal markdown links.
+  * **Gate I (Demo & Operational Verification)**: Cold-start verification via `verify.py` and interactive CLI demo executing in $< 5$ minutes under Mode A (offline standard library) and Mode B (local Ollama).
+* **Gate D (AI Evaluation)**: In Tier 2, running `eval_runner.py` is a **voluntary reference benchmark**, not an applicable tier requirement (Gate D is mandatory for Tier 1 Reference Applications per `QUALITY-GATES.md`).
 * **`verify.py` Semantics**:
   Running `python3 examples/agent-execution/verify.py` prints `VERIFICATION RESULT: DETERMINISTIC PHASE 6 VERIFICATION PASSED`. It certifies deterministic reference verification for Tier 2 under Mode A; it does not claim "all repository quality gates passed across all tiers."
 
