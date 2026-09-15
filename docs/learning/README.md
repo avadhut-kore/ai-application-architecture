@@ -70,8 +70,9 @@ Phase 6: Agentic Task Execution [ACCEPTED & FREEZE-READY]
   "How will AI safely invoke enterprise tools and execute stateful actions?"
   → [Phase 06 Learning Guide](phase-06-agentic-task-execution.md)
         ↓
-Phase 7: Agentic Workflow Orchestration [PLANNED — GUIDE NOT YET AVAILABLE]
+Phase 7: Agentic Workflow Orchestration [ACCEPTED & FREEZE-READY]
   "How will multi-step, human-in-the-loop workflows be coordinated?"
+  → [Phase 07 Learning Guide](phase-07-agentic-workflow-orchestration.md)
         ↓
 Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE]
   Multi-Agent, Observability, Gateways, Multimodal, Edge, and Production Apps
@@ -90,7 +91,7 @@ Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE
 | **04** | **AI Foundations** | Provider-Neutral Ports, `OllamaAdapter`, Structured Generation, Gate D Eval | `FROZEN` | [Phase 04 Guide](phase-04-ai-foundations.md) |
 | **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `ACCEPTED` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
 | **06** | **Agentic Task Execution** | Tool Proposals, Capability Registry, Policy Enforcement, Mandatory HITL, MCP | `ACCEPTED` | [Phase 06 Guide](phase-06-agentic-task-execution.md) |
-| **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `PLANNED` | *Available after Phase 7 freeze* |
+| **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `ACCEPTED` | [Phase 07 Guide](phase-07-agentic-workflow-orchestration.md) |
 | **08–14** | **Enterprise AI Systems** | Multi-Agent, Gateways, Telemetry, Multimodal, Edge & Reference Apps | `PLANNED` | *Available after respective phase freeze* |
 
 ---
