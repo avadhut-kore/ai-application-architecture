@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import inspect
 import time
-from typing import Any, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional, Union
 
 from contracts.agent import (
     AgentActor,
@@ -27,7 +28,7 @@ from ..state import StepOutcome, WorkflowState
 
 
 class MutationExecutionStep:
-    """Executes state-mutating capability following strict authorization and approval verification."""
+    """Executes state-mutating capability following strict authorization, approval, and reconciliation."""
 
     def __init__(
         self,
@@ -36,12 +37,22 @@ class MutationExecutionStep:
         store: Any,
         policy: Any,
         requires_approval: bool = True,
+        reconciler: Optional[Callable[[str, str, Mapping[str, Any]], Any]] = None,
     ) -> None:
         self.capability = capability
         self.tool_executor = tool_executor
         self.store = store
         self.policy = policy
         self.requires_approval = requires_approval
+        self.reconciler = reconciler
+
+    def _find_approval_record(self, state: WorkflowState, action_id: str) -> Optional[DurableApprovalRecord]:
+        approval_record = self.store.load_approval_by_action_id(action_id)
+        if not approval_record:
+            approval_id = state.domain_context.get("pending_approval_id")
+            if approval_id:
+                approval_record = self.store.load_approval(approval_id)
+        return approval_record
 
     async def execute(self, state: WorkflowState) -> StepOutcome:
         target_args = dict(state.domain_context.get("target_arguments", {}))
@@ -67,21 +78,139 @@ class MutationExecutionStep:
             permissions=list(state.initiator_actor.permissions),
         )
 
-        # 1. Idempotency Check: Inspect Durable Mutation Ledger
+        # 1. Idempotency & In-Flight Recovery Check: Inspect Durable Mutation Ledger
         existing_mutation = self.store.load_mutation(action_id)
-        if existing_mutation and existing_mutation.status == MutationStatus.EXECUTED:
-            receipt = existing_mutation.execution_receipt or ExecutionReceipt(
-                action_id=action_id,
-                capability_name=self.capability.metadata.name,
-                status="succeeded",
-                result_summary="Replayed from durable mutation ledger (duplicate suppressed).",
-            )
-            return StepOutcome(
-                status=StepExecutionStatus.SUCCEEDED,
-                outcome_type="mutation_succeeded",
-                context_updates={"mutation_executed": True, "duplicate_suppressed": True},
-                receipts=(receipt,),
-            )
+        if existing_mutation:
+            if existing_mutation.status == MutationStatus.EXECUTED:
+                receipt = existing_mutation.execution_receipt or ExecutionReceipt(
+                    action_id=action_id,
+                    capability_name=self.capability.metadata.name,
+                    status="succeeded",
+                    result_summary="Replayed from durable mutation ledger (duplicate suppressed).",
+                )
+                return StepOutcome(
+                    status=StepExecutionStatus.SUCCEEDED,
+                    outcome_type="mutation_succeeded",
+                    context_updates={"mutation_executed": True, "duplicate_suppressed": True},
+                    receipts=(receipt,),
+                )
+
+            elif existing_mutation.status == MutationStatus.EXECUTION_STARTED:
+                # Ambiguous in-flight execution recovery after crash
+                # Invariant: Never blindly re-execute! Reconcile domain state before any tool invocation.
+                reconciliation_result = "inconclusive"
+                if self.reconciler:
+                    try:
+                        res = self.reconciler(action_id, self.capability.metadata.name, target_args)
+                        if inspect.isawaitable(res):
+                            reconciliation_result = await res
+                        else:
+                            reconciliation_result = str(res)
+                    except Exception:
+                        reconciliation_result = "inconclusive"
+
+                if reconciliation_result == "executed":
+                    # Side-effect physically executed before crash. Commit ledger EXECUTED + consume approval.
+                    now = time.time()
+                    receipt = ExecutionReceipt(
+                        action_id=action_id,
+                        capability_name=self.capability.metadata.name,
+                        status="succeeded",
+                        result_summary="Reconciled from domain state: mutation was executed prior to crash.",
+                    )
+                    reconciled_mutation = DurableMutationRecord(
+                        action_id=action_id,
+                        workflow_id=state.workflow_id,
+                        step_name="mutation_execution",
+                        capability_name=self.capability.metadata.name,
+                        canonical_args=canonical_args,
+                        status=MutationStatus.EXECUTED,
+                        execution_receipt=receipt,
+                        created_at=existing_mutation.created_at,
+                        updated_at=now,
+                    )
+
+                    approval_record = self._find_approval_record(state, action_id)
+                    if approval_record and approval_record.status in (ApprovalStatus.APPROVED, ApprovalStatus.PENDING):
+                        consumed_approval = DurableApprovalRecord(
+                            approval_id=approval_record.approval_id,
+                            workflow_id=approval_record.workflow_id,
+                            workflow_definition_id=approval_record.workflow_definition_id,
+                            workflow_definition_version=approval_record.workflow_definition_version,
+                            action_id=approval_record.action_id,
+                            capability_name=approval_record.capability_name,
+                            canonical_arguments_json=approval_record.canonical_arguments_json,
+                            actor_id=approval_record.actor_id,
+                            actor_role=approval_record.actor_role,
+                            status=ApprovalStatus.CONSUMED,
+                            approver_id=approval_record.approver_id,
+                            approver_role=approval_record.approver_role,
+                            reason=approval_record.reason,
+                            requested_at=approval_record.requested_at,
+                            decided_at=approval_record.decided_at,
+                            consumed_at=now,
+                            execution_receipt_id=receipt.action_id,
+                            expires_at=approval_record.expires_at,
+                        )
+                        self.store.atomic_commit_mutation_and_approval(reconciled_mutation, consumed_approval)
+                    else:
+                        self.store.save_mutation(reconciled_mutation)
+
+                    return StepOutcome(
+                        status=StepExecutionStatus.SUCCEEDED,
+                        outcome_type="mutation_succeeded",
+                        context_updates={
+                            "mutation_executed": True,
+                            "duplicate_suppressed": True,
+                            "reconciled_after_restart": True,
+                            "execution_receipt_id": receipt.action_id,
+                        },
+                        receipts=(receipt,),
+                    )
+
+                elif reconciliation_result == "not_executed":
+                    # Confirmed by domain state that physical side-effect did not occur.
+                    # Proceed with safe execution below under original action_id.
+                    pass
+
+                else:
+                    # Inconclusive or unconfigured reconciler: halt safely to prevent duplicate mutation
+                    ambiguous_mutation = DurableMutationRecord(
+                        action_id=action_id,
+                        workflow_id=state.workflow_id,
+                        step_name="mutation_execution",
+                        capability_name=self.capability.metadata.name,
+                        canonical_args=canonical_args,
+                        status=MutationStatus.AMBIGUOUS,
+                        created_at=existing_mutation.created_at,
+                        updated_at=time.time(),
+                    )
+                    self.store.save_mutation(ambiguous_mutation)
+                    return StepOutcome(
+                        status=StepExecutionStatus.FAILED,
+                        outcome_type="ambiguous_execution",
+                        error_message=(
+                            f"Ambiguous in-flight execution detected for action '{action_id}'. "
+                            "Domain reconciliation was inconclusive. Manual intervention required to prevent duplicate mutation."
+                        ),
+                        context_updates={"manual_intervention_required": True},
+                    )
+
+            elif existing_mutation.status == MutationStatus.AMBIGUOUS:
+                return StepOutcome(
+                    status=StepExecutionStatus.FAILED,
+                    outcome_type="ambiguous_execution",
+                    error_message=f"Action '{action_id}' is marked AMBIGUOUS in mutation ledger. Manual intervention required.",
+                    context_updates={"manual_intervention_required": True},
+                )
+
+            elif existing_mutation.status == MutationStatus.FAILED:
+                return StepOutcome(
+                    status=StepExecutionStatus.FAILED,
+                    outcome_type="mutation_failed",
+                    error_message=existing_mutation.execution_receipt.error_message if existing_mutation.execution_receipt else "Previous mutation failed.",
+                    receipts=(existing_mutation.execution_receipt,) if existing_mutation.execution_receipt else (),
+                )
 
         # 2. TOCTOU Authorization Revalidation
         auth_decision = self.policy.authorize(actor, self.capability.metadata, target_args)
@@ -98,12 +227,7 @@ class MutationExecutionStep:
         approval_record: Optional[DurableApprovalRecord] = None
 
         if requires_approval:
-            approval_record = self.store.load_approval_by_action_id(action_id)
-            if not approval_record:
-                approval_id = state.domain_context.get("pending_approval_id")
-                if approval_id:
-                    approval_record = self.store.load_approval(approval_id)
-
+            approval_record = self._find_approval_record(state, action_id)
             if not approval_record:
                 return StepOutcome(
                     status=StepExecutionStatus.FAILED,
@@ -135,7 +259,7 @@ class MutationExecutionStep:
             capability_name=self.capability.metadata.name,
             canonical_args=canonical_args,
             status=MutationStatus.EXECUTION_STARTED,
-            created_at=time.time(),
+            created_at=existing_mutation.created_at if existing_mutation else time.time(),
             updated_at=time.time(),
         )
         self.store.save_mutation(in_flight_mutation)

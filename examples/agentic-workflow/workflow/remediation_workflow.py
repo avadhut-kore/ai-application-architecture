@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Mapping
 
-from contracts.workflow import StepExecutionStatus, WorkflowStatus
+from contracts.agent import AgentActor, ExecutionReceipt
+from contracts.workflow import MutationStatus, StepExecutionStatus, WorkflowStatus
 
+from .approval import canonicalize_arguments
 from .definition import StepDefinition, TransitionRule, WorkflowDefinition
+from .ledger import DurableMutationRecord, generate_stable_action_id
 from .state import RemediationType, StepOutcome, WorkflowState
 from .steps import (
     AgenticInvestigationStep,
@@ -32,7 +36,32 @@ def build_customer_remediation_workflow(
 ) -> WorkflowDefinition:
     """Construct the canonical Customer Account Remediation workflow graph."""
 
-    # 1. Instantiate step handlers
+    # 1. Domain Reconcilers for In-Flight Recovery
+    def reconcile_credit_mutation(action_id: str, capability_name: str, args: Mapping[str, Any]) -> str:
+        """Reconcile apply_fee_credit against customer account balance and activity log."""
+        customer_id = args.get("customer_id")
+        amount_cents = int(args.get("amount_cents", 0))
+        reason = str(args.get("reason", ""))
+        account = customer_store.get_account(customer_id)
+        if not account:
+            return "inconclusive"
+        expected_log = f"Credit applied: +${amount_cents / 100:.2f} (Reason: {reason})"
+        if expected_log in account.activity_log:
+            return "executed"
+        return "not_executed"
+
+    def reconcile_note_mutation(action_id: str, capability_name: str, args: Mapping[str, Any]) -> str:
+        """Reconcile update_customer_note against customer account notes."""
+        customer_id = args.get("customer_id")
+        note = str(args.get("note", "")).strip()
+        account = customer_store.get_account(customer_id)
+        if not account:
+            return "inconclusive"
+        if note in account.notes:
+            return "executed"
+        return "not_executed"
+
+    # 2. Instantiate step handlers
     intake_step = IntakeValidationStep(customer_store=customer_store)
     context_step = ContextGatheringStep(customer_store=customer_store)
     agentic_step = AgenticInvestigationStep(
@@ -45,6 +74,7 @@ def build_customer_remediation_workflow(
         tool_executor=tool_executor,
         store=workflow_store,
         policy=auth_policy,
+        reconciler=reconcile_credit_mutation,
     )
     mutation_note_step = MutationExecutionStep(
         capability=note_capability,
@@ -52,25 +82,141 @@ def build_customer_remediation_workflow(
         store=workflow_store,
         policy=auth_policy,
         requires_approval=False,
+        reconciler=reconcile_note_mutation,
     )
     finalize_step = FinalizationStep()
 
     async def compensate_step_handler(state: WorkflowState) -> StepOutcome:
-        """Local saga compensation step executing inverse note update."""
+        """Controlled local saga backward compensation with authorization, ledger tracking, and failure safety."""
         customer_id = state.domain_context.get("customer_id", "")
-        action_id = f"comp-note-{state.workflow_id}"
         comp_args = {
             "customer_id": customer_id,
             "note": f"COMPENSATION: Fee credit disbursement failed for workflow {state.workflow_id}. Concession note voided.",
-            "action_id": action_id,
         }
-        receipt, _ = await tool_executor.execute_tool(note_capability, comp_args, action_id=action_id)
-        return StepOutcome(
-            status=StepExecutionStatus.SUCCEEDED,
-            outcome_type="compensation_completed",
-            context_updates={"compensation_applied": True, "compensating_receipt_id": receipt.action_id},
-            receipts=(receipt,),
+        canonical_comp_args = canonicalize_arguments(comp_args)
+        action_id = generate_stable_action_id(
+            workflow_id=state.workflow_id,
+            step_name="compensate_mutation",
+            capability_name=note_capability.metadata.name,
+            canonical_args=canonical_comp_args,
         )
+
+        actor = AgentActor(
+            actor_id=state.initiator_actor.actor_id,
+            role=state.initiator_actor.role,
+            permissions=list(state.initiator_actor.permissions),
+        )
+
+        # 1. Check ledger for prior execution
+        existing = workflow_store.load_mutation(action_id)
+        if existing and existing.status == MutationStatus.EXECUTED:
+            receipt = existing.execution_receipt or ExecutionReceipt(
+                action_id=action_id,
+                capability_name=note_capability.metadata.name,
+                status="succeeded",
+                result_summary="Compensation replayed from durable mutation ledger (duplicate suppressed).",
+            )
+            return StepOutcome(
+                status=StepExecutionStatus.SUCCEEDED,
+                outcome_type="compensation_completed",
+                context_updates={
+                    "compensation_applied": True,
+                    "duplicate_suppressed": True,
+                    "compensating_receipt_id": receipt.action_id,
+                },
+                receipts=(receipt,),
+            )
+
+        # 2. Re-validate authorization for compensation action
+        auth_decision = auth_policy.authorize(actor, note_capability.metadata, comp_args)
+        if not auth_decision.allowed:
+            return StepOutcome(
+                status=StepExecutionStatus.FAILED,
+                outcome_type="compensation_failed",
+                error_message=f"Compensation authorization revoked: {auth_decision.reason}",
+                context_updates={
+                    "compensation_applied": False,
+                    "compensation_failed": True,
+                    "manual_intervention_required": True,
+                },
+            )
+
+        # 3. Record intent in durable mutation ledger: EXECUTION_STARTED
+        now = time.time()
+        in_flight = DurableMutationRecord(
+            action_id=action_id,
+            workflow_id=state.workflow_id,
+            step_name="compensate_mutation",
+            capability_name=note_capability.metadata.name,
+            canonical_args=canonical_comp_args,
+            status=MutationStatus.EXECUTION_STARTED,
+            created_at=existing.created_at if existing else now,
+            updated_at=now,
+        )
+        workflow_store.save_mutation(in_flight)
+
+        # 4. Execute physical compensating action via tool_executor
+        args_with_id = dict(comp_args)
+        args_with_id["action_id"] = action_id
+        try:
+            receipt, raw_output = await tool_executor.execute_tool(note_capability, args_with_id, action_id=action_id)
+        except Exception as exc:
+            receipt = ExecutionReceipt(
+                action_id=action_id,
+                capability_name=note_capability.metadata.name,
+                status="failed",
+                executed_at=time.time(),
+                error_message=str(exc),
+            )
+
+        now = time.time()
+        # 5. Commit outcome to durable mutation ledger
+        if receipt.status == "succeeded":
+            executed_record = DurableMutationRecord(
+                action_id=action_id,
+                workflow_id=state.workflow_id,
+                step_name="compensate_mutation",
+                capability_name=note_capability.metadata.name,
+                canonical_args=canonical_comp_args,
+                status=MutationStatus.EXECUTED,
+                execution_receipt=receipt,
+                created_at=in_flight.created_at,
+                updated_at=now,
+            )
+            workflow_store.save_mutation(executed_record)
+            return StepOutcome(
+                status=StepExecutionStatus.SUCCEEDED,
+                outcome_type="compensation_completed",
+                context_updates={
+                    "compensation_applied": True,
+                    "compensating_receipt_id": receipt.action_id,
+                },
+                receipts=(receipt,),
+            )
+        else:
+            failed_record = DurableMutationRecord(
+                action_id=action_id,
+                workflow_id=state.workflow_id,
+                step_name="compensate_mutation",
+                capability_name=note_capability.metadata.name,
+                canonical_args=canonical_comp_args,
+                status=MutationStatus.FAILED,
+                execution_receipt=receipt,
+                created_at=in_flight.created_at,
+                updated_at=now,
+            )
+            workflow_store.save_mutation(failed_record)
+            return StepOutcome(
+                status=StepExecutionStatus.FAILED,
+                outcome_type="compensation_failed",
+                error_message=f"Compensation execution failed: {receipt.error_message}. Manual intervention required.",
+                context_updates={
+                    "compensation_applied": False,
+                    "compensation_failed": True,
+                    "manual_intervention_required": True,
+                },
+                receipts=(receipt,),
+            )
 
     # 2. Define steps and declared transitions
     steps = [

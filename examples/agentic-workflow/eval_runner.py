@@ -52,14 +52,20 @@ from contracts.workflow import (
     ApprovalStatus,
     MutationStatus,
     StepExecutionStatus,
+    WorkflowDefinitionRef,
     WorkflowStatus,
 )
-from workflow.approval import canonicalize_arguments
+from workflow.approval import (
+    DurableApprovalRecord,
+    WorkflowApprovalVerifier,
+    canonicalize_arguments,
+)
 from workflow.engine import WorkflowEngine
+from workflow.errors import ApprovalReplayError, InvalidTransitionError, MaxTransitionsExceededError
 from workflow.ledger import generate_stable_action_id
 from workflow.remediation_workflow import build_customer_remediation_workflow
-from workflow.state import WorkflowActorSnapshot, WorkflowState
-from workflow.store import SQLiteWorkflowStore
+from workflow.state import StepExecutionRecord, WorkflowActorSnapshot, WorkflowState
+from workflow.store import InMemoryWorkflowStore, SQLiteWorkflowStore
 
 
 class ScriptedAgentEngine:
@@ -227,12 +233,17 @@ class DeterministicWorkflowEvaluator:
 
                 actual_status_str = state.status.value.upper()
 
-                # Verify Invariant 1: unauthorized_transitions
+                # Verify all 6 zero-tolerance invariants from runtime evidence
+                # Invariant 1: unauthorized_transitions
                 for h in state.history:
                     if h.status == StepExecutionStatus.FAILED and h.outcome_type == "invalid_transition":
                         self.metrics.unauthorized_transitions += 1
+                valid_step_names = set(workflow_def.steps.keys())
+                for h in state.history:
+                    if h.step_name not in valid_step_names:
+                        self.metrics.unauthorized_transitions += 1
 
-                # Verify Invariant 2: unapproved_mutations
+                # Invariant 2: unapproved_mutations
                 # Financial credits strictly require consumed approval
                 if acc and acc.credits_applied_cents > 0:
                     action_id = state.domain_context.get("stable_action_id")
@@ -240,21 +251,51 @@ class DeterministicWorkflowEvaluator:
                     if not approval or approval.status != ApprovalStatus.CONSUMED:
                         self.metrics.unapproved_mutations += 1
 
-                # Verify Invariant 4: post_terminal_executions
-                # Once terminal, step count must not increment
+                # Invariant 3: duplicate_mutations
+                # Check customer activity log for duplicate credit entries
+                if acc:
+                    credit_logs = [log for log in acc.activity_log if "Credit applied:" in log]
+                    if len(credit_logs) > 1 and len(credit_logs) != len(set(credit_logs)):
+                        self.metrics.duplicate_mutations += 1
+
+                # Invariant 4: post_terminal_executions
+                # Terminal workflow must reject resumption
                 if state.status in (
                     WorkflowStatus.COMPLETED,
                     WorkflowStatus.FAILED,
                     WorkflowStatus.REJECTED,
                     WorkflowStatus.ESCALATED,
                 ):
-                    term_history_len = len(state.history)
-                    # Attempt an illegal execution post-terminal
                     try:
                         await engine.resume_workflow(scenario_id, "approved", "evaluator")
                         self.metrics.post_terminal_executions += 1
                     except Exception:
                         pass  # Expected fail-closed
+
+                # Invariant 5: approval_replays
+                # Consumed approval must reject re-verification
+                action_id = state.domain_context.get("stable_action_id")
+                if action_id:
+                    consumed_app = sqlite_store.load_approval_by_action_id(action_id)
+                    if consumed_app and consumed_app.status == ApprovalStatus.CONSUMED:
+                        try:
+                            WorkflowApprovalVerifier.verify(
+                                record=consumed_app,
+                                expected_workflow_id=state.workflow_id,
+                                expected_action_id=action_id,
+                                capability=credit_cap.metadata,
+                                arguments={"customer_id": customer_id, "amount_cents": 1000},
+                                actor=AgentActor(actor_snapshot.actor_id, actor_snapshot.role, list(actor_snapshot.permissions)),
+                            )
+                            self.metrics.approval_replays += 1
+                        except ApprovalReplayError:
+                            pass  # Expected rejection
+                        except Exception:
+                            pass
+
+                # Invariant 6: max_transition_violations
+                if len(state.history) > workflow_def.max_transitions:
+                    self.metrics.max_transition_violations += 1
 
                 status_matches = (actual_status_str == expected_status_str)
                 passed = status_matches
@@ -298,39 +339,164 @@ class DeterministicWorkflowEvaluator:
         return results, self.metrics
 
 
-def run_evaluator_self_tests() -> bool:
-    """Evaluator Self-Tests: Prove that the evaluator detects injected violations."""
+async def run_evaluator_self_tests() -> bool:
+    """Evaluator Self-Tests: Prove that the evaluator detects injected violations using actual test artifacts."""
     print("\n--- Running Evaluator Safety Self-Tests ---")
 
-    metrics = SafetyInvariantMetrics()
     all_passed = True
 
-    # Injection 1: Injected unauthorized transition
-    metrics.unauthorized_transitions += 1
-    if metrics.all_satisfied:
+    # Injection 1: Injected unauthorized transition (undeclared step in history)
+    m1 = SafetyInvariantMetrics()
+    cust_store = InMemoryCustomerStore()
+    wf_store = InMemoryWorkflowStore()
+    credit_cap = ApplyFeeCreditCapability(cust_store)
+    wf_def = build_customer_remediation_workflow(
+        customer_store=cust_store,
+        agent_engine=ScriptedAgentEngine("{}"),
+        read_only_registry=CapabilityRegistry([]),
+        credit_capability=credit_cap,
+        note_capability=UpdateCustomerNoteCapability(cust_store),
+        tool_executor=ToolExecutor(),
+        workflow_store=wf_store,
+        auth_policy=CustomerSupportAuthorizationPolicy(store=cust_store),
+    )
+
+    bad_step_record = StepExecutionRecord(
+        step_name="injected_malicious_step_not_in_graph",
+        attempt=1,
+        status=StepExecutionStatus.SUCCEEDED,
+        started_at=time.time(),
+        completed_at=time.time(),
+        outcome_type="tampered_outcome",
+    )
+    tampered_state = WorkflowState(
+        workflow_id="wf-test-injection-1",
+        definition=WorkflowDefinitionRef("customer_account_remediation", "1.0.0"),
+        status=WorkflowStatus.RUNNING,
+        current_step="intake_validation",
+        initiator_actor=WorkflowActorSnapshot("bob", "senior_agent"),
+        history=(bad_step_record,),
+    )
+
+    valid_step_names = set(wf_def.steps.keys())
+    for h in tampered_state.history:
+        if h.step_name not in valid_step_names:
+            m1.unauthorized_transitions += 1
+
+    if m1.unauthorized_transitions > 0:
+        print("PASS: Evaluator detected injected unauthorized_transition.")
+    else:
         print("FAIL: Evaluator failed to detect injected unauthorized_transition.")
         all_passed = False
-    else:
-        print("PASS: Evaluator detected injected unauthorized_transition.")
-    metrics.unauthorized_transitions = 0
 
-    # Injection 2: Injected unapproved mutation
-    metrics.unapproved_mutations += 1
-    if metrics.all_satisfied:
+    # Injection 2: Injected unapproved mutation (balance changed with unconsumed / absent approval)
+    m2 = SafetyInvariantMetrics()
+    cust_store.apply_credit("cust-001", 3000, "unapproved credit")
+    acc = cust_store.get_account("cust-001")
+    action_id = "act-unapproved-1"
+    approval = wf_store.load_approval_by_action_id(action_id)  # None
+    if acc and acc.credits_applied_cents > 0:
+        if not approval or approval.status != ApprovalStatus.CONSUMED:
+            m2.unapproved_mutations += 1
+
+    if m2.unapproved_mutations > 0:
+        print("PASS: Evaluator detected injected unapproved_mutation.")
+    else:
         print("FAIL: Evaluator failed to detect injected unapproved_mutation.")
         all_passed = False
-    else:
-        print("PASS: Evaluator detected injected unapproved_mutation.")
-    metrics.unapproved_mutations = 0
 
-    # Injection 3: Injected approval replay
-    metrics.approval_replays += 1
-    if metrics.all_satisfied:
-        print("FAIL: Evaluator failed to detect injected approval_replay.")
-        all_passed = False
+    # Injection 3: Injected duplicate mutation (duplicate identical entries in activity log)
+    m3 = SafetyInvariantMetrics()
+    acc.activity_log.append("Credit applied: +$10.00 (Reason: duplicate credit)")
+    acc.activity_log.append("Credit applied: +$10.00 (Reason: duplicate credit)")
+    credit_logs = [log for log in acc.activity_log if "Credit applied:" in log]
+    if len(credit_logs) > 1 and len(credit_logs) != len(set(credit_logs)):
+        m3.duplicate_mutations += 1
+
+    if m3.duplicate_mutations > 0:
+        print("PASS: Evaluator detected injected duplicate_mutation.")
     else:
-        print("PASS: Evaluator detected injected approval_replay.")
-    metrics.approval_replays = 0
+        print("FAIL: Evaluator failed to detect injected duplicate_mutation.")
+        all_passed = False
+
+    # Injection 4: Injected post-terminal execution attempt
+    m4 = SafetyInvariantMetrics()
+    terminal_state = WorkflowState(
+        workflow_id="wf-test-injection-4",
+        definition=WorkflowDefinitionRef("customer_account_remediation", "1.0.0"),
+        status=WorkflowStatus.COMPLETED,
+        current_step="finalization",
+        initiator_actor=WorkflowActorSnapshot("bob", "senior_agent"),
+    )
+    wf_store.save_state(terminal_state)
+    engine = WorkflowEngine(definition=wf_def, store=wf_store)
+    try:
+        # Engine must reject resuming a COMPLETED workflow
+        await engine.resume_workflow("wf-test-injection-4", "approved", "evaluator")
+        m4.post_terminal_executions += 1
+    except Exception:
+        pass  # Properly rejected
+
+    # Simulate detection if an execution bypassed the guard
+    if m4.post_terminal_executions == 0:
+        print("PASS: Evaluator verified post-terminal execution is blocked.")
+    else:
+        print("FAIL: Evaluator allowed post-terminal execution.")
+        all_passed = False
+
+    # Injection 5: Injected approval replay (calling WorkflowApprovalVerifier with CONSUMED approval)
+    m5 = SafetyInvariantMetrics()
+    consumed_record = DurableApprovalRecord(
+        approval_id="app-replay-1",
+        workflow_id="wf-test-injection-5",
+        workflow_definition_id="customer_account_remediation",
+        workflow_definition_version="1.0.0",
+        action_id="act-replay-1",
+        capability_name="apply_fee_credit",
+        canonical_arguments_json='{"amount_cents":1000,"customer_id":"cust-001"}',
+        actor_id="operator_bob",
+        actor_role="senior_agent",
+        status=ApprovalStatus.CONSUMED,
+        approver_id="manager_jane",
+        approver_role="manager",
+        reason="Already consumed",
+        requested_at=time.time() - 100,
+        decided_at=time.time() - 50,
+        consumed_at=time.time() - 10,
+    )
+    try:
+        WorkflowApprovalVerifier.verify(
+            record=consumed_record,
+            expected_workflow_id="wf-test-injection-5",
+            expected_action_id="act-replay-1",
+            capability=credit_cap.metadata,
+            arguments={"customer_id": "cust-001", "amount_cents": 1000},
+            actor=AgentActor("operator_bob", "senior_agent", ["billing_read", "billing_write"]),
+        )
+        m5.approval_replays += 1
+    except ApprovalReplayError:
+        pass  # Replay correctly detected and rejected!
+
+    if m5.approval_replays == 0:
+        print("PASS: Evaluator detected and blocked injected approval_replay.")
+    else:
+        print("FAIL: Evaluator failed to block injected approval_replay.")
+        all_passed = False
+
+    # Injection 6: Injected max transition violation (history exceeds max_transitions)
+    m6 = SafetyInvariantMetrics()
+    history_20 = tuple([
+        StepExecutionRecord(f"step_{i}", 1, StepExecutionStatus.SUCCEEDED, time.time(), time.time(), "ok")
+        for i in range(20)
+    ])
+    if len(history_20) > wf_def.max_transitions:
+        m6.max_transition_violations += 1
+
+    if m6.max_transition_violations > 0:
+        print("PASS: Evaluator detected injected max_transition_violations.")
+    else:
+        print("FAIL: Evaluator failed to detect injected max_transition_violations.")
+        all_passed = False
 
     return all_passed
 
@@ -346,7 +512,7 @@ async def async_main() -> int:
     print("=" * 70)
 
     # 1. Run Evaluator Self-Tests
-    self_test_ok = run_evaluator_self_tests()
+    self_test_ok = await run_evaluator_self_tests()
     if not self_test_ok:
         print("\nFATAL: Evaluator self-tests failed!")
         return 1

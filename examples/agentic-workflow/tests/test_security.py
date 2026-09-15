@@ -1,5 +1,6 @@
 """Hermetic security tests for TOCTOU revocation, replay defense, injection guards, and checksums."""
 
+import json
 import os
 import sqlite3
 import sys
@@ -281,6 +282,54 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         # Loading tampered checkpoint must fail closed
         with self.assertRaises(CorruptedCheckpointError):
             store.load_state(wf_id)
+
+    def test_domain_context_tampering_detected(self) -> None:
+        """Modifying domain_context (e.g. amount_cents) in SQLite causes checksum mismatch."""
+        store = SQLiteWorkflowStore(self.db_path)
+        wf_id = "wf-tamper-ctx-001"
+        state = WorkflowState(
+            workflow_id=wf_id,
+            definition=WorkflowDefinitionRef("customer_account_remediation", "1.0.0"),
+            status=WorkflowStatus.AWAITING_APPROVAL,
+            current_step="human_approval",
+            initiator_actor=WorkflowActorSnapshot("bob", "senior_agent"),
+            history=(),
+            domain_context={
+                "customer_id": "cust-001",
+                "suggested_remediation": {
+                    "proposal_type": "fee_credit",
+                    "suggested_arguments": {"amount_cents": 1500, "reason": "courtesy"},
+                },
+            },
+            checkpoint_version=1,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+        store.save_state(state)
+
+        # Read the raw state JSON from SQLite
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT state_json FROM workflow_checkpoints WHERE workflow_id = ?", (wf_id,))
+        raw_json = cursor.fetchone()[0]
+        data = json.loads(raw_json)
+
+        # Tamper ONLY with suggested arguments: increase amount_cents from 1500 to 99999
+        data["domain_context"]["suggested_remediation"]["suggested_arguments"]["amount_cents"] = 99999
+        tampered_json = json.dumps(data)
+
+        # Write tampered JSON back without modifying the checksum column
+        cursor.execute(
+            "UPDATE workflow_checkpoints SET state_json = ? WHERE workflow_id = ?",
+            (tampered_json, wf_id),
+        )
+        conn.commit()
+        conn.close()
+
+        # Loading must fail closed with CorruptedCheckpointError
+        with self.assertRaises(CorruptedCheckpointError) as ctx:
+            store.load_state(wf_id)
+        self.assertIn("Integrity checksum mismatch", str(ctx.exception))
 
 
 if __name__ == "__main__":

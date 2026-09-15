@@ -153,7 +153,10 @@ class WorkflowState:
     updated_at: float = field(default_factory=time.time)
 
     def compute_checksum(self) -> str:
-        """Compute SHA-256 integrity checksum for accidental corruption detection."""
+        """Compute SHA-256 integrity checksum for accidental corruption and tampering detection."""
+        canon_domain = json.dumps(self.domain_context, sort_keys=True, default=str)
+        canon_history = json.dumps([r.to_dict() for r in self.history], sort_keys=True, default=str)
+        canon_retries = json.dumps(dict(self.step_retries), sort_keys=True)
         payload = (
             f"{self.workflow_id}|"
             f"{self.definition.definition_id}:{self.definition.version}|"
@@ -162,6 +165,10 @@ class WorkflowState:
             f"{self.initiator_actor.actor_id}:{self.initiator_actor.role}|"
             f"{self.checkpoint_version}|"
             f"{self.pending_approval_id or ''}|"
+            f"{canon_domain}|"
+            f"{canon_history}|"
+            f"{canon_retries}|"
+            f"{self.created_at}|"
             f"{self.updated_at}"
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()

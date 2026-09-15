@@ -159,6 +159,72 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(final_state.domain_context.get("compensation_applied"))
         self.assertIn("COMPENSATION", self.customer_store.get_account("cust-001").notes[-1])
 
+        # Assert compensation was recorded in the durable mutation ledger
+        comp_mutations = [
+            m for m in self.store.mutations.values()
+            if m.step_name == "compensate_mutation"
+        ]
+        self.assertEqual(len(comp_mutations), 1)
+        self.assertEqual(comp_mutations[0].status, "executed")
+
+    async def test_workflow_compensation_failure_signals_manual_intervention(self) -> None:
+        """When compensation capability itself fails, ledger records FAILED and manual intervention is flagged."""
+        failing_credit = FailingCapability("apply_fee_credit")
+        failing_note = FailingCapability("update_customer_note")
+        read_only_caps = [
+            GetCustomerCapability(self.customer_store),
+            GetAccountStatusCapability(self.customer_store),
+            SearchPolicyCapability(),
+        ]
+        executor = ToolExecutor()
+
+        class StubAgentEngine:
+            async def run(self, task: str, actor: AgentActor) -> Any:
+                class Res:
+                    final_answer = '{"proposal_type": "fee_credit", "summary": "Fee refund", "suggested_arguments": {"amount_cents": 1000, "reason": "test"}}'
+                    status = "COMPLETED"
+                    execution_receipts = []
+                    run_id = "stub-2"
+                return Res()
+
+        workflow_def = build_customer_remediation_workflow(
+            customer_store=self.customer_store,
+            agent_engine=StubAgentEngine(),
+            read_only_registry=CapabilityRegistry(read_only_caps),
+            credit_capability=failing_credit,
+            note_capability=failing_note,
+            tool_executor=executor,
+            workflow_store=self.store,
+            auth_policy=self.auth_policy,
+        )
+
+        engine = WorkflowEngine(definition=workflow_def, store=self.store)
+        wf_id = "wf-saga-fail-002"
+        actor = WorkflowActorSnapshot("operator_bob", "senior_agent")
+
+        await engine.start_workflow(
+            workflow_id=wf_id,
+            actor=actor,
+            domain_context={"customer_id": "cust-001", "has_prior_note": True},
+        )
+
+        final_state = await engine.resume_workflow(
+            workflow_id=wf_id,
+            decision="approved",
+            approver_id="manager_jane",
+        )
+
+        self.assertEqual(final_state.status, WorkflowStatus.FAILED)
+        self.assertFalse(final_state.domain_context.get("compensation_applied", False))
+        self.assertTrue(final_state.domain_context.get("manual_intervention_required"))
+
+        comp_mutations = [
+            m for m in self.store.mutations.values()
+            if m.step_name == "compensate_mutation"
+        ]
+        self.assertEqual(len(comp_mutations), 1)
+        self.assertEqual(comp_mutations[0].status, "failed")
+
 
 if __name__ == "__main__":
     unittest.main()

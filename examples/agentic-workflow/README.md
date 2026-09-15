@@ -16,7 +16,7 @@ The central thesis of Phase 7 is:
 
 ## 2. Architectural Overview & Component Structure
 
-This reference implementation models a production-grade **Customer Account Remediation Workflow** using pure Python standard library and an ACID SQLite checkpoint store (Mode A: Offline Local).
+This reference implementation models a production-rigorous Tier 2 reference **Customer Account Remediation Workflow** using pure Python standard library and an ACID SQLite checkpoint store (Mode A: Offline Local).
 
 ```text
 examples/agentic-workflow/
@@ -47,7 +47,7 @@ examples/agentic-workflow/
 │       ├── agentic.py             # AgenticInvestigationStep (strictly read-only)
 │       ├── human.py               # HumanApprovalStep (durable suspension)
 │       └── mutation.py            # MutationExecutionStep (pre-verified tool execution)
-└── tests/                         # 47 hermetic unit and integration tests
+└── tests/                         # 53 hermetic unit and integration tests
 ```
 
 ---
@@ -152,6 +152,10 @@ $$\text{action\_id} = \text{"act-" } \mathbin{\Vert} \text{workflow\_id} \mathbi
 * **Same logical mutation across restart** $\rightarrow$ **Identical `action_id`**.
 * **Altered arguments** $\rightarrow$ **Different `action_id`** (rejects approval reuse).
 * **Duplicate Execution Suppression**: Before invoking `ToolExecutor`, `MutationExecutionStep` queries the ledger. If `status == EXECUTED`, it replays the existing receipt without invoking the tool.
+* **Ambiguous In-Flight Recovery (`EXECUTION_STARTED`)**: If a process crashes after `EXECUTION_STARTED` is recorded, the engine must never blindly re-execute the tool. On resumption, `MutationExecutionStep` triggers domain state reconciliation:
+  - If domain state confirms physical execution completed: ledger is committed as `EXECUTED`, approval is consumed, and duplicate tool invocation is suppressed.
+  - If domain state confirms physical execution did not take place: safe execution proceeds under the original stable `action_id`.
+  - If reconciliation is inconclusive or unconfigured: ledger transitions to `AMBIGUOUS`, workflow halts safely in `FAILED`, and `manual_intervention_required` is flagged.
 
 ---
 
@@ -172,7 +176,7 @@ In multi-step remediation flows where an operational note is logged prior to cre
 ```bash
 python3 -m unittest discover -s examples/agentic-workflow/tests
 ```
-Executes 47 hermetic unit and integration tests across 11 test modules.
+Executes 53 hermetic unit and integration tests across 11 test modules.
 
 ### Run 30-Scenario Deterministic Evaluation
 ```bash

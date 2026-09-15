@@ -1,6 +1,7 @@
 """Hermetic tests for durable Human-in-the-Loop (HITL) resumption across process restarts."""
 
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -112,11 +113,11 @@ class TestHitlProcessRestart(unittest.IsolatedAsyncioTestCase):
         return WorkflowEngine(definition=workflow_def, store=sqlite_store)
 
     async def test_hitl_approval_and_execution_across_independent_instances(self) -> None:
-        """Process A runs until suspension; Process B reloads and executes approved mutation."""
+        """Same-Process Simulation: Independent engine/store instances run pause and resumption."""
         wf_id = "wf-restart-001"
         actor = WorkflowActorSnapshot(actor_id="operator_bob", role="senior_agent")
 
-        # --- PROCESS A: Execution begins, diagnoses, suspends at HumanApprovalStep ---
+        # --- INSTANCE A: Execution begins, diagnoses, suspends at HumanApprovalStep ---
         engine_a = self._create_engine(self.db_path, proposal_type="fee_credit", amount_cents=2500)
         state_a = await engine_a.start_workflow(
             workflow_id=wf_id,
@@ -211,6 +212,78 @@ class TestHitlProcessRestart(unittest.IsolatedAsyncioTestCase):
         action_id = final_state.domain_context.get("stable_action_id")
         mutation_rec = engine_b.store.load_mutation(action_id)
         self.assertIsNone(mutation_rec)
+
+    def test_true_os_multiprocess_hitl_lifecycle(self) -> None:
+        """True OS Multi-Process Test: Process 1 (start) exits at pause; Process 2 (approve) resumes in fresh OS process."""
+        demo_py = WORKFLOW_DIR / "demo.py"
+        db_file = os.path.join(self.temp_dir.name, "os_multiprocess.db")
+
+        # OS Process 1: Start workflow and pause at approval gate
+        p1 = subprocess.run(
+            [
+                sys.executable,
+                str(demo_py),
+                "--db", db_file,
+                "start",
+                "--customer", "cust-001",
+                "--inquiry", "Dispute fee concession refund",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(p1.returncode, 0, f"Process 1 failed: {p1.stderr}")
+        self.assertIn("WORKFLOW SUSPENDED", p1.stdout)
+        self.assertIn("AWAITING_APPROVAL", p1.stdout)
+
+        # Extract workflow_id from Process 1 stdout
+        wf_id = None
+        for line in p1.stdout.splitlines():
+            if "WORKFLOW INSTANCE:" in line:
+                wf_id = line.split("WORKFLOW INSTANCE:")[-1].strip()
+                break
+        self.assertIsNotNone(wf_id, "Could not extract workflow_id from Process 1 output")
+
+        # OS Process 2: Inspect status from independent OS process
+        p2 = subprocess.run(
+            [
+                sys.executable,
+                str(demo_py),
+                "--db", db_file,
+                "status",
+                "--workflow-id", wf_id,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(p2.returncode, 0, f"Process 2 failed: {p2.stderr}")
+        self.assertIn("AWAITING_APPROVAL", p2.stdout)
+
+        # OS Process 3: Approve and resume execution to completion in another separate OS process
+        p3 = subprocess.run(
+            [
+                sys.executable,
+                str(demo_py),
+                "--db", db_file,
+                "approve",
+                "--workflow-id", wf_id,
+                "--approver", "manager_charlie",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(p3.returncode, 0, f"Process 3 failed: {p3.stderr}")
+        self.assertIn("WORKFLOW EXECUTION COMPLETE: COMPLETED", p3.stdout)
+
+        # Direct SQLite verification from test harness
+        store = SQLiteWorkflowStore(db_file)
+        final_state = store.load_state(wf_id)
+        self.assertIsNotNone(final_state)
+        assert final_state is not None
+        self.assertEqual(final_state.status, WorkflowStatus.COMPLETED)
+        self.assertEqual(final_state.current_step, "terminal_completed")
 
 
 if __name__ == "__main__":

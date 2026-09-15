@@ -288,7 +288,7 @@ async def cmd_decision(args: argparse.Namespace, decision: str) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Phase 7 Agentic Workflow Orchestration CLI Demo")
-    parser.add_argument("--db", type=str, default=DEFAULT_DB_PATH, help="Path to SQLite database file")
+    parser.add_argument("--db", "--db-path", dest="db", type=str, default=DEFAULT_DB_PATH, help="Path to SQLite database file")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 

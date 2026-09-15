@@ -92,9 +92,9 @@ graph TD
 * **Mitigation**: Strict Definition Version Compatibility Guard. On resume, `state.definition.version` is compared against `runtime.definition.version`. Any mismatch immediately raises `IncompatibleWorkflowDefinitionError` without executing steps.
 
 ### 2.8 Checkpoint Tampering & Silent Data Corruption
-* **Threat**: SQLite database file is tampered with on disk (e.g. altering `domain_context` or `initiator_actor`).
+* **Threat**: SQLite database file is tampered with on disk (e.g. altering `domain_context` payload arguments like `amount_cents`, `history`, or `initiator_actor`).
 * **Impact**: Compromise of state machine integrity or unauthorized escalation.
-* **Mitigation**: Cryptographic Checksum Integrity. Every checkpoint computes a SHA-256 digest over canonical state JSON. On load, the digest is re-evaluated. Mismatches raise `CorruptedCheckpointError` and fail closed.
+* **Mitigation**: Canonical Checksum Integrity. Every checkpoint computes a SHA-256 digest over the full canonical state payload, including `domain_context`, `history`, `step_retries`, `status`, `checkpoint_version`, and actors. On load, the digest is re-evaluated. Mismatches raise `CorruptedCheckpointError` and fail closed.
 * **Limitation**: As documented in the architecture, a local attacker with full write access to the SQLite file can compute a new checksum. Production environments require external cryptographic signing or HMAC.
 
 ### 2.9 Retry Amplification & Mutation Loops
@@ -102,10 +102,10 @@ graph TD
 * **Impact**: Resource exhaustion, rate limit exhaustion, or duplicate charges.
 * **Mitigation**: Sovereign Step Retry Policy. `StepRetryPolicy.is_retryable(...)` enforces that state-mutating steps are **never** blindly retried (`is_state_mutating == True -> False`). Furthermore, the workflow definition enforces a global cycle ceiling (`max_transitions = 15`).
 
-### 2.10 Local Saga Compensation Abuse
+### 2.10 Local Saga Compensation Abuse & Failure Handling
 * **Threat**: An attacker attempts to trigger compensating steps directly without a legitimate forward failure, or abuses compensation to reverse valid transactions.
-* **Impact**: Denial of service, ledger corruption.
-* **Mitigation**: State Machine Governed Compensation. The compensating step (`COMPENSATE_MUTATION`) is only reachable via explicit forward failure transition rules from `MUTATION_EXECUTION` when `has_prior_note == True`. Compensating actions use deterministic action IDs (`act-comp-...`), record receipts in the mutation ledger, and terminate in `FAILED` with explicit compensation audit logs.
+* **Impact**: Denial of service, ledger corruption, unmonitored compensation failure.
+* **Mitigation**: State Machine Governed Compensation with Authorization & Ledger Tracking. The compensating step (`COMPENSATE_MUTATION`) is only reachable via explicit forward failure transition rules from `MUTATION_EXECUTION` when `has_prior_note == True`. Compensating actions re-verify authorization policy for the actor, derive deterministic action IDs (`act-comp-...`), record `EXECUTION_STARTED` and `EXECUTED`/`FAILED` in the durable mutation ledger, emit structured compensation audit events, and set `manual_intervention_required = True` if the compensating capability fails.
 
 ---
 

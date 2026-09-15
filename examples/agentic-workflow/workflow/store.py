@@ -281,10 +281,32 @@ class SQLiteWorkflowStore(CheckpointStorePort):
         now = time.time()
         with self._get_connection() as conn:
             cursor = conn.execute(
+                "SELECT state_json FROM workflow_checkpoints WHERE workflow_id = ? AND checkpoint_version = ? AND status = ?;",
+                (workflow_id, expected_version, WorkflowStatus.AWAITING_APPROVAL.value),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return False
+
+            data = json.loads(row["state_json"])
+            data["status"] = WorkflowStatus.RUNNING.value
+            data["checkpoint_version"] = new_version
+            data["updated_at"] = now
+
+            # Reconstruct state to compute canonical checksum over updated payload
+            updated_state = WorkflowState.from_dict(data)
+            new_checksum = updated_state.compute_checksum()
+            data["checksum"] = new_checksum
+            updated_json = json.dumps(data)
+
+            # Atomic single-statement update of columns, state JSON, and checksum
+            update_cur = conn.execute(
                 """
                 UPDATE workflow_checkpoints
                 SET checkpoint_version = ?,
                     status = ?,
+                    state_json = ?,
+                    checksum = ?,
                     updated_at = ?
                 WHERE workflow_id = ?
                   AND checkpoint_version = ?
@@ -293,6 +315,8 @@ class SQLiteWorkflowStore(CheckpointStorePort):
                 (
                     new_version,
                     WorkflowStatus.RUNNING.value,
+                    updated_json,
+                    new_checksum,
                     now,
                     workflow_id,
                     expected_version,
@@ -300,28 +324,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
                 ),
             )
             conn.commit()
-            if cursor.rowcount == 1:
-                # Synchronize JSON state payload inside SQLite
-                state = self.load_state(workflow_id)
-                if state:
-                    updated_state = WorkflowState(
-                        workflow_id=state.workflow_id,
-                        definition=state.definition,
-                        status=WorkflowStatus.RUNNING,
-                        current_step=state.current_step,
-                        initiator_actor=state.initiator_actor,
-                        history=state.history,
-                        pending_approval_id=state.pending_approval_id,
-                        step_retries=state.step_retries,
-                        domain_context=state.domain_context,
-                        checkpoint_version=new_version,
-                        checksum="",
-                        created_at=state.created_at,
-                        updated_at=now,
-                    )
-                    self.save_state(updated_state)
-                return True
-            return False
+            return update_cur.rowcount == 1
 
     def save_approval(self, record: DurableApprovalRecord) -> None:
         rec_json = json.dumps(record.to_dict())

@@ -41,6 +41,26 @@ class WorkflowEngine:
         self.retry_policy = retry_policy or StepRetryPolicy()
         self.audit_recorder = audit_recorder or WorkflowAuditRecorder()
 
+    def _record_audit(
+        self,
+        workflow_id: str,
+        event_type: str,
+        step_name: Optional[str] = None,
+        details: Optional[Mapping[str, Any]] = None,
+    ) -> Any:
+        event = self.audit_recorder.record(
+            workflow_id=workflow_id,
+            event_type=event_type,
+            step_name=step_name,
+            details=details,
+        )
+        if hasattr(self.store, "append_audit_event"):
+            try:
+                self.store.append_audit_event(event)
+            except Exception:
+                pass
+        return event
+
     async def start_workflow(
         self,
         workflow_id: str,
@@ -66,7 +86,7 @@ class WorkflowEngine:
         )
 
         self.store.save_state(initial_state)
-        self.audit_recorder.record(
+        self._record_audit(
             workflow_id=workflow_id,
             event_type="workflow_started",
             step_name=self.definition.start_step,
@@ -151,7 +171,7 @@ class WorkflowEngine:
                 )
                 self.store.save_approval(updated_approval)
 
-            self.audit_recorder.record(
+            self._record_audit(
                 workflow_id=workflow_id,
                 event_type="approval_decided",
                 details={"decision": "approved", "approver": approver_id, "reason": reason},
@@ -192,7 +212,7 @@ class WorkflowEngine:
                 )
                 self.store.save_approval(rejected_approval)
 
-            self.audit_recorder.record(
+            self._record_audit(
                 workflow_id=workflow_id,
                 event_type="approval_decided",
                 details={"decision": "rejected", "approver": approver_id, "reason": reason},
@@ -250,7 +270,7 @@ class WorkflowEngine:
                     updated_at=time.time(),
                 )
                 self.store.save_state(state)
-                self.audit_recorder.record(
+                self._record_audit(
                     workflow_id=state.workflow_id,
                     event_type="workflow_terminal",
                     step_name=state.current_step,
@@ -277,7 +297,7 @@ class WorkflowEngine:
                     updated_at=time.time(),
                 )
                 self.store.save_state(state)
-                self.audit_recorder.record(
+                self._record_audit(
                     workflow_id=state.workflow_id,
                     event_type="max_transitions_exceeded",
                     step_name=state.current_step,
@@ -293,7 +313,7 @@ class WorkflowEngine:
             while True:
                 attempt += 1
                 start_time = time.time()
-                self.audit_recorder.record(
+                self._record_audit(
                     workflow_id=state.workflow_id,
                     event_type="step_started",
                     step_name=step_def.name,
@@ -308,7 +328,7 @@ class WorkflowEngine:
                     completed_time = time.time()
                     if self.retry_policy.is_retryable(exc, attempt, is_state_mutating=step_def.is_mutating):
                         delay = self.retry_policy.compute_delay_seconds(attempt)
-                        self.audit_recorder.record(
+                        self._record_audit(
                             workflow_id=state.workflow_id,
                             event_type="step_retry",
                             step_name=step_def.name,
@@ -347,7 +367,7 @@ class WorkflowEngine:
                     updated_at=time.time(),
                 )
                 self.store.save_state(state)
-                self.audit_recorder.record(
+                self._record_audit(
                     workflow_id=state.workflow_id,
                     event_type="workflow_suspended",
                     step_name=step_def.name,
@@ -413,7 +433,7 @@ class WorkflowEngine:
 
         new_status = terminal_status if terminal_status is not None else state.status
 
-        self.audit_recorder.record(
+        self._record_audit(
             workflow_id=state.workflow_id,
             event_type="transition_selected",
             step_name=state.current_step,
