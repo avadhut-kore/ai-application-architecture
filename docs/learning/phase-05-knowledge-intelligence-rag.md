@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  05 — Knowledge Intelligence & RAG
-Status:                 Accepted & Freeze-Ready
+Status:                 Implemented; corrections pending independent review
 Learning Guide Status:  Complete
 Primary Audience:       AI Systems Architects, Senior Backend Engineers, Search & RAG Engineers
 Implementation:         platform/ollama-embedding-adapter/, examples/rag/, ADR-0004, ADR-0005
@@ -259,7 +259,7 @@ When reviewing the code itself, follow this detailed symbol-by-symbol walkthroug
 * File: [`examples/rag/rag/ingestion.py`](../../examples/rag/rag/ingestion.py)
   * Symbols: `parse_frontmatter()` (extracts YAML metadata block), `load_corpus_directory()` (loads all `.md` files in a directory).
 * File: [`examples/rag/rag/chunker.py`](../../examples/rag/rag/chunker.py)
-  * Symbol: `HeadingAwareChunker` — Parses markdown headings (`#`, `##`, `###`), maintains section context, and splits oversized paragraphs with character overlap.
+  * Symbol: `HeadingAwareChunker` — Detects headings outside fenced code, retains short text, and splits oversized paragraphs within the full character limit including heading prefixes. Non-zero overlap is explicitly rejected.
 
 ### Step 3: Platform Adapter
 * File: [`platform/ollama-embedding-adapter/ollama_embedding_adapter/adapter.py`](../../platform/ollama-embedding-adapter/ollama_embedding_adapter/adapter.py)
@@ -299,7 +299,7 @@ Markdown Source Document (sec-01-data-retention-policy.md)
 ```
 
 ### Deterministic Chunk Identity
-Every chunk receives a globally stable, deterministic identifier:
+Every chunk receives a deterministic positional citation identifier for the current document snapshot:
 $$\text{chunk\_id} = \text{document\_id} + \text{"\#c"} + \text{str}(\text{chunk\_index})$$
 
 Example: `sec-01#c1` denotes Document `sec-01`, chunk index `1`.
@@ -307,7 +307,11 @@ Example: `sec-01#c1` denotes Document `sec-01`, chunk index `1`.
 **Why Chunk Identity Matters:**
 * **Evaluation Ground Truth**: The evaluation dataset (`eval_dataset.jsonl`) asserts expected chunk IDs (e.g., `["sec-01#c0"]`).
 * **Citation Verification**: The LLM must cite specific chunk IDs, allowing the application to verify exactly which text snippet supported the answer.
-* **Deterministic Indexing**: Deduplication and idempotent re-indexing require stable keys.
+* **Content Identity**: Positional IDs can change after section movement. `Chunk.content_hash` hashes the exact embedding input and enables reuse independently of citation positions. Citation membership proves source identity, not factual support.
+
+### Local Preparation Persistence
+
+[CorpusCache](../../examples/rag/rag/persistence.py) adds SQLite persistence under [ADR-0012](../../adr/0012-phase-4-telemetry-deferral-and-rag-preparation-cache.md), while exact search still uses `InMemoryVectorIndex`. Byte fingerprints detect additions/edits/deletions; unchanged files bypass parsing and chunking, and unchanged text reuses embeddings. Compatibility includes corpus root, ingestion/chunker versions/settings and embedding provider/model/immutable revision/dimensions. Failed preparation preserves the last complete snapshot, and competing commits are rejected. The demo synchronizes at startup; long-lived callers must rebuild their retriever and citation catalog together after synchronization. See the [RAG run guide](../../examples/rag/README.md) for cache commands and the deterministic preparation benchmark. External vector databases remain decision-gated.
 
 ---
 
@@ -453,7 +457,9 @@ CRITICAL OPERATIONAL RULES:
 ### Context Budgeting
 The context builder enforces hard limits:
 * `max_chunks` (default: 5): Prevents context window saturation.
-* `max_chars` (default: 4000): Truncates content before it can trigger model context overflow errors.
+* `max_chars` (default: 4000): Bounds the complete evidence block, including wrappers, source headers, separators and truncation markers. Tiny budgets may supply no passages.
+
+`RAGService.max_request_chars` additionally bounds combined system/user prompt text (default 8000), reserving instructions, the full question and formatting before evidence. Output is capped separately by `max_output_tokens` (default 512). Character limits are not tokenizer-based model-window guarantees.
 
 ---
 
@@ -471,11 +477,8 @@ Phase 5 reuses the frozen Phase 4 foundation without introducing new model gatew
   }
   ```
 
-### Schema Failure Fallback vs Schema Adherence
-If the model returns malformed JSON or plain text containing valid facts:
-1. The service extracts the plain text answer and scans for citation patterns using regex.
-2. The service marks `schema_valid = False` and populates `schema_error = "..."`.
-3. **The evaluation runner records this as a Schema Adherence failure**, even if citations and answer accuracy are 100%. Fallback robustness must never mask structured generation failures.
+### Explicit Response Validation Failure
+Malformed JSON, wrong field types, duplicate keys and unexpected fields yield `schema_valid=False`, `status="validation_failed"`, `accepted=False` and `validation_error`. The accepted `answer` and public `citations` are empty; raw text remains separately available for diagnostics. There is no plain-text answer or guessed-citation fallback. Invalid citation membership also yields an explicit validation failure even when the JSON schema itself is valid. Normal answers require supplied evidence citations; abstentions require none.
 
 ---
 
@@ -496,7 +499,7 @@ class CitationValidator:
 ```
 
 ### Validation Rules Enforced:
-1. **Retrieval Set Membership**: Every raw citation identifier in `cited_ids` must map to a chunk present in `retrieved_chunks`. If the model cites `sec-99#c0` but only `sec-01#c0` was retrieved, `sec-99#c0` is appended to `rejected_citation_ids`, an error is recorded, and `is_valid` becomes `False`.
+1. **Supplied Evidence Membership**: Every citation must map to a passage actually included in the prompt. The service filters `retrieved_chunks` using `context_build.included_chunk_ids`; citing a retrieved but omitted passage fails. This proves source identity, not factual entailment.
 2. **Catalog Metadata Resolution**: When a chunk ID matches a retrieved chunk, the validator resolves parent document metadata from the registered `document_catalog` (mapping `document_id` to `Document` instances) to construct an authenticated `Citation` object (`chunk_id`, `document_id`, `section_title`, `source_title`, `source_uri`).
 3. **Abstention Integrity**: If `insufficient_evidence` is True, `verified_citations` is returned empty. Any citations submitted alongside an insufficient evidence response are flagged in `rejected_citation_ids` and error logs.
 4. **Deterministic Deduplication**: Repeated citations from the model are deduplicated without error, preserving the original citation order.
@@ -517,8 +520,9 @@ Phase 5 implements a 32-scenario reference evaluation harness ([`examples/rag/ev
 | **MRR** | Retrieval | Mean Reciprocal Rank ($1/\text{rank}$) of the first relevant chunk. | N/A |
 | **Context Relevance** | Retrieval | Fraction of retrieved chunks that were pertinent to the query. | $\ge 0.80$ |
 | **Schema Adherence** | Generation | Fraction of model responses that parsed into valid JSON matching the schema. | $\ge 0.98$ |
-| **Groundedness** | Generation | Fraction of answers containing expected facts and zero unsupported claims. | $\ge 0.85$ |
-| **Citation Accuracy** | Verification | Fraction of claimed citations that were valid and pertinent. | N/A |
+| **Expected Outcome Heuristic** | Generation | Accepted schema/citations and expected-fact substrings, or expected abstention; extra unsupported claims are not checked. | N/A |
+| **Claim-level Faithfulness** | Generation | Requires reviewed support for individual generated claims; currently unmeasured. | $\ge 0.85$ |
+| **Citation Accuracy** | Verification | Fraction of claimed citations matching supplied source identities; does not establish factual support. | N/A |
 | **Abstention Accuracy**| Governance | Fraction of out-of-domain / adversarial queries correctly refused. | N/A |
 
 ### Architectural Policy Modes vs CLI Execution Modes
@@ -538,7 +542,7 @@ To evaluate and reason about RAG systems accurately, architects must distinguish
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-The Phase 5 reference implementation is designed and validated under **Mode A (Offline Local)**: the entire pipeline—vector indexing, dense embedding generation, and language model inference—runs locally on the developer workstation without cloud egress or paid API keys.
+The Phase 5 reference implementation supports **Mode A (Offline Local)** without cloud keys. Executed deterministic checks validate software behavior with test doubles; actual local-model quality and representative capacity remain unverified.
 
 Within that architectural boundary, `eval_runner.py` provides two distinct execution modes:
 
@@ -551,7 +555,8 @@ Within that architectural boundary, `eval_runner.py` provides two distinct execu
   {
     "mode": "fake",
     "harness_passed": true,
-    "reference_thresholds_met": true,
+    "software_checks_passed": true,
+    "reference_thresholds_met": false,
     "real_ai_quality_verified": false,
     "gate_d_applicable": false,
     "gate_d_status": "NOT_APPLICABLE"
@@ -560,12 +565,12 @@ Within that architectural boundary, `eval_runner.py` provides two distinct execu
 
 #### 2. Live Local Mode (`--mode live`)
 * **What it runs**: Real local Ollama daemon at `http://localhost:11434` hosting open-weights models (`nomic-embed-text` and `llama3.2`).
-* **What it proves**: Real probabilistic model quality, semantic vector retrieval accuracy, and grounded generation adherence on the local machine under Mode A policy.
-* **Evidence Semantics**: If all reference thresholds are met on live execution, `real_ai_quality_verified` is set to `True`.
+* **What it measures**: Observed local-model responses, retrieval results and schema/citation/expected-outcome checks. Live execution alone does not establish claim-level factual support.
+* **Evidence Semantics**: `real_ai_quality_verified` and `reference_thresholds_met` remain false while reviewed claim-level faithfulness is unavailable. Deterministic CLI success uses `software_checks_passed`; missing adversarial evidence is unavailable, not a pass. See the [evaluation contract](../../examples/rag/README.md#63-automated-reference-ai-evaluation).
 
 ### Result Artifact Policy
 * **Transient Timestamped Reports**: CLI runs write `eval_report_<timestamp>.json` into `examples/rag/results/`. These files are ignored by version control in [`.gitignore`](../../.gitignore) to prevent repository churn.
-* **Stable Canonical Evidence**: The repository maintains a single version-controlled baseline report at [`examples/rag/results/canonical_eval_report.json`](../../examples/rag/results/canonical_eval_report.json).
+* **Historical Canonical Snapshot**: The old report predates the corrected scoring labels and is not current faithfulness/adversarial-quality evidence: [`examples/rag/results/canonical_eval_report.json`](../../examples/rag/results/canonical_eval_report.json).
 
 ### Quality Gate Applicability (Gate D)
 Per [`QUALITY-GATES.md`](../../QUALITY-GATES.md#gate-d--ai-evaluation):

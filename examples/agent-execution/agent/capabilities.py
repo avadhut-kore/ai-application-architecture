@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 from contracts.agent import (
     CapabilityMetadata,
@@ -47,7 +48,10 @@ class GetCustomerCapability(CapabilityPort):
             input_schema={
                 "type": "object",
                 "properties": {
-                    "customer_id": {"type": "string", "description": "Unique customer identifier (e.g. cust-001)"}
+                    "customer_id": {
+                        "type": "string",
+                        "description": "Unique customer identifier (e.g. cust-001)",
+                    }
                 },
                 "required": ["customer_id"],
                 "additionalProperties": False,
@@ -63,7 +67,7 @@ class GetCustomerCapability(CapabilityPort):
     async def execute(
         self,
         arguments: Mapping[str, Any],
-        context: Optional[AiOperationContext] = None,
+        context: AiOperationContext | None = None,
     ) -> Any:
         customer_id = str(arguments.get("customer_id", ""))
         cust = self.store.get_customer(customer_id)
@@ -106,7 +110,7 @@ class GetAccountStatusCapability(CapabilityPort):
     async def execute(
         self,
         arguments: Mapping[str, Any],
-        context: Optional[AiOperationContext] = None,
+        context: AiOperationContext | None = None,
     ) -> Any:
         customer_id = str(arguments.get("customer_id", ""))
         acc = self.store.get_account(customer_id)
@@ -152,7 +156,7 @@ class SearchPolicyCapability(CapabilityPort):
     async def execute(
         self,
         arguments: Mapping[str, Any],
-        context: Optional[AiOperationContext] = None,
+        context: AiOperationContext | None = None,
     ) -> Any:
         topic = str(arguments.get("topic", "")).lower()
         matched = []
@@ -180,8 +184,15 @@ class UpdateCustomerNoteCapability(CapabilityPort):
                 "type": "object",
                 "properties": {
                     "customer_id": {"type": "string", "description": "Customer identifier"},
-                    "note": {"type": "string", "description": "Note content explaining action or context"},
-                    "action_id": {"type": "string", "description": "Idempotency key uniquely identifying this action proposal"},
+                    "note": {
+                        "type": "string",
+                        "description": "Note content explaining action or context",
+                    },
+                    "action_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Idempotency key uniquely identifying this action proposal",
+                    },
                 },
                 "required": ["customer_id", "note", "action_id"],
                 "additionalProperties": False,
@@ -197,7 +208,7 @@ class UpdateCustomerNoteCapability(CapabilityPort):
     async def execute(
         self,
         arguments: Mapping[str, Any],
-        context: Optional[AiOperationContext] = None,
+        context: AiOperationContext | None = None,
     ) -> Any:
         customer_id = str(arguments.get("customer_id", ""))
         note = str(arguments.get("note", ""))
@@ -206,7 +217,7 @@ class UpdateCustomerNoteCapability(CapabilityPort):
         if not note.strip():
             return {"success": False, "error": "Note cannot be empty"}
 
-        ok = self.store.add_note(customer_id, note)
+        ok = self.store.add_note(customer_id, note, action_id=action_id)
         if not ok:
             return {"success": False, "error": f"Customer '{customer_id}' not found"}
         return {
@@ -230,9 +241,19 @@ class ApplyFeeCreditCapability(CapabilityPort):
                 "type": "object",
                 "properties": {
                     "customer_id": {"type": "string", "description": "Customer identifier"},
-                    "amount_cents": {"type": "integer", "description": "Credit amount in integer cents (e.g. 1500 for $15.00)"},
-                    "reason": {"type": "string", "description": "Justification for the credit adjustment"},
-                    "action_id": {"type": "string", "description": "Idempotency key uniquely identifying this transaction"},
+                    "amount_cents": {
+                        "type": "integer",
+                        "description": "Credit amount in integer cents (e.g. 1500 for $15.00)",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Justification for the credit adjustment",
+                    },
+                    "action_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Idempotency key uniquely identifying this transaction",
+                    },
                 },
                 "required": ["customer_id", "amount_cents", "reason", "action_id"],
                 "additionalProperties": False,
@@ -248,7 +269,7 @@ class ApplyFeeCreditCapability(CapabilityPort):
     async def execute(
         self,
         arguments: Mapping[str, Any],
-        context: Optional[AiOperationContext] = None,
+        context: AiOperationContext | None = None,
     ) -> Any:
         customer_id = str(arguments.get("customer_id", ""))
         amount_cents = int(arguments.get("amount_cents", 0))
@@ -259,7 +280,7 @@ class ApplyFeeCreditCapability(CapabilityPort):
             return {"success": False, "error": "Credit amount must be greater than zero"}
 
         try:
-            ok = self.store.apply_credit(customer_id, amount_cents, reason)
+            ok = self.store.apply_credit(customer_id, amount_cents, reason, action_id=action_id)
             if not ok:
                 return {"success": False, "error": f"Customer '{customer_id}' not found"}
 
@@ -276,5 +297,5 @@ class ApplyFeeCreditCapability(CapabilityPort):
                 "reason": reason,
                 "status": "applied",
             }
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- tool boundary returns a structured failure.
             return {"success": False, "error": str(exc)}
