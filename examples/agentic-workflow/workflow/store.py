@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from contracts.workflow import (
     ApprovalStatus,
@@ -133,13 +134,27 @@ class SQLiteWorkflowStore(CheckpointStorePort):
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path), timeout=10.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA busy_timeout=5000;")
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA busy_timeout=5000;")
+        except Exception:
+            conn.close()
+            raise
         return conn
 
+    @contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        """Yield a transactional SQLite connection and deterministically close it on exit."""
+        conn = self._get_connection()
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
     def _init_db(self) -> None:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS workflow_checkpoints (
                     workflow_id TEXT PRIMARY KEY,
@@ -214,7 +229,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
         state_with_checksum = state.with_updated_checksum()
         state_json = json.dumps(state_with_checksum.to_dict())
 
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO workflow_checkpoints (
@@ -246,7 +261,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             conn.commit()
 
     def load_state(self, workflow_id: str) -> Optional[WorkflowState]:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT state_json, checksum FROM workflow_checkpoints WHERE workflow_id = ?;",
                 (workflow_id,),
@@ -279,7 +294,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
     ) -> bool:
         """Atomic compare-and-swap on checkpoint version and AWAITING_APPROVAL status."""
         now = time.time()
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT state_json FROM workflow_checkpoints WHERE workflow_id = ? AND checkpoint_version = ? AND status = ?;",
                 (workflow_id, expected_version, WorkflowStatus.AWAITING_APPROVAL.value),
@@ -329,7 +344,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
     def save_approval(self, record: DurableApprovalRecord) -> None:
         rec_json = json.dumps(record.to_dict())
         now = time.time()
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO workflow_approvals (
@@ -359,7 +374,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             conn.commit()
 
     def load_approval(self, approval_id: str) -> Optional[DurableApprovalRecord]:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT record_json FROM workflow_approvals WHERE approval_id = ?;",
                 (approval_id,),
@@ -370,7 +385,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             return DurableApprovalRecord.from_dict(json.loads(row["record_json"]))
 
     def load_approval_by_action_id(self, action_id: str) -> Optional[DurableApprovalRecord]:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT record_json FROM workflow_approvals WHERE action_id = ?;",
                 (action_id,),
@@ -383,7 +398,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
     def save_mutation(self, record: DurableMutationRecord) -> None:
         rec_json = json.dumps(record.to_dict())
         now = time.time()
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO workflow_mutation_ledger (
@@ -410,7 +425,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             conn.commit()
 
     def load_mutation(self, action_id: str) -> Optional[DurableMutationRecord]:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT record_json FROM workflow_mutation_ledger WHERE action_id = ?;",
                 (action_id,),
@@ -430,7 +445,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
         app_json = json.dumps(approval.to_dict())
         now = time.time()
 
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE;")
             conn.execute(
                 """
@@ -484,7 +499,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             conn.commit()
 
     def append_audit_event(self, event: WorkflowAuditEvent) -> None:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO workflow_audit_log (
@@ -503,7 +518,7 @@ class SQLiteWorkflowStore(CheckpointStorePort):
             conn.commit()
 
     def load_audit_events(self, workflow_id: Optional[str] = None) -> List[WorkflowAuditEvent]:
-        with self._get_connection() as conn:
+        with self._connection() as conn:
             if workflow_id:
                 cursor = conn.execute(
                     "SELECT event_id, workflow_id, event_type, step_name, details_json, timestamp "

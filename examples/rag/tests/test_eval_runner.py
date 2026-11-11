@@ -51,11 +51,15 @@ class TestEvalRunner(unittest.TestCase):
             load_dataset(Path("/nonexistent/path/eval_dataset.jsonl"))
 
     def test_load_dataset_insufficient_scenarios_raises_error(self) -> None:
-        with tempfile.NamedTemporaryFile("w", suffix=".jsonl") as tf:
-            tf.write('{"scenario_id": "rag-01", "scenario_type": "test", "query": "q", "expected_chunk_ids": []}\n')
-            tf.flush()
-            with self.assertRaises(ValueError):
-                load_dataset(Path(tf.name))
+        with tempfile.TemporaryDirectory() as td:
+            dataset_path = Path(td) / "insufficient.jsonl"
+            dataset_path.write_text(
+                '{"scenario_id": "rag-01", "scenario_type": "test", "query": "q", "expected_chunk_ids": []}\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError) as ctx:
+                load_dataset(dataset_path)
+            self.assertIn("scenarios", str(ctx.exception))
 
     def test_evaluate_single_scenario_grounded(self) -> None:
         sc = EvalScenario(

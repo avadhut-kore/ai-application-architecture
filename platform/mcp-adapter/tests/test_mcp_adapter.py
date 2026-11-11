@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import unittest
 from pathlib import Path
 from typing import Any, Mapping
+from unittest.mock import MagicMock, patch
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
@@ -18,7 +20,7 @@ for p in (BUILDING_BLOCKS_DIR, MCP_ADAPTER_DIR):
 
 from contracts.agent import CapabilityPort, SideEffectLevel
 from mcp_adapter.adapter import McpCapabilityAdapter, create_mcp_capabilities
-from mcp_adapter.client import McpClient, McpClientError
+from mcp_adapter.client import McpClient, McpClientError, build_subprocess_pythonpath
 from mcp_adapter.protocol import (
     JsonRpcError,
     JsonRpcErrorCode,
@@ -159,6 +161,51 @@ class TestMcpSubprocessTransport(unittest.TestCase):
             self.assertIn("subprocess-test", res["content"][0]["text"])
         finally:
             client.close()
+
+    def test_build_subprocess_pythonpath_windows_and_posix(self) -> None:
+        win_contracts = r"D:\repo\building-blocks\python"
+        win_adapter = r"D:\repo\platform\mcp-adapter"
+        win_existing = r"C:\custom\libs"
+        self.assertEqual(
+            build_subprocess_pythonpath(win_contracts, win_adapter, "", pathsep=";"),
+            f"{win_contracts};{win_adapter}",
+        )
+        self.assertEqual(
+            build_subprocess_pythonpath(win_contracts, win_adapter, win_existing, pathsep=";"),
+            f"{win_contracts};{win_adapter};{win_existing}",
+        )
+
+        posix_contracts = "/repo/building-blocks/python"
+        posix_adapter = "/repo/platform/mcp-adapter"
+        posix_existing = "/opt/custom"
+        self.assertEqual(
+            build_subprocess_pythonpath(posix_contracts, posix_adapter, "", pathsep=":"),
+            f"{posix_contracts}:{posix_adapter}",
+        )
+        self.assertEqual(
+            build_subprocess_pythonpath(posix_contracts, posix_adapter, posix_existing, pathsep=":"),
+            f"{posix_contracts}:{posix_adapter}:{posix_existing}",
+        )
+
+    def test_start_process_uses_os_pathsep_and_preserves_env(self) -> None:
+        for sep, existing in ((";", r"C:\extra\pkg"), (":", "/extra/pkg")):
+            with self.subTest(pathsep=sep):
+                mock_proc = MagicMock()
+                with (
+                    patch.dict(os.environ, {"PYTHONPATH": existing, "MCP_TEST_ENV": "keep-me"}, clear=False),
+                    patch.object(os, "pathsep", sep),
+                    patch("mcp_adapter.client.subprocess.Popen", return_value=mock_proc) as mock_popen,
+                ):
+                    client = McpClient(command=[sys.executable, "-m", "mcp_adapter.server"])
+                    try:
+                        mock_popen.assert_called_once()
+                        kwargs = mock_popen.call_args.kwargs
+                        passed_env = kwargs["env"]
+                        self.assertEqual(passed_env["MCP_TEST_ENV"], "keep-me")
+                        expected_pypath = sep.join([str(BUILDING_BLOCKS_DIR), str(MCP_ADAPTER_DIR), existing])
+                        self.assertEqual(passed_env["PYTHONPATH"], expected_pypath)
+                    finally:
+                        client.close()
 
 
 class TestMcpTimeoutAndResponsiveness(unittest.IsolatedAsyncioTestCase):

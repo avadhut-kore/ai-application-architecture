@@ -21,7 +21,7 @@ import re
 import subprocess
 import sys
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import List, Tuple
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -197,6 +197,24 @@ def discover_all_test_suites(repo_root: Path) -> List[Tuple[str, Path, Path]]:
     return sorted(suites, key=lambda s: s[0])
 
 
+def build_test_pythonpath(
+    top_dir: PurePath,
+    repo_root: PurePath,
+    existing_pythonpath: str = "",
+    pathsep: str | None = None,
+) -> str:
+    """Build cross-platform PYTHONPATH for unittest discovery subprocesses."""
+    sep = os.pathsep if pathsep is None else pathsep
+    entries = [
+        str(top_dir),
+        str(repo_root / "building-blocks" / "python"),
+        str(repo_root / "examples" / "structured-generation"),
+    ]
+    if existing_pythonpath:
+        entries.append(existing_pythonpath)
+    return sep.join(entries)
+
+
 def run_contract_tests() -> Tuple[bool, List[str]]:
     """Discover and execute all hermetic unit test suites across approved monorepo roots."""
     suites = discover_all_test_suites(REPO_ROOT)
@@ -209,10 +227,11 @@ def run_contract_tests() -> Tuple[bool, List[str]]:
 
     for label, test_dir, top_dir in suites:
         env = os.environ.copy()
-        pythonpath = f"{top_dir}:{REPO_ROOT / 'building-blocks' / 'python'}:{REPO_ROOT / 'examples' / 'structured-generation'}"
-        if "PYTHONPATH" in env:
-            pythonpath = f"{pythonpath}:{env['PYTHONPATH']}"
-        env["PYTHONPATH"] = pythonpath
+        env["PYTHONPATH"] = build_test_pythonpath(
+            top_dir=top_dir,
+            repo_root=REPO_ROOT,
+            existing_pythonpath=env.get("PYTHONPATH", ""),
+        )
 
         proc = subprocess.run(
             [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-t", str(top_dir)],

@@ -609,7 +609,8 @@ CREATE TABLE IF NOT EXISTS workflow_audit_log (
     event_id TEXT PRIMARY KEY,
     workflow_id TEXT NOT NULL,
     event_type TEXT NOT NULL,
-    payload_json TEXT NOT NULL,
+    step_name TEXT,
+    details_json TEXT NOT NULL,
     timestamp REAL NOT NULL
 );
 ```
@@ -1002,13 +1003,13 @@ Execute the verified Phase 7 commands from the repository root:
 ```bash
 python3 scripts/validate.py
 ```
-*Expected Output*: PASS across all governance rules, link integrity, import boundaries, and all 255 automated unit tests.
+*Expected Output*: PASS across all governance rules, link integrity, import boundaries, and all 262 automated unit tests.
 
 ### 2. Run Standalone Phase 7 Verification
 ```bash
 python3 examples/agentic-workflow/verify.py
 ```
-*Expected Output*: AST compilation of 33 files, 56 hermetic unit tests passed, and 30/30 deterministic evaluation scenarios passed.
+*Expected Output*: AST compilation of 33 files, 59 hermetic unit tests passed, and 30/30 deterministic evaluation scenarios passed.
 
 ### 3. Run the 30-Scenario Evaluation Harness
 ```bash

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
 from .protocol import (
@@ -13,6 +15,20 @@ from .protocol import (
     JsonRpcResponse,
 )
 from .server import McpServer
+
+
+def build_subprocess_pythonpath(
+    contracts_dir: str,
+    adapter_dir: str,
+    existing_pythonpath: str = "",
+    pathsep: str | None = None,
+) -> str:
+    """Build a cross-platform PYTHONPATH value preserving inherited entries."""
+    sep = os.pathsep if pathsep is None else pathsep
+    entries = [contracts_dir, adapter_dir]
+    if existing_pythonpath:
+        entries.append(existing_pythonpath)
+    return sep.join(entries)
 
 
 class McpClientError(Exception):
@@ -41,15 +57,16 @@ class McpClient:
     def _start_process(self) -> None:
         """Start background subprocess for stdio transport."""
         assert self._command is not None
-        import os
-        from pathlib import Path
         env = os.environ.copy()
         root_dir = Path(__file__).resolve().parent.parent.parent.parent
         contracts_dir = str(root_dir / "building-blocks" / "python")
         adapter_dir = str(Path(__file__).resolve().parent.parent)
         curr_pypath = env.get("PYTHONPATH", "")
-        prefix = f"{contracts_dir}:{adapter_dir}"
-        env["PYTHONPATH"] = f"{prefix}:{curr_pypath}" if curr_pypath else prefix
+        env["PYTHONPATH"] = build_subprocess_pythonpath(
+            contracts_dir=contracts_dir,
+            adapter_dir=adapter_dir,
+            existing_pythonpath=curr_pypath,
+        )
 
         self._process = subprocess.Popen(
             list(self._command),
