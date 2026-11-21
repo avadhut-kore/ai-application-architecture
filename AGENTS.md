@@ -11,7 +11,7 @@
 
 This repository, **`ai-application-architecture`**, is an **Enterprise AI Architecture & Reference Implementation Repository**. It is not a playground for toy demos, quick tutorial snippets, unvalidated prompt scripts, vendor-locked experiments, or generated boilerplate.
 
-Every implementation in this repository must stand as a production-grade benchmark for Solution Architects, Enterprise Architects, and Senior AI Engineers. As an AI coding agent operating in this codebase, you must exercise the rigor, restraint, and discipline of a Principal Enterprise Architect.
+Every implementation must meet its declared [reference implementation tier](docs/architecture/reference-standard.md) and applicable quality gates. Pattern examples and templates must not be presented as production reference applications. Exercise the rigor, restraint, and discipline of a Principal Enterprise Architect while keeping deliverables proportional to their scope.
 
 ---
 
@@ -44,7 +44,17 @@ Maintain one authoritative source per topic. Do not duplicate principles, taxono
 Never commit fake sleep loops (e.g., `time.sleep(2)`) or hardcoded static strings in production execution paths to mimic AI inference. Runtime demos must default to real local models or live adapters and must never silently fall back to scripted answers. Test doubles belong in automated test support or explicitly requested deterministic verification harnesses, which must label their mode and report real AI quality as not verified. Architecture decisions and exceptions are recorded in [ADR-0012](adr/0012-phase1-7-verification-and-local-recovery.md).
 
 ### 9. Validate Your Work
-Run static analysis, type checking (`mypy --strict`, `dotnet build`), unit test suites, evaluation harnesses, and link checkers after making changes.
+Select verification by the changed behavior, artifact tier, and applicable engineering standards. Run relevant static analysis, type checking, deterministic tests, evaluations, security checks, and documentation validation. AI evaluation requirements follow [QUALITY-GATES.md](QUALITY-GATES.md), the approved roadmap scope, and the artifact's requirements; do not require a new dataset or evaluation runner for every documentation or deterministic change.
+
+Use the locked Python environment and repository entry points from the repository root:
+
+```bash
+uv sync --frozen
+uv run --frozen python scripts/validate.py
+uv run --frozen python scripts/quality.py
+```
+
+`validate.py` covers repository structure, import boundaries, documentation, manifests and discovered test suites. `quality.py` covers Ruff, strict mypy and coverage gates. For documentation-only changes, run `uv run --frozen python scripts/validate-docs.py` and `git diff --check`; run additional checks when the changes affect executable examples or validation behavior. Follow the relevant language standards for non-Python changes. Keep deterministic harness checks separate from live model evaluation and identify the exact source revision and environment verified.
 
 ### 10. Report Actual Evidence
 Every claim in your completion report must be accompanied by verifiable evidence (terminal execution logs, test outputs, file paths, or score results). Never fabricate completed work.
@@ -63,11 +73,13 @@ Never make vague assertions (e.g., "all tests pass" or "observability verified")
 
 ## 3. Mandatory Agent Workflow Protocol
 
-When assigned an engineering task, follow this sequence. An explicit approval in
+When assigned an implementation task, follow the applicable steps in this sequence. An explicit approval in
 the current chat satisfies plan review for that agreed scope; do not repeatedly
 request the same approval. Record material scope decisions in the authoritative
 roadmap or ADR. Routine fixes, regression tests and reversible verification within
-the approved scope may proceed autonomously.
+the approved scope may proceed autonomously. Review-only tasks inspect and verify without
+implementing changes. Documentation-only tasks use the applicable research, review,
+validation and reporting steps; they do not require contracts, adapters or AI datasets.
 
 ```text
 ┌────────────────────────────────────────────────────────┐
@@ -87,7 +99,7 @@ the approved scope may proceed autonomously.
                             │
 ┌───────────────────────────▼────────────────────────────┐
 │ 4. WRITE DETERMINISTIC & EVALUATION TESTS              │
-│    Unit tests + eval_dataset.jsonl + eval runner       │
+│    Relevant tests; AI dataset/runner when required    │
 └───────────────────────────┬────────────────────────────┘
                             │
 ┌───────────────────────────▼────────────────────────────┐
@@ -105,13 +117,21 @@ the approved scope may proceed autonomously.
 
 ## 4. Completion Report Structure & Self-Assessment Policy
 
-Upon completing any task, produce a structured completion report covering:
+For implementation tasks, produce a completion report covering the eight topics below.
+Scale detail to the task and artifact tier. For a small documentation or maintenance
+change, a concise report may combine topics and mark architecture, runtime execution
+or gates not affected as Not Applicable with a reason. Reference existing evidence
+rather than duplicating reports; do not run unrelated model evaluations or create
+placeholder artifacts just to fill the report. Review-only tasks report findings,
+review scope, independently executed checks and remaining verification gaps.
+
+Implementation completion reports cover:
 1. **Executive Summary**: High-level summary of accomplished work.
 2. **Files Created & Modified**: Explicit list of files with relative paths.
 3. **Architecture Decisions**: Key patterns adopted and ADR references.
 4. **Decisions Deliberately Deferred**: Explicit statement of what was not built and why.
-5. **Quality Gate Verification**: Line-by-line verification against applicable gates in [QUALITY-GATES.md](QUALITY-GATES.md) (Gates A–J), distinguishing Automated Evidence, Manual Evidence, and Not Verified items.
-6. **Local Execution Verification**: Proof that the system runs under Mode A (Offline Local) or Mode B (Local-First) without paid API keys.
+5. **Quality Gate Verification**: Assess applicable gates from [QUALITY-GATES.md](QUALITY-GATES.md), distinguishing Automated Evidence, Manual Evidence, and Not Verified items. Justify Not Applicable items by tier and change scope; do not maintain a competing gate applicability matrix here.
+6. **Local Execution Verification**: For runtime changes, provide evidence of execution under Mode A (Offline Local) or Mode B (Local-First) without paid API keys. For documentation-only changes, state that runtime execution was not affected or reverified.
 7. **Known Risks & Limitations**: Objective documentation of technical trade-offs.
 8. **Remaining Issues & Next Steps**: What remains for subsequent roadmap phases.
 
@@ -119,4 +139,4 @@ Upon completing any task, produce a structured completion report covering:
 * **Internal Label Mandate**: Any self-score or self-evaluation must explicitly be labeled:  
   `> **Internal Self-Assessment — Not Independent Certification**`
 * **Conservative Scoring**: Scores must be evidence-based and conservative. A score below 100 is expected.
-* **Separation of Assessment from Acceptance**: The completion report must distinguish **Implementation Assessment** (performed by the implementing agent) from **Independent Acceptance** (performed later by an independent reviewer). An AI coding agent must **never** declare its own work independently accepted.
+* **Separation of Assessment from Acceptance**: The completion report must distinguish **Implementation Assessment** (performed by the implementing agent) from **Independent Acceptance** (performed later by a separate human reviewer or distinct verification agent). A separate agent may perform the independent review, but must assess the source and execute relevant checks itself rather than endorse the implementing agent's report. State the reviewed revision, scope, exclusions, evidence and unresolved findings. The implementing agent must **never** declare its own work independently accepted. Independent acceptance is a scoped review decision, not a claim of formal certification or 100% accuracy.

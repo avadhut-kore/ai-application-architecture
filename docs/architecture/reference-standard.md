@@ -99,5 +99,5 @@ This document establishes **Four Reference Implementation Tiers**:
 Compliance with [QUALITY-GATES.md](../../QUALITY-GATES.md) is scaled to the respective tier:
 * **Tier 1 (Reference Application)**: Must pass **all** Quality Gates (Gates A through J).
 * **Tier 2 (Pattern Example)**: Must pass Gates B (Code), C (Testing), H (Documentation), and I (Local Execution).
-* **Tier 3 (Platform Component)**: Must pass Gates A (Architecture), B (Code), C (Testing), F (Observability), and H (Documentation).
+* **Tier 3 (Platform Component)**: Must pass Gates A (Architecture), B (Code), C (Testing), E (Security), F (Observability), and H (Documentation).
 * **Tier 4 (Template)**: Must pass Gate B (Code Quality / Linting) and Gate H (Documentation).
