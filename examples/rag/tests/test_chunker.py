@@ -15,7 +15,7 @@ for p in (BUILDING_BLOCKS_DIR, RAG_DIR):
         sys.path.insert(0, str(p))
 
 from rag.chunker import HeadingAwareChunker
-from rag.document import Document, make_chunk_id
+from rag.document import Document
 from rag.ingestion import load_corpus_directory, normalize_text, parse_frontmatter
 
 
@@ -95,7 +95,9 @@ All passwords must be at least 16 characters in length.
         para2 = "Sentence two about topic B. " * 15
         content = f"## Large Section\n\n{para1}\n\n{para2}"
 
-        doc = Document(document_id="large-doc", title="Large Doc", content=content, source_uri="large.md")
+        doc = Document(
+            document_id="large-doc", title="Large Doc", content=content, source_uri="large.md"
+        )
         chunker = HeadingAwareChunker(max_chunk_chars=300)
         chunks = chunker.chunk_document(doc)
 

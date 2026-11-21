@@ -78,7 +78,7 @@ In accordance with repository governance, we establish measurable baselines befo
 
 | Capability | Decision | Rationale | Re-evaluation Trigger |
 | :--- | :--- | :--- | :--- |
-| **Reranking Models** | DEFERRED | Baseline semantic retrieval achieves 100% Hit Rate and 0.938 MRR on the reference corpus. Adding a cross-encoder introduces substantial latency without measured benefit. | Retrieval benchmark drops below 85% Hit Rate due to ranking inversion on larger corpora. |
+| **Reranking Models** | DEFERRED | The deterministic fixture score is not live retrieval evidence. Current model-specific measurements belong in the remediation report; a cross-encoder requires measured benefit. | Retrieval benchmark drops below 85% Hit Rate due to ranking inversion on larger corpora. |
 | **Hybrid Search (BM25 + Dense)** | DEFERRED | Dense embeddings successfully disambiguate test scenarios. Hybrid search adds inverted index dependencies. | Documented failure of dense retrieval on exact keyword queries, product SKUs, or specialized acronyms. |
 | **GraphRAG / Knowledge Graphs** | DEFERRED | Entity graph extraction and graph traversal add massive LLM pre-processing costs out of core Phase 5 scope. | Complex multi-hop relational reasoning requirements across disconnected documents. |
 | **Persistent Vector Database** | DEFERRED | In-memory index satisfies all Phase 5 CI and demo requirements without Docker or external services. Storage is decoupled via `VectorIndexPort`. | Corpus size exceeds memory budget ($> 100,000$ chunks) or requires multi-process persistence. |
@@ -90,8 +90,8 @@ In accordance with repository governance, we establish measurable baselines befo
 
 ### Positive
 * **Provable Boundaries**: Retrieval quality is measured independently of generation quality.
-* **Deterministic Hermetic CI**: All 31 unit tests and 32 evaluation scenarios execute in $< 0.1$s without network or daemon dependencies.
-* **Citation Integrity**: Eliminates LLM citation hallucination by validating citations against retrieval metadata.
+* **Deterministic Hermetic CI**: Deterministic unit tests and the 32-scenario harness run without network or daemon dependencies; current counts and timing are in the remediation evidence report.
+* **Citation Integrity**: Rejects invented or unavailable citation identifiers against supplied chunks; this does not prove semantic claim support.
 * **Zero Vendor Lock-In**: Both embedding and generation rely on provider-neutral ports (`EmbeddingPort`, `TextGenerationPort`).
 
 ### Negative

@@ -10,9 +10,56 @@ permissions:
   contents: read
 
 jobs:
+  runtime-security:
+    name: Build and audit local Ollama runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned same-release security patch
+        run: docker build -t ai-architecture-ollama:0.40.16-security.1 -f platform/ollama-adapter/Dockerfile.security platform/ollama-adapter
+      - name: Audit runtime image packages
+        run: |
+          mkdir -p .quality
+          docker run --rm --mount type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly --mount type=bind,source=${{ github.workspace }}/.quality,target=/report aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /report/runtime-vulnerabilities.json ai-architecture-ollama:0.40.16-security.1
+          docker run --rm --mount type=bind,source=${{ github.workspace }}/.quality,target=/report aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb convert --format cyclonedx --output /report/runtime-sbom.json /report/runtime-vulnerabilities.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-image-audit
+          path: |
+            .quality/runtime-vulnerabilities.json
+            .quality/runtime-sbom.json
+  secrets:
+    name: Scan committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan complete Git history
+        run: >-
+          docker run --rm --mount type=bind,source=${{ github.workspace }},target=/repo,readonly
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git /repo --redact --no-banner
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Render repository Mermaid diagrams
+        run: python scripts/validate-diagrams.py
+      - name: Retain diagram verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mermaid-diagrams
+          path: .quality/diagrams/
   validate:
     name: Repository & Quality Validation
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.14']
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,7 +67,38 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python }}
+
+      - name: Install pinned environment manager
+        run: python -m pip install uv==0.13.9
+
+      - name: Restore locked development environment
+        run: uv sync --frozen
 
       - name: Run Unified Repository Validator
-        run: python3 scripts/validate.py
+        run: uv run --frozen python scripts/validate.py
+
+      - name: Enforce lint, strict types and module coverage
+        run: uv run --frozen python scripts/quality.py
+
+      - name: Run deterministic evaluator negative controls and scenarios
+        run: |
+          uv run --frozen python examples/agentic-workflow/eval_runner.py
+          uv run --frozen python examples/agent-execution/eval_runner.py --mode fake
+          uv run --frozen python examples/rag/eval_runner.py --mode fake
+          uv run --frozen python examples/ai-evaluation/runner.py --mode fake
+
+      - name: Scan runtime Python sources
+        run: uv run --frozen bandit -r building-blocks/python/contracts building-blocks/python/ai_telemetry platform examples -x tests,test_doubles.py -ll
+
+      - name: Audit locked runtime dependencies
+        run: |
+          uv export --frozen --no-dev --format requirements-txt --output-file .quality/runtime-requirements.txt
+          uv run --frozen pip-audit -r .quality/runtime-requirements.txt
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-${{ matrix.os }}-${{ matrix.python }}
+          path: .quality/

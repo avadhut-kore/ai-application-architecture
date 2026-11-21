@@ -27,7 +27,7 @@ How can an AI system safely decide to use bounded capabilities to accomplish a t
 
 Enterprise systems must never grant autonomous execution authority to a probabilistic language model. The model's role is strictly limited to **proposing** candidate actions. The host application retains sole decision authority to validate, authorize, gate, and execute those proposals.
 
-```
+```text
 ┌─────────────────┐
 │     Model       │ ── Proposes Action (Untrusted Structured Output)
 └────────┬────────┘
@@ -128,7 +128,7 @@ sequenceDiagram
 
 ## 4. Component Architecture
 
-```
+```text
 examples/agent-execution/
 ├── artifact.json                 # Tier 2 Pattern Example Manifest
 ├── README.md                     # Architectural documentation (this file)
@@ -194,7 +194,7 @@ SAFETY INVARIANTS (ZERO TOLERANCE — DERIVED FROM EXECUTION EVIDENCE):
   - Real AI quality is explicitly reported as `[NOT VERIFIED]` (test doubles cannot prove probabilistic model quality).
   - Gate D is reported as `[NOT APPLICABLE TO TIER 2]`.
 - **Live Model (`--mode live`)**:
-  - Connects to local Ollama (`http://localhost:11434`, e.g. `llama3.2`).
+  - Connects to local Ollama (`http://localhost:11434`, e.g. `qwen2.5:7b`).
   - Evaluates probabilistic decision parsing, tool selection accuracy, and invariant maintenance against live models.
 
 ---
@@ -206,7 +206,7 @@ SAFETY INVARIANTS (ZERO TOLERANCE — DERIVED FROM EXECUTION EVIDENCE):
 python3 examples/agent-execution/verify.py
 ```
 
-### Run Hermetic Unit Tests (58 Tests)
+### Run Hermetic Unit Tests
 ```bash
 python3 -m unittest discover -s examples/agent-execution/tests
 ```
@@ -218,10 +218,10 @@ python3 examples/agent-execution/eval_runner.py --mode fake --verbose
 
 ### Run Interactive CLI Demo
 ```bash
-# Canned approved fee credit scenario
+# Live fee-credit scenario; requires an explicit human decision
 python3 examples/agent-execution/demo.py --scenario mutation-approve
 
-# Interactive human-in-the-loop prompt ([y/N] on stdin)
+# Live mode always prompts for human approval ([y/N] on stdin)
 python3 examples/agent-execution/demo.py --scenario mutation-approve --interactive
 
 # Policy denial scenario (junior agent exceeds threshold)

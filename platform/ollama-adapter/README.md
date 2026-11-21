@@ -2,7 +2,7 @@
 
 > **Tier Classification**: **Tier 3 — Platform Component**  
 > **Component Role**: Outbound Model Provider Adapter  
-> **Target Ecosystem**: Python 3.9+  
+> **Target Ecosystem**: Python 3.11+
 > **Status**: Implemented  
 
 ---
@@ -36,7 +36,7 @@ class OllamaAdapter(TextGenerationPort):
     def __init__(
         self,
         endpoint: str = "http://localhost:11434",
-        default_model: str = "llama3.2",
+        default_model: str = "qwen2.5:7b",
         timeout_seconds: float = 30.0,
         max_retries: int = 2,
         backoff_base_seconds: float = 0.5,
@@ -62,13 +62,14 @@ import asyncio
 from contracts.models import CompletionRequest
 from ollama_adapter.adapter import OllamaAdapter
 
+
 async def main():
     # Initialize adapter pointing to local Ollama
-    adapter = OllamaAdapter(endpoint="http://localhost:11434", default_model="llama3.2")
+    adapter = OllamaAdapter(endpoint="http://localhost:11434", default_model="qwen2.5:7b")
 
     request = CompletionRequest(
         prompt="Explain hexagonal architecture in one sentence.",
-        model="llama3.2",
+        model="qwen2.5:7b",
         temperature=0.2,
     )
 
@@ -77,6 +78,7 @@ async def main():
     print(f"Latency: {response.latency_ms}ms")
     if response.usage:
         print(f"Tokens: {response.usage.total_tokens}")
+
 
 asyncio.run(main())
 ```
@@ -112,7 +114,7 @@ All exceptions are mapped into the domain `AiError` taxonomy (`building-blocks/p
   * Running live inference against Ollama is required **only** for real runtime execution and live verification; it is **not** required for deterministic repository validation or CI.
   * Installing and managing Ollama is a developer responsibility. Verify installation via `ollama --version`.
   * Start the local daemon: `ollama serve` (default endpoint: `http://localhost:11434`).
-  * Models must be manually installed by the developer (e.g. `ollama pull llama3.2:3b` or `ollama pull llama3.2`). No test, script, or CI workflow executes `ollama pull`. Check installed models via `ollama list`.
+  * Models must be manually installed by the developer (e.g. `ollama pull qwen2.5:7b` or `ollama pull qwen2.5:7b`). No test, script, or CI workflow executes `ollama pull`. Check installed models via `ollama list`.
 * **Verification Commands**:
 ```bash
 # 1. Offline hermetic unit tests (runnable anywhere without Ollama)
@@ -124,11 +126,33 @@ python3 platform/ollama-adapter/verify.py
 
 ---
 
-## 7. Quality Gate Checklist (Scaled for Tier 3)
+## 7. Verification evidence
 
-Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, F, and H:
-- [x] **Gate A — Architecture & Structural Boundaries**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
-- [ ] **Gate B — Code Quality & Type Safety**: Strictly typed with standard Python type annotations; formal external linters (`mypy`, `ruff`) not installed/run in CI (*Partially Verified*).
-- [ ] **Gate C — Software Testing**: 15 hermetic unit tests verifying request/response mapping, error translation, timeout classification, and retries; statement coverage measurement: *Not Verified* (coverage tooling not installed).
-- [ ] **Gate F — Observability & Telemetry**: Minimal metadata extraction implemented (`latency_ms`, token `UsageMetrics`, model name); distributed OpenTelemetry trace exporter and span emission: *Deferred*.
-- [x] **Gate H — Documentation & Architectural Integrity**: Stable, documented public contracts, architecture specifications, and zero broken links.
+Applicable gates remain defined by [QUALITY-GATES.md](../../QUALITY-GATES.md).
+Run `uv run --frozen python scripts/quality.py` for Ruff, strict runtime typing,
+hermetic assertions and statement/branch coverage. Runtime model calls emit
+metadata-only OpenTelemetry spans through `ai_telemetry`; exporter tests assert
+model names, token usage, parent correlation, duration, error status and payload
+exclusion. The root environment supplies the pinned telemetry dependencies.
+
+Security scans, live local runs and current limitations are recorded in the
+[remediation record](../../docs/engineering/phase1-7-remediation.md). Metadata alone
+does not satisfy Gate F. This evidence is implementation verification, with
+independent acceptance pending.
+
+## 8. Local runtime security patch
+
+Root Compose builds [Dockerfile.security](Dockerfile.security), a bounded patch of
+Ollama 0.40.16. The upstream image had three HIGH package findings across two
+CVEs. The checksummed same-release source is rebuilt with `golang.org/x/net
+v0.62.0`; APT and its library are updated to `2.8.4ubuntu0.1`. Upstream inference
+libraries and separately mounted model weights are retained. Builder/base image
+digests and the source archive checksum are pinned in the Dockerfile.
+
+The fixes follow the [Go advisory](https://pkg.go.dev/vuln/GO-2026-6860) and
+[Ubuntu notice](https://ubuntu.com/security/notices/USN-8996-1). The local image is
+`ai-architecture-ollama:0.40.16-security.1`; it is built locally, not pulled from a
+published repository. CI builds it and fails on HIGH/CRITICAL findings. Current
+scan results and generation/embedding smoke evidence belong in the remediation
+record. Retire the patch when an upstream image passes equivalent verification.
+See [local setup](../../docs/setup/local-ai-environment.md) for execution.

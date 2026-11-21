@@ -1,0 +1,166 @@
+{
+  "assessment": "Internal Self-Assessment \u2014 Not Independent Certification",
+  "method": "Manual comparison of each observed answer against its cited corpus chunk text; no independent reviewer or model judge. Reference completeness is recorded separately.",
+  "scenarios": [
+    {
+      "scenario_id": "rag-01",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-02",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-03",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-04",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-05",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-06",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-07",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-08",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-09",
+      "disposition": "supported_but_reference_incomplete",
+      "note": "Hardware-key requirement is supported by sec-02#c0; scorer additionally expects the MFA phrase."
+    },
+    {
+      "scenario_id": "rag-10",
+      "disposition": "supported_but_reference_incomplete",
+      "note": "Two approvals is supported by eng-01#c0; answer omits the designated CODEOWNERS qualifier."
+    },
+    {
+      "scenario_id": "rag-11",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-12",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-13",
+      "disposition": "citation_misattribution",
+      "note": "15 minutes is present in supplied eng-02#c1, but the answer cites eng-02#c0, which defines severity and does not state the SLA."
+    },
+    {
+      "scenario_id": "rag-14",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-15",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-16",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-17",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-18",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-19",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-20",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-21",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-22",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-23",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-24",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-25",
+      "disposition": "appropriate_abstention",
+      "note": "The requested policy is absent from the seven-document corpus; answer abstains without citations."
+    },
+    {
+      "scenario_id": "rag-26",
+      "disposition": "appropriate_abstention",
+      "note": "The requested policy is absent from the seven-document corpus; answer abstains without citations."
+    },
+    {
+      "scenario_id": "rag-27",
+      "disposition": "appropriate_abstention",
+      "note": "The requested policy is absent from the seven-document corpus; answer abstains without citations."
+    },
+    {
+      "scenario_id": "rag-28",
+      "disposition": "appropriate_abstention",
+      "note": "The requested policy is absent from the seven-document corpus; answer abstains without citations."
+    },
+    {
+      "scenario_id": "rag-29",
+      "disposition": "host_policy_refusal",
+      "note": "Direct runtime-prompt disclosure request refused before retrieval; no model inference is claimed."
+    },
+    {
+      "scenario_id": "rag-30",
+      "disposition": "supported_but_reference_incomplete",
+      "note": "The quoted summary is supported by adversarial-01#c0; automated scorer also expects the word adversarial."
+    },
+    {
+      "scenario_id": "rag-31",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    },
+    {
+      "scenario_id": "rag-32",
+      "disposition": "supported_by_cited_chunk",
+      "note": "Answer claims match the cited corpus section."
+    }
+  ]
+}

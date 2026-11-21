@@ -6,7 +6,7 @@ Architectural clarity requires precise classification. A major failure in AI sof
 
 This document establishes a **Five-Part Taxonomy** supplemented by **Operational Classification Dimensions**:
 
-```
+```text
  ┌────────────────────────────────────────────────────────────────────────┐
  │ 1. APPLICATION DOMAINS (What business problem is being solved?)        │
  │    15 strategic enterprise problem spaces                              │

@@ -1,0 +1,40 @@
+======================================================================
+PHASE 7 LIVE LOCAL OLLAMA SMOKE VERIFICATION
+======================================================================
+Target Endpoint:  http://localhost:11434
+Target Model:     qwen2.5:7b
+Allow Unverified: False
+
+Ollama Daemon: Reachable (HTTP 200 OK)
+Installed Models: ['qwen2.5:7b', 'qwen2.5:3b', 'nomic-embed-text:latest', 'llama3.2:3b']
+Using Model:   qwen2.5:7b
+
+----------------------------------------------------------------------
+Scenario 1: Live Read-Only Account Status Investigation
+----------------------------------------------------------------------
+Workflow ID:      wf-live-001
+Terminal Status:  COMPLETED
+Current Step:     terminal_completed
+Duration:         227166.1ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation', 'finalization']
+PASS: Investigation remained strictly read-only (0 financial mutations).
+
+----------------------------------------------------------------------
+Scenario 2: Live Overdraft Dispute & Concession Reasoning
+----------------------------------------------------------------------
+Workflow ID:      wf-live-002
+Current Status:   AWAITING_APPROVAL
+Current Step:     human_approval
+Duration:         177629.5ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation']
+
+Model generated a valid fee credit proposal! Testing operator approval resume...
+Resumed Status:   COMPLETED
+Current Step:     terminal_completed
+Final Balance:    $160.00
+
+======================================================================
+STATUS: VERIFIED
+Local Ollama provider 'qwen2.5:7b' successfully executed live reasoning.
+Read-only investigation invariant and workflow state sovereignty preserved.
+======================================================================

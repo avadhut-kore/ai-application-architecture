@@ -17,9 +17,38 @@ import sys
 from pathlib import Path
 
 
+def heading_anchors(content: str) -> set[str]:
+    """GitHub-style heading IDs, including duplicate-heading suffixes."""
+    content = re.sub(r"```[\s\S]*?```", "", content)
+    counts: dict[str, int] = {}
+    anchors: set[str] = set()
+    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*#*\s*$", content, re.MULTILINE):
+        base = re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-")
+        count = counts.get(base, 0)
+        anchors.add(f"{base}-{count}" if count else base)
+        counts[base] = count + 1
+    return anchors
+
+
 def get_markdown_files(repo_root: Path) -> list[Path]:
     md_files = []
     for root, dirs, files in os.walk(repo_root):
+        dirs[:] = [
+            d
+            for d in dirs
+            if d
+            not in {
+                ".git",
+                ".venv",
+                "venv",
+                "node_modules",
+                "__pycache__",
+                ".quality",
+                ".quality-linux",
+                ".mypy_cache",
+                ".ruff_cache",
+            }
+        ]
         # Skip git directory
         if ".git" in dirs:
             dirs.remove(".git")
@@ -48,23 +77,31 @@ def validate_internal_links(md_files: list[Path], repo_root: Path) -> tuple[int,
             text, target = match.group(1), match.group(2).strip()
 
             # Ignore external protocols, mailto, and pure anchor links in same file
-            if target.startswith(("http://", "https://", "mailto:", "#")):
+            if target.startswith(("http://", "https://", "mailto:")):
                 continue
 
             # Strip target anchors if present (e.g., path/to/file.md#section)
             clean_target = target.split("#")[0].strip()
             if not clean_target:
-                continue
+                target_path = file_path
 
             # Handle file:/// absolute paths
-            if clean_target.startswith("file://"):
+            elif clean_target.startswith("file://"):
                 target_path = Path(clean_target.replace("file://", ""))
             else:
                 target_path = (file_path.parent / clean_target).resolve()
 
             if not target_path.exists():
                 rel_file = file_path.relative_to(repo_root)
-                broken_links.append(f"{rel_file}: [{text}]({target}) -> Target not found: {clean_target}")
+                broken_links.append(
+                    f"{rel_file}: [{text}]({target}) -> Target not found: {clean_target}"
+                )
+            elif "#" in target and target_path.suffix == ".md":
+                fragment = target.split("#", 1)[1]
+                if fragment not in heading_anchors(target_path.read_text(encoding="utf-8")):
+                    broken_links.append(
+                        f"{file_path.relative_to(repo_root)}: Missing heading anchor: {target}"
+                    )
 
     return total_links, broken_links
 
@@ -78,17 +115,24 @@ def validate_markdown_structure(md_files: list[Path], repo_root: Path) -> list[s
 
         fence_count = 0
         last_heading_level = 0
+        h1_count = 0
 
         for line_num, line in enumerate(lines, start=1):
             # Check for trailing whitespace: allow exactly 2 spaces for standard markdown linebreaks
             if line.endswith("\t"):
                 structure_issues.append(f"{rel_path}:{line_num}: Trailing tab detected")
             elif line.endswith(" ") and not (line.endswith("  ") and not line.endswith("   ")):
-                structure_issues.append(f"{rel_path}:{line_num}: Trailing whitespace detected (not a 2-space linebreak)")
+                structure_issues.append(
+                    f"{rel_path}:{line_num}: Trailing whitespace detected (not a 2-space linebreak)"
+                )
 
             # Track code fences
             stripped = line.strip()
             if stripped.startswith("```"):
+                if fence_count % 2 == 0 and stripped == "```":
+                    structure_issues.append(
+                        f"{rel_path}:{line_num}: Code fence requires a language tag"
+                    )
                 fence_count += 1
 
             # Check heading levels (outside of code fences)
@@ -96,6 +140,8 @@ def validate_markdown_structure(md_files: list[Path], repo_root: Path) -> list[s
                 match = re.match(r"^(#{1,6})\s+", stripped)
                 if match:
                     current_level = len(match.group(1))
+                    if current_level == 1:
+                        h1_count += 1
                     # Heading shouldn't skip levels downwards by more than 1 (e.g. h1 -> h3)
                     if last_heading_level > 0 and current_level > last_heading_level + 1:
                         structure_issues.append(
@@ -104,7 +150,11 @@ def validate_markdown_structure(md_files: list[Path], repo_root: Path) -> list[s
                     last_heading_level = current_level
 
         if fence_count % 2 != 0:
-            structure_issues.append(f"{rel_path}: Unclosed markdown code fence (found {fence_count} fences)")
+            structure_issues.append(
+                f"{rel_path}: Unclosed markdown code fence (found {fence_count} fences)"
+            )
+        if h1_count != 1:
+            structure_issues.append(f"{rel_path}: Expected one H1 heading, found {h1_count}")
 
     return structure_issues
 
@@ -113,7 +163,7 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     md_files = get_markdown_files(repo_root)
 
-    print(f"=== Markdown Quality & Link Validator ===")
+    print("=== Markdown Quality & Link Validator ===")
     print(f"Repository Root: {repo_root}")
     print(f"Markdown Files Found: {len(md_files)}")
     print("-" * 50)
@@ -135,7 +185,9 @@ def main() -> int:
         print("RESULT: PASS — All documentation checks succeeded cleanly.")
         return 0
     else:
-        print(f"RESULT: FAIL — Found {len(broken_links)} broken links and {len(structure_issues)} structural issues.")
+        print(
+            f"RESULT: FAIL — Found {len(broken_links)} broken links and {len(structure_issues)} structural issues."
+        )
         return 1
 
 

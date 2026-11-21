@@ -1,0 +1,45 @@
+{
+  "commands": [
+    [
+      "docker",
+      "stop",
+      "ai-architecture-ollama"
+    ],
+    [
+      "docker",
+      "rm",
+      "ai-architecture-ollama"
+    ],
+    [
+      "docker",
+      "run",
+      "-d",
+      "--name",
+      "ai-architecture-ollama",
+      "--memory",
+      "8g",
+      "--restart",
+      "unless-stopped",
+      "-p",
+      "127.0.0.1:11434:11434",
+      "--mount",
+      "type=bind,source=D:\\ai-models\\ollama,target=/root/.ollama",
+      "ai-architecture-ollama:0.40.16-security.1"
+    ]
+  ],
+  "all_exit_codes": 0,
+  "version": {
+    "version": "0.40.16-security.1"
+  },
+  "image_id": "sha256:65fb566c5a423cb2034cde1e2b774270481f6f52f97b3e4c4b531f978afb91d7",
+  "models": [
+    {
+      "name": "qwen2.5:7b",
+      "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e"
+    },
+    {
+      "name": "nomic-embed-text:latest",
+      "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f"
+    }
+  ]
+}

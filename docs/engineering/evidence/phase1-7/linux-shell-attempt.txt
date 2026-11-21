@@ -1,0 +1,33 @@
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+
+[notice] A new release of pip is available: 24.0 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+Verified native-volume source copy: 336 files
+Python 3.11.18
+Checked 42 packages in 89ms
+============================================================
+ai-application-architecture — Unified Repository Validator
+============================================================
+Repository Root: /validation/source-final
+
+1. Checking physical repository structure & governance rules...
+   PASS — Repository structure
+
+2. Checking contract dependency boundaries (no vendor SDKs)...
+   PASS — Contract boundaries
+
+3. Validating documentation links & markdown formatting...
+   PASS — Documentation validation
+
+4. Validating reference artifact templates & manifests...
+   PASS — Templates & artifact manifests
+
+5. Executing automated unit test suite...
+   PASS — Automated unit tests
+      - Ran 323 unit tests across 9 suites: building-blocks/python (56), examples/agent-execution (65), examples/agentic-workflow (78), examples/ai-evaluation (11), examples/rag (50), examples/structured-generation (10), platform/mcp-adapter (21), platform/ollama-adapter (18), platform/ollama-embedding-adapter (14).
+
+============================================================
+RESULT: REPOSITORY VALIDATION PASSED
+Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests
+============================================================
+/validation/venv/bin/python: can't open file '/validation/source-final/scripts/quality.py\r': [Errno 2] No such file or directory

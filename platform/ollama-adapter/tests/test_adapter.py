@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import io
-import json
 import socket
 import sys
 import unittest
 import urllib.error
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # Ensure paths
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -43,6 +42,55 @@ from ollama_adapter.adapter import OllamaAdapter
 
 class TestOllamaAdapter(unittest.TestCase):
     """Test suite verifying OllamaAdapter behavior, payload mapping, and error resilience."""
+
+    def test_structured_schema_payload_and_endpoint_boundary(self):
+        schema = {"type": "object", "properties": {"answer": {"type": "string"}}}
+        self.assertEqual(
+            OllamaAdapter()._build_payload(
+                CompletionRequest("prompt", "model", metadata={"response_schema": schema})
+            )["format"],
+            schema,
+        )
+        for endpoint in (
+            "file:///tmp/data",
+            "ftp://localhost",
+            "http://user:password@localhost",
+            "http://localhost?secret=x",
+        ):
+            with self.subTest(endpoint=endpoint), self.assertRaises(ValueError):
+                OllamaAdapter(endpoint=endpoint)
+
+    def test_invalid_budget_and_unknown_http_errors_fail_closed(self):
+        for config in (
+            {"timeout_seconds": 0},
+            {"timeout_seconds": float("nan")},
+            {"backoff_base_seconds": float("inf")},
+        ):
+            with self.subTest(config=config), self.assertRaises(ValueError):
+                OllamaAdapter(**config)
+        failure = urllib.error.HTTPError(
+            "http://local", 418, "Unknown status", {}, io.BytesIO(b"{}")
+        )
+        with patch("urllib.request.urlopen", side_effect=failure):
+            with self.assertRaises(Exception) as raised:
+                self.adapter._send_http_request("/unknown", {})
+        self.assertNotIsInstance(raised.exception, AiModelNotFoundError)
+        self.assertEqual(getattr(raised.exception, "error_code", None), "AI_HTTP_ERROR")
+        with patch(
+            "urllib.request.urlopen", side_effect=urllib.error.URLError("operation timed out")
+        ):
+            with self.assertRaises(AiTimeoutError):
+                self.adapter._send_http_request("/api/generate", {})
+
+    def test_provider_wrong_types_and_token_counts_are_not_successes(self):
+        for payload in (
+            {"response": True},
+            {"response": "ok", "model": None},
+            {"response": "ok", "eval_count": True},
+            {"response": "ok", "prompt_eval_count": -1},
+        ):
+            with self.subTest(payload=payload), self.assertRaises(AiInvalidRequestError):
+                self.adapter._map_response(payload, "model")
 
     def setUp(self) -> None:
         self.adapter = OllamaAdapter(
@@ -180,7 +228,7 @@ class TestOllamaAdapter(unittest.TestCase):
 
     def test_transient_retry_success(self) -> None:
         """Verify that a transient 503 error is retried and succeeds on subsequent attempt."""
-        server_err = urllib.error.HTTPError(
+        urllib.error.HTTPError(
             url="http://mock-ollama:11434/api/generate",
             code=503,
             msg="Service Unavailable",
@@ -233,7 +281,9 @@ class TestOllamaAdapter(unittest.TestCase):
             healthy = asyncio.run(self.adapter.check_health())
             self.assertTrue(healthy)
 
-        with patch.object(self.adapter, "_send_http_request", side_effect=urllib.error.URLError("Refused")):
+        with patch.object(
+            self.adapter, "_send_http_request", side_effect=urllib.error.URLError("Refused")
+        ):
             healthy = asyncio.run(self.adapter.check_health())
             self.assertFalse(healthy)
 
@@ -246,20 +296,25 @@ class TestOllamaAdapter(unittest.TestCase):
             ]
         }
         with patch.object(self.adapter, "_send_http_request", return_value=mock_tags):
-            models = asyncio.run(self.adapter.get_installed_models())
+            asyncio.run(self.adapter.get_installed_models())
+
     def test_wrapped_socket_timeout_mapping(self) -> None:
         """Verify URLError wrapping socket.timeout correctly maps to AiTimeoutError."""
         wrapped_timeout = urllib.error.URLError(socket.timeout("timed out"))
         with patch("urllib.request.urlopen", side_effect=wrapped_timeout):
             with self.assertRaises(AiTimeoutError) as ctx:
-                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+                self.adapter._send_http_request(
+                    "/api/generate", {"model": "llama3.2", "prompt": "Hi"}
+                )
             self.assertTrue(ctx.exception.is_transient)
 
     def test_direct_socket_timeout_mapping(self) -> None:
         """Verify direct socket.timeout correctly maps to AiTimeoutError."""
         with patch("urllib.request.urlopen", side_effect=socket.timeout("timed out")):
             with self.assertRaises(AiTimeoutError) as ctx:
-                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+                self.adapter._send_http_request(
+                    "/api/generate", {"model": "llama3.2", "prompt": "Hi"}
+                )
             self.assertTrue(ctx.exception.is_transient)
 
     def test_connection_refused_error_mapping(self) -> None:
@@ -267,7 +322,9 @@ class TestOllamaAdapter(unittest.TestCase):
         conn_err = urllib.error.URLError(ConnectionRefusedError("Connection refused"))
         with patch("urllib.request.urlopen", side_effect=conn_err):
             with self.assertRaises(AiProviderUnavailableError) as ctx:
-                self.adapter._send_http_request("/api/generate", {"model": "llama3.2", "prompt": "Hi"})
+                self.adapter._send_http_request(
+                    "/api/generate", {"model": "llama3.2", "prompt": "Hi"}
+                )
             self.assertTrue(ctx.exception.is_transient)
 
     def test_context_metadata_propagation(self) -> None:

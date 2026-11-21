@@ -98,11 +98,13 @@ class ScriptedGenerationStub(TextGenerationPort):
             )
 
         # Default fallback response if queue is exhausted
-        default_fallback = json.dumps({
-            "type": "final",
-            "final_answer": "Scripted generation queue exhausted; stopping execution.",
-            "explanation": "No further canned decisions available.",
-        })
+        default_fallback = json.dumps(
+            {
+                "type": "final",
+                "final_answer": "Scripted generation queue exhausted; stopping execution.",
+                "explanation": "No further canned decisions available.",
+            }
+        )
         return CompletionResponse(
             text=default_fallback,
             model=request.model,

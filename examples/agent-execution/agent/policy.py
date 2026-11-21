@@ -40,7 +40,9 @@ class CustomerSupportAuthorizationPolicy(AuthorizationPort):
         # 1. Read-only capabilities are accessible to all internal staff roles
         if capability.side_effect_level == SideEffectLevel.READ_ONLY:
             if actor.role in ("junior_agent", "senior_agent", "admin"):
-                return AuthorizationDecision(allowed=True, reason=f"Role '{actor.role}' is authorized for read-only access.")
+                return AuthorizationDecision(
+                    allowed=True, reason=f"Role '{actor.role}' is authorized for read-only access."
+                )
             return AuthorizationDecision(
                 allowed=False,
                 reason=f"Unrecognized or unauthenticated actor role '{actor.role}' cannot access operational data.",

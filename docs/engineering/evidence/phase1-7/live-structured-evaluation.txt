@@ -1,0 +1,19 @@
+Tier 2 voluntary structured-output benchmark; this does not certify full Gate D.
+===========================================================================
+AI EVALUATION REPORT (EXECUTION: LIVE RUNTIME)
+===========================================================================
+Total Scenarios Evaluated: 30
+Schema Adherence Rate:     100.0% (30/30) [Schema benchmark target: >=98.0%]
+Category Accuracy:         86.67% [Artifact Target: >=70.0%]
+Sentiment Accuracy:        76.67%
+Urgency Accuracy:          66.67%
+Average Round-Trip Latency:24533.67 ms
+---------------------------------------------------------------------------
+Breakdown by Scenario Type:
+  * ADVERSARIAL  (n=8) -> Schema Adherence: 100.0% | Category Accuracy: 87.5%
+  * AMBIGUOUS    (n=7) -> Schema Adherence: 100.0% | Category Accuracy: 71.4%
+  * BOUNDARY     (n=5) -> Schema Adherence: 100.0% | Category Accuracy: 80.0%
+  * NORMAL       (n=10) -> Schema Adherence: 100.0% | Category Accuracy: 100.0%
+---------------------------------------------------------------------------
+Gate D Real-Model Evaluation:  [PASSED] (Criteria: >=30 cases, >=98.0% schema adherence)
+===========================================================================

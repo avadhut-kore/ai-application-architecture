@@ -43,7 +43,7 @@ Explain the step-by-step mechanism and how edge cases or malformed responses are
 ## 4. Local Execution & Verification
 
 ### Prerequisites
-* Local runtime: (e.g. Python 3.11+, .NET 8, or Node 20+).
+* Local runtime: (e.g. Python 3.11+, .NET 10, or Node 24+).
 * Local model engine: (e.g. Ollama with local model configured).
 
 ### Run Example

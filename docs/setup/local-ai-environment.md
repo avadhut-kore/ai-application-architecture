@@ -8,11 +8,11 @@ This guide describes how to configure a local development environment for runnin
 
 This repository enforces an evidence-based, local-first policy defined in [`docs/architecture/local-first.md`](../architecture/local-first.md). Before configuring any local AI tools, understand this fundamental distinction:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 1. Deterministic Repository Work (No AI Runtime Required)              │
 │    - Running static analysis, linters, doc checkers, and validators    │
-│    - Running all 63 unit tests across contracts, adapters, and examples │
+│    - Running repository-discovered tests across all active examples │
 │    - Requires only Python 3.11+ and standard repository dependencies    │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 2. Live Runtime Verification (Mode A: Offline Local)                   │
@@ -38,7 +38,7 @@ This repository enforces an evidence-based, local-first policy defined in [`docs
 Hardware requirements follow the sizing profiles in [`docs/architecture/local-first.md`](../architecture/local-first.md):
 
 * **Standard Profile (Recommended)**: Apple Silicon (M1/M2/M3/M4) with $\ge 16\text{GB}$ unified memory, or x86_64 workstation with $\ge 16\text{GB}$ RAM and optional NVIDIA GPU ($\ge 8\text{GB}$ VRAM). Suitable for 3B and 8B parameter models.
-* **Lightweight Profile**: 8GB RAM, CPU-only. Suitable for 1B–3B parameter models (e.g. `llama3.2:3b`, `phi3:mini`).
+* **Lightweight Profile**: 8GB RAM, CPU-only. Suitable for 1B–3B parameter models (e.g. `qwen2.5:7b`, `phi3:mini`).
 
 ---
 
@@ -87,16 +87,16 @@ Expected response: a JSON object containing a `"models"` array.
 
 ## 4. Model Installation & Management
 
-Models are pulled manually by the developer. The recommended development model for Phase 4 reference implementations is **`llama3.2:3b`** (compact, fast inference, strong structured JSON compliance).
+Models are pulled manually by the developer. The recommended development model for Phase 4 reference implementations is **`qwen2.5:7b`** (compact, fast inference, strong structured JSON compliance).
 
 ### 4.1 Installing the Recommended Models
 
 ```bash
 # Pull the 3B parameter Llama 3.2 text generation model (~2.0 GB)
-ollama pull llama3.2:3b
+ollama pull qwen2.5:7b
 
 # Create an alias tag for convenience (optional)
-ollama cp llama3.2:3b llama3.2
+ollama cp qwen2.5:7b qwen2.5:7b
 
 # Pull the recommended dense embedding model for Phase 5 Knowledge Intelligence (~274 MB)
 ollama pull nomic-embed-text
@@ -113,8 +113,8 @@ ollama list
 Expected output:
 ```text
 NAME                     ID              SIZE      MODIFIED
-llama3.2:latest          a80c4f17acd5    2.0 GB    ...
-llama3.2:3b              a80c4f17acd5    2.0 GB    ...
+qwen2.5:7b:latest          a80c4f17acd5    2.0 GB    ...
+qwen2.5:7b              a80c4f17acd5    2.0 GB    ...
 nomic-embed-text:latest  0a109f422b47    274 MB    ...
 ```
 
@@ -174,6 +174,52 @@ python3 examples/rag/eval_runner.py --mode live
 | Symptom | Root Cause | Remediation |
 | :--- | :--- | :--- |
 | `AiProviderUnavailableError` or connection refused on `11434` | Ollama daemon is not running | Run `ollama serve` in a dedicated terminal or launch Ollama.app. |
-| `AiModelNotFoundError` (HTTP 404) | Requested model tag is not downloaded | Run `ollama pull <model-tag>` (e.g. `ollama pull llama3.2:3b`). |
+| `AiModelNotFoundError` (HTTP 404) | Requested model tag is not downloaded | Run `ollama pull <model-tag>` (e.g. `ollama pull qwen2.5:7b`). |
 | `AiTimeoutError` | Model loading or generation exceeded timeout | Increase timeout via `--timeout` argument or verify workstation memory pressure. |
 | Live commands exit with code `1` | Strict exit contract prevents false passes | Check terminal output for the specific failure reason and verify daemon health. |
+
+## Windows Docker storage and local inference
+
+Move Docker Desktop disk storage using Settings → Resources → Advanced before
+pulling images. On the remediation workstation, Docker data is already configured
+under `D:\DockerDesktop\DockerDesktopWSL`. Ollama model files are bind-mounted
+from `D:\ai-models\ollama`; they are separate from image layers. The container
+publishes only `127.0.0.1:11434`. Models are explicitly installed by the developer,
+never by tests or CI.
+
+Use the locked root environment (`uv sync --frozen`) for Python commands. A local
+Ollama Docker endpoint works with the existing adapters; no cloud credentials are
+needed. Runtime examples default to live inference. A deterministic harness pass
+is not evidence of live model quality.
+
+For the pinned container configuration, copy `.env.example` to `.env`, create
+the `OLLAMA_MODEL_DIR` directory, and run `docker compose up --build -d`. Compose
+builds the [same-release security patch](../../platform/ollama-adapter/Dockerfile.security)
+from pinned upstream inputs; the initial build requires network access and extra
+Docker disk space. It updates the three HIGH package findings recorded in the
+[evidence report](../engineering/phase1-7-remediation.md). Initial image/build/model
+installation is separate from the measured interactive CLI demonstration.
+Install model
+weights explicitly with `docker compose exec ollama ollama pull qwen2.5:7b`
+and `docker compose exec ollama ollama pull nomic-embed-text`. The workflow CLI
+defaults to the same Qwen tag. An existing
+Ollama container already publishing port 11434 must be stopped before starting
+this Compose service. Model downloads need network access once; subsequent
+local inference needs no paid API key.
+
+## Local trace export
+
+Python CLIs use process environment variables; Compose's `.env` interpolation
+does not export those variables into a separate Python terminal. To record
+metadata-only OpenTelemetry JSON spans on Windows:
+
+```powershell
+$env:AI_TRACE_FILE = ".quality/traces/local.jsonl"
+uv run --frozen python examples/agentic-workflow/demo.py start --customer cust-001 --inquiry "Check account status"
+```
+
+On Linux or macOS, prefix the command with
+`AI_TRACE_FILE=.quality/traces/local.jsonl`. The exporter records operation names,
+model names, timing, usage and status, with parent/child correlation. It does not
+export prompts, answers, retrieved text or exception messages. An application
+that already configures an SDK tracer provider keeps ownership of that provider.

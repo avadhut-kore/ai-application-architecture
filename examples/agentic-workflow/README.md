@@ -16,7 +16,7 @@ The central thesis of Phase 7 is:
 
 ## 2. Architectural Overview & Component Structure
 
-This reference implementation models a production-rigorous Tier 2 reference **Customer Account Remediation Workflow** using pure Python standard library and an ACID SQLite checkpoint store (Mode A: Offline Local).
+This reference implementation models a focused Tier 2 **Customer Account Remediation Workflow** using Python, SQLite and the locked telemetry dependencies. Its deterministic harness runs in Mode A; the runtime demo uses real local Ollama inference in Mode B.
 
 ```text
 examples/agentic-workflow/
@@ -47,7 +47,7 @@ examples/agentic-workflow/
 │       ├── agentic.py             # AgenticInvestigationStep (strictly read-only)
 │       ├── human.py               # HumanApprovalStep (durable suspension)
 │       └── mutation.py            # MutationExecutionStep (pre-verified tool execution)
-└── tests/                         # 56 hermetic unit and integration tests
+└── tests/                         # repository-discovered deterministic tests
 ```
 
 ---
@@ -83,10 +83,11 @@ stateDiagram-v2
 
     AGENTIC_INVESTIGATION --> FINALIZATION: Proposal = INFORMATIONAL
     AGENTIC_INVESTIGATION --> TERMINAL_ESCALATED: Proposal = SECURITY_ESCALATION
-    AGENTIC_INVESTIGATION --> MUTATE_NOTE: Proposal = CUSTOMER_NOTE
+    AGENTIC_INVESTIGATION --> HUMAN_APPROVAL: Proposal = CUSTOMER_NOTE
     AGENTIC_INVESTIGATION --> HUMAN_APPROVAL: Proposal = FEE_CREDIT
 
-    HUMAN_APPROVAL --> MUTATION_EXECUTION: Operator Approved
+    HUMAN_APPROVAL --> MUTATION_EXECUTION: Credit Approved
+    HUMAN_APPROVAL --> MUTATE_NOTE: Note Approved
     HUMAN_APPROVAL --> TERMINAL_REJECTED: Operator Rejected
 
     MUTATE_NOTE --> FINALIZATION: Note Appended
@@ -96,6 +97,7 @@ stateDiagram-v2
     MUTATION_EXECUTION --> TERMINAL_FAILED: Credit Failed (No Prior Note)
 
     COMPENSATE_MUTATION --> TERMINAL_FAILED: Compensation Completed
+    note right of COMPENSATE_MUTATION: Separate human approval required before compensation
 
     FINALIZATION --> TERMINAL_COMPLETED: Done
 
@@ -106,7 +108,7 @@ stateDiagram-v2
 ```
 
 ### Safety Invariants
-1. **Model Output Cannot Route**: The model emits a typed `RemediationProposal`. The state machine engine strictly evaluates declarative transition rules against the proposal type. Injected strings like `"goto": "finalization"` are completely ignored.
+1. **Model Output Cannot Route**: The model emits a typed `RemediationProposal`. The state machine engine strictly evaluates declarative transition rules against the proposal type. Unexpected routing fields such as `"goto": "finalization"` cause proposal rejection.
 2. **Cycle Ceiling**: A maximum transition count (`max_transitions = 15`) guarantees bounded execution and prevents infinite loops.
 3. **Terminal Immobility**: Once a workflow reaches `COMPLETED`, `FAILED`, `REJECTED`, or `ESCALATED`, no further transitions or physical mutations are permitted.
 
@@ -126,13 +128,14 @@ To guarantee that autonomous model reasoning cannot cause side-effects:
 
 ## 6. Durable Human-in-the-Loop (HITL) Lifecycle
 
-When an agentic investigation proposes a state-mutating fee credit:
+When an investigation proposes a fee credit or customer note:
 1. **Suspension**: The workflow enters `HUMAN_APPROVAL`. A `DurableApprovalRecord` is generated and saved to SQLite with status `PENDING`.
 2. **Persistence**: The workflow state transitions to `AWAITING_APPROVAL`. Checkpoint version increments, SHA-256 integrity checksum is committed to disk, and the execution process cleanly exits.
 3. **External Operator Action**: An independent process loads the pending approval, reviews the proposal, and registers an approval decision (`APPROVED` or `REJECTED`).
 4. **Resumption & CAS**: Resumption uses optimistic Compare-and-Swap (CAS) on `checkpoint_version` and status to prevent concurrent resume conflicts.
-5. **Pre-Execution 7-Point Binding Verification**: Before executing the physical tool, `WorkflowApprovalVerifier` confirms:
+5. **Pre-Execution Approval Binding Verification**: Before executing the physical tool, `WorkflowApprovalVerifier` confirms:
    - Approval status is `APPROVED` and not `CONSUMED`.
+   - Workflow definition ID and version match.
    - Workflow ID matches.
    - Stable action ID matches.
    - Target capability matches.
@@ -161,13 +164,13 @@ $$\text{action\_id} = \text{"act-" } \mathbin{\Vert} \text{workflow\_id} \mathbi
 
 ## 8. Local Saga Backward Compensation
 
-In multi-step remediation flows where an operational note is logged prior to credit disbursement:
+The canonical graph chooses note or credit; it does not execute a forward note-then-credit sequence. The compensation branch is exercised with explicitly supplied prior-note context. When that context exists:
 * If the credit disbursement encounters permanent downstream failure (e.g. gateway error or policy cap violation), the workflow transitions to `COMPENSATE_MUTATION`.
-* The compensating step invokes `update_customer_note` appending an inverse compensating record:
+* The compensating step first suspends for a separate human approval; after approval it invokes `update_customer_note` appending an inverse compensating record:
   `"COMPENSATION: Fee credit disbursement failed for workflow ... Concession note voided."`
 * If compensation succeeds, the workflow completes in `FAILED` status with `compensation_applied = True`.
 * If compensation itself fails, the system logs `manual_intervention_required` and halts safely.
-* **Compensation Crash Recovery & Reconciliation**: Compensating actions derive stable action IDs (`act-{wf_id}-compensate_mutation-...`) and enforce the same in-flight reconciliation semantics as primary mutations. If a crash occurs after `EXECUTION_STARTED`, resumption reconciles customer notes: if the compensating note already physically exists, duplicate invocation is suppressed (`duplicate_suppressed = True`) and ledger is committed to `EXECUTED`; if unexecuted, it executes safely; if inconclusive, it fails closed to `AMBIGUOUS` with `manual_intervention_required = True`.
+* **Compensation Crash Recovery & Reconciliation**: Stable action IDs are reconciled against persisted domain action receipts. A confirmed receipt suppresses duplicate invocation; confirmed absence permits execution under the original ID and approval. Matching note text is insufficient. Inconclusive recovery fails closed to `AMBIGUOUS` and requests manual intervention.
 
 ---
 
@@ -177,7 +180,7 @@ In multi-step remediation flows where an operational note is logged prior to cre
 ```bash
 python3 -m unittest discover -s examples/agentic-workflow/tests
 ```
-Executes 56 hermetic unit and integration tests across 11 test modules.
+Executes the repository-discovered deterministic test modules; consult the evidence report for current counts.
 
 ### Run 30-Scenario Deterministic Evaluation
 ```bash
@@ -198,9 +201,9 @@ python3 examples/agentic-workflow/eval_runner.py --self-test
 
 ### Run Live Local Ollama Smoke Suite
 ```bash
-python3 examples/agentic-workflow/live_smoke.py --model llama3.2
+python3 examples/agentic-workflow/live_smoke.py --model qwen2.5:7b
 ```
-Connects to local Ollama (`http://localhost:11434`), verifies provider reachability, executes live reasoning with real `llama3.2`, and confirms read-only investigation invariants. If Ollama is offline:
+Connects to local Ollama (`http://localhost:11434`), verifies provider reachability, executes live reasoning with real `qwen2.5:7b`, and confirms read-only investigation invariants. If Ollama is offline:
 ```bash
 python3 examples/agentic-workflow/live_smoke.py --allow-unverified
 ```
@@ -222,5 +225,24 @@ python3 examples/agentic-workflow/demo.py approve --workflow-id wf-demo-1 --appr
 ```bash
 python3 examples/agentic-workflow/verify.py
 ```
-Runs artifact manifest validation, all 47 unit tests, and the 30-scenario evaluation harness, confirming:
+Runs artifact manifest validation, the current deterministic tests, and the 30-scenario evaluation harness, confirming:
 `PHASE 7 DETERMINISTIC VERIFICATION PASSED`.
+
+## Recovery and verification boundaries
+
+The demo invokes real local Ollama; scripted reasoning is confined to test fixtures.
+Customer accounts and action-keyed receipts persist in SQLite alongside workflow
+tables. `recover --workflow-id ID` acquires exclusive OS ownership, reconciles an
+interrupted action and continues safely; it never invents a missing human decision.
+Use the same `--db` path for start, inspect, approve and recover commands. A live
+process holding ownership blocks another recovery attempt. This is single-host
+local-filesystem coordination, not a distributed lease.
+
+Customer notes require human approval. Compensation is also a mutation and pauses
+for a separate approval. The canonical example consumes an existing prior-note
+condition; it does not autonomously create a complete note-then-credit business saga.
+The standalone saga coordinator is process-local and requires an explicit approval
+and authorization callback; durable compensation is handled by the workflow graph.
+
+Current evidence and limitations are recorded in the
+[remediation record](../../docs/engineering/phase1-7-remediation.md).

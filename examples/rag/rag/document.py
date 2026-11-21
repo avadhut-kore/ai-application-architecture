@@ -23,7 +23,6 @@ class Document:
             raise ValueError("Document content must be a string")
 
 
-
 @dataclass(frozen=True)
 class Chunk:
     """Represents a bounded textual passage extracted from a Document.

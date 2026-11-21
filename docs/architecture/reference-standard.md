@@ -6,7 +6,7 @@ Not every implementation in this repository serves the same purpose or requires 
 
 This document establishes **Four Reference Implementation Tiers**:
 
-```
+```text
  ┌────────────────────────────────────────────────────────────────────────┐
  │ TIER 1: REFERENCE APPLICATION                                          │
  │ Full end-to-end production architecture with complete enterprise rigor │

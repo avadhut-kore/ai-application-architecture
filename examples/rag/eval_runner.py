@@ -18,13 +18,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 import sys
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
@@ -86,6 +85,16 @@ class ScenarioEvalResult:
     latency_ms: float
     answer: str
     error: Optional[str] = None
+    cited_chunk_ids: List[str] = field(default_factory=list)
+    supplied_chunk_ids: List[str] = field(default_factory=list)
+
+
+def adversarial_handling_passed(results: List[ScenarioEvalResult]) -> bool:
+    """Measure bounded abstention/schema/citation checks, not general attack resistance."""
+    return bool(results) and all(
+        r.schema_valid and r.abstention_accurate and r.citation_accuracy == 1.0 and not r.error
+        for r in results
+    )
 
 
 @dataclass
@@ -109,6 +118,7 @@ class RAGEvalSummary:
     reference_thresholds_met: bool
     reference_threshold_details: Dict[str, Any]
     real_ai_quality_verified: bool
+    scoring_version: str = "2.0-cited-reference-facts"
     gate_d_applicable: bool = False
     gate_d_status: str = "NOT_APPLICABLE"
     type_breakdown: Dict[str, Dict[str, float]] = field(default_factory=dict)
@@ -164,7 +174,9 @@ async def setup_knowledge_index(
 
     # Batch embedding
     chunk_texts = [c.text for c in all_chunks]
-    req = EmbeddingRequest(inputs=chunk_texts, model=embedding_model)
+    req = EmbeddingRequest(
+        inputs=chunk_texts, model=embedding_model, metadata={"input_type": "document"}
+    )
     res = await embedding_port.embed(req)
 
     index = InMemoryVectorIndex(dimensions=res.dimensions)
@@ -202,10 +214,13 @@ def evaluate_single_scenario(
 
         # Context relevance: ratio of retrieved chunks that belong to expected documents or chunks
         relevant_count = sum(
-            1 for r in response.retrieved_results
+            1
+            for r in response.retrieved_results
             if r.chunk_id in expected_cids or r.document_id in scenario.expected_document_ids
         )
-        context_relevance = relevant_count / len(response.retrieved_results) if response.retrieved_results else 0.0
+        context_relevance = (
+            relevant_count / len(response.retrieved_results) if response.retrieved_results else 0.0
+        )
 
     # 2. Generation Metrics
     # Schema adherence: check if model output satisfied the schema without fallback and has no schema_error
@@ -228,14 +243,31 @@ def evaluate_single_scenario(
         # Check that verified citations exist
         has_verified_citations = len(response.citations) > 0
         # Check expected facts presence in answer
-        facts_present = all(fact.lower() in response.answer.lower() for fact in scenario.expected_facts)
-        grounded = has_verified_citations and facts_present and not response.insufficient_evidence
+        facts_present = all(
+            fact.lower() in response.answer.lower() for fact in scenario.expected_facts
+        )
+        cited_ids = {citation.chunk_id for citation in response.citations}
+        supplied_ids = set(response.context_build.included_chunk_ids)
+        cited_text = "\n".join(
+            row.text.lower()
+            for row in response.retrieved_results
+            if row.chunk_id in cited_ids & supplied_ids
+        )
+        facts_supported = all(fact.lower() in cited_text for fact in scenario.expected_facts)
+        grounded = (
+            has_verified_citations
+            and facts_present
+            and facts_supported
+            and not response.insufficient_evidence
+        )
 
     # Citation accuracy: verified citations / total citations produced
     if scenario.expected_abstention:
         citation_acc = 1.0 if len(response.citations) == 0 else 0.0
     else:
-        total_cited = len(response.citation_validation.verified_citations) + len(response.citation_validation.rejected_citation_ids)
+        total_cited = len(response.citation_validation.verified_citations) + len(
+            response.citation_validation.rejected_citation_ids
+        )
         if total_cited == 0:
             citation_acc = 0.0
         else:
@@ -256,6 +288,8 @@ def evaluate_single_scenario(
         abstention_accurate=abstention_accurate,
         latency_ms=response.latency_ms,
         answer=response.answer,
+        cited_chunk_ids=[citation.chunk_id for citation in response.citations],
+        supplied_chunk_ids=list(response.context_build.included_chunk_ids),
     )
 
 
@@ -264,10 +298,12 @@ async def run_evaluation(
     corpus_dir: Path,
     mode: str = "fake",
     embedding_model: str = "nomic-embed-text",
-    generation_model: str = "llama3.2",
+    generation_model: str = "qwen2.5:7b",
     endpoint: str = "http://localhost:11434",
     top_k: int = 2,
     allow_unverified: bool = False,
+    progress_path: Optional[Path] = None,
+    timeout_seconds: float = 240.0,
 ) -> Tuple[Optional[RAGEvalSummary], List[ScenarioEvalResult]]:
     """Run full evaluation suite over dataset scenarios."""
     scenarios = load_dataset(dataset_path)
@@ -275,11 +311,16 @@ async def run_evaluation(
     if mode == "live":
         print(f"Connecting to live Ollama runtime at: {endpoint}")
         embed_adapter = OllamaEmbeddingAdapter(endpoint=endpoint, default_model=embedding_model)
-        gen_adapter = OllamaAdapter(endpoint=endpoint, default_model=generation_model)
+        gen_adapter = OllamaAdapter(
+            endpoint=endpoint,
+            default_model=generation_model,
+            timeout_seconds=timeout_seconds,
+            max_retries=0,
+        )
 
         is_healthy = await embed_adapter.check_health()
         if not is_healthy:
-            print(f"\n[LIVE EVALUATION STATUS: NOT VERIFIED]")
+            print("\n[LIVE EVALUATION STATUS: NOT VERIFIED]")
             print(f"Reason: Ollama daemon is unreachable at '{endpoint}'.")
             if allow_unverified:
                 return None, []
@@ -291,12 +332,16 @@ async def run_evaluation(
         has_gen_model = any(generation_model.split(":")[0] in m for m in installed)
 
         if not has_embed_model or not has_gen_model:
-            print(f"\n[LIVE EVALUATION STATUS: NOT VERIFIED]")
+            print("\n[LIVE EVALUATION STATUS: NOT VERIFIED]")
             print(f"Installed models: {installed}")
             if not has_embed_model:
-                print(f"Missing required embedding model: '{embedding_model}'. Run `ollama pull {embedding_model}`.")
+                print(
+                    f"Missing required embedding model: '{embedding_model}'. Run `ollama pull {embedding_model}`."
+                )
             if not has_gen_model:
-                print(f"Missing required generation model: '{generation_model}'. Run `ollama pull {generation_model}`.")
+                print(
+                    f"Missing required generation model: '{generation_model}'. Run `ollama pull {generation_model}`."
+                )
             if allow_unverified:
                 return None, []
             sys.exit(1)
@@ -328,11 +373,24 @@ async def run_evaluation(
     index, docs, chunks = await setup_knowledge_index(corpus_dir, embedding_port, embedding_model)
     print(f"Indexed {len(docs)} documents ({len(chunks)} chunks) into in-memory vector index.")
 
-    retriever = Retriever(embedding_port=embedding_port, vector_index=index, embedding_model=embedding_model, default_top_k=top_k)
+    retriever = Retriever(
+        embedding_port=embedding_port,
+        vector_index=index,
+        embedding_model=embedding_model,
+        default_top_k=top_k,
+        prefer_primary_document=True,
+    )
     validator = CitationValidator(document_catalog={d.document_id: d for d in docs})
-    service = RAGService(retriever=retriever, llm_client=llm_port, citation_validator=validator, model=generation_model)
+    service = RAGService(
+        retriever=retriever,
+        llm_client=llm_port,
+        citation_validator=validator,
+        model=generation_model,
+    )
 
-    print(f"\nExecuting evaluation across {len(scenarios)} scenarios (mode={mode}, top_k={top_k})...")
+    print(
+        f"\nExecuting evaluation across {len(scenarios)} scenarios (mode={mode}, top_k={top_k})..."
+    )
     results: List[ScenarioEvalResult] = []
 
     for i, sc in enumerate(scenarios, start=1):
@@ -344,9 +402,18 @@ async def run_evaluation(
 
         eval_res = evaluate_single_scenario(sc, res)
         results.append(eval_res)
+        if progress_path is not None:
+            progress_path.parent.mkdir(parents=True, exist_ok=True)
+            pending = progress_path.with_suffix(".tmp")
+            pending.write_text(
+                json.dumps([asdict(row) for row in results], indent=2), encoding="utf-8"
+            )
+            pending.replace(progress_path)
 
         status_symbol = "✓" if (eval_res.grounded and eval_res.hit) else "✗"
-        print(f"[{i:02d}/{len(scenarios):02d}] {status_symbol} {sc.scenario_id} ({sc.scenario_type}): {sc.query[:50]}...")
+        print(
+            f"[{i:02d}/{len(scenarios):02d}] {status_symbol} {sc.scenario_id} ({sc.scenario_type}): {sc.query[:50]}..."
+        )
 
     # Aggregate metrics
     total = len(results)
@@ -360,18 +427,45 @@ async def run_evaluation(
     abstention_acc = sum(1 for r in results if r.abstention_accurate) / total
     avg_latency = sum(r.latency_ms for r in results) / total
 
+    adversarial_results = [r for r in results if r.scenario_type == "adversarial_injection"]
+    adversarial_handled = adversarial_handling_passed(adversarial_results)
+
     # Reference threshold assessment against Tier 1 quantitative benchmarks
-    reference_threshold_details = {
-        "scenario_count": {"measured": total, "required": GATE_D_MIN_SCENARIOS, "passed": total >= GATE_D_MIN_SCENARIOS},
-        "groundedness": {"measured": round(groundedness, 4), "required": GATE_D_GROUNDEDNESS_THRESHOLD, "passed": groundedness >= GATE_D_GROUNDEDNESS_THRESHOLD},
-        "context_relevance": {"measured": round(mean_context_rel, 4), "required": GATE_D_CONTEXT_RELEVANCE_THRESHOLD, "passed": mean_context_rel >= GATE_D_CONTEXT_RELEVANCE_THRESHOLD},
-        "schema_adherence": {"measured": round(schema_adh, 4), "required": GATE_D_SCHEMA_ADHERENCE_THRESHOLD, "passed": schema_adh >= GATE_D_SCHEMA_ADHERENCE_THRESHOLD},
-        "adversarial_handling": {"measured": True, "required": True, "passed": True},
+    reference_threshold_details: Dict[str, Dict[str, Any]] = {
+        "scenario_count": {
+            "measured": total,
+            "required": GATE_D_MIN_SCENARIOS,
+            "passed": total >= GATE_D_MIN_SCENARIOS,
+        },
+        "groundedness": {
+            "measured": round(groundedness, 4),
+            "required": GATE_D_GROUNDEDNESS_THRESHOLD,
+            "passed": groundedness >= GATE_D_GROUNDEDNESS_THRESHOLD,
+        },
+        "context_relevance": {
+            "measured": round(mean_context_rel, 4),
+            "required": GATE_D_CONTEXT_RELEVANCE_THRESHOLD,
+            "passed": mean_context_rel >= GATE_D_CONTEXT_RELEVANCE_THRESHOLD,
+        },
+        "schema_adherence": {
+            "measured": round(schema_adh, 4),
+            "required": GATE_D_SCHEMA_ADHERENCE_THRESHOLD,
+            "passed": schema_adh >= GATE_D_SCHEMA_ADHERENCE_THRESHOLD,
+        },
+        "adversarial_handling": {
+            "measured": adversarial_handled,
+            "required": True,
+            "passed": adversarial_handled,
+        },
     }
-    reference_thresholds_met = all(check["passed"] for check in reference_threshold_details.values())
+    reference_thresholds_met = all(
+        check["passed"] for check in reference_threshold_details.values()
+    )
     harness_passed = True  # Evaluation harness executed completely without unhandled errors
     real_ai_quality_verified = (mode == "live") and reference_thresholds_met
-    gate_d_applicable = False  # Per QUALITY-GATES.md, Gate D applies to Tier 1 Reference Applications
+    gate_d_applicable = (
+        False  # Per QUALITY-GATES.md, Gate D applies to Tier 1 Reference Applications
+    )
     gate_d_status = "NOT_APPLICABLE"
 
     # Type breakdown
@@ -424,42 +518,66 @@ def print_report(summary: RAGEvalSummary) -> None:
     print(f"  Hit Rate:                 {summary.hit_rate * 100:.1f}%")
     print(f"  Recall@K:                 {summary.mean_recall_at_k * 100:.1f}%")
     print(f"  MRR (Mean Reciprocal Rank): {summary.mrr:.3f}")
-    print(f"  Context Relevance:        {summary.mean_context_relevance * 100:.1f}% (Threshold: >= {GATE_D_CONTEXT_RELEVANCE_THRESHOLD * 100:.0f}%)")
+    print(
+        f"  Context Relevance:        {summary.mean_context_relevance * 100:.1f}% (Threshold: >= {GATE_D_CONTEXT_RELEVANCE_THRESHOLD * 100:.0f}%)"
+    )
     print("-" * 70)
     print("GROUNDED GENERATION METRICS:")
-    print(f"  Schema Adherence:         {summary.schema_adherence_rate * 100:.1f}% (Threshold: >= {GATE_D_SCHEMA_ADHERENCE_THRESHOLD * 100:.0f}%)")
-    print(f"  Groundedness / Faithfulness:{summary.groundedness_rate * 100:.1f}% (Threshold: >= {GATE_D_GROUNDEDNESS_THRESHOLD * 100:.0f}%)")
-    print(f"  Citation Accuracy:        {summary.citation_accuracy_rate * 100:.1f}%")
+    print(
+        f"  Schema Adherence:         {summary.schema_adherence_rate * 100:.1f}% (Threshold: >= {GATE_D_SCHEMA_ADHERENCE_THRESHOLD * 100:.0f}%)"
+    )
+    print(
+        f"  Cited reference-fact coverage:{summary.groundedness_rate * 100:.1f}% (Threshold: >= {GATE_D_GROUNDEDNESS_THRESHOLD * 100:.0f}%)"
+    )
+    print(f"  Citation ID validity:     {summary.citation_accuracy_rate * 100:.1f}%")
     print(f"  Abstention Accuracy:      {summary.abstention_accuracy_rate * 100:.1f}%")
     print("-" * 70)
     print("SCENARIO TYPE BREAKDOWN:")
     for st, data in summary.type_breakdown.items():
-        print(f"  {st:<28} (n={data['count']:<2}) Hit: {data['hit_rate']*100:>5.1f}% | Grounded: {data['groundedness']*100:>5.1f}%")
+        print(
+            f"  {st:<28} (n={data['count']:<2}) Hit: {data['hit_rate'] * 100:>5.1f}% | Grounded: {data['groundedness'] * 100:>5.1f}%"
+        )
     print("-" * 70)
     print("QUALITY GOVERNANCE & EVALUATION ASSESSMENT:")
     if summary.mode == "fake":
         print("  Evaluation Harness Validation: [PASS]")
-        print("    -> Deterministic scenario execution, scoring mechanics, and threshold evaluation verified.")
+        print(
+            "    -> Deterministic scenario execution, scoring mechanics, and threshold evaluation verified."
+        )
         print("  Real AI RAG Quality:          [NOT VERIFIED]")
         print("    -> Offline test doubles cannot establish real probabilistic model compliance.")
         print("  Gate D Applicability:         [NOT APPLICABLE TO TIER 2]")
-        print("    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications).")
-        print("       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark.")
+        print(
+            "    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications)."
+        )
+        print(
+            "       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark."
+        )
     else:
         status_str = "PASS" if summary.real_ai_quality_verified else "FAIL"
         print("  Evaluation Harness Validation: [PASS]")
-        print(f"  Real AI RAG Quality:          [{status_str}] (Live execution on {summary.total_scenarios} scenarios)")
+        print(
+            f"  Real AI RAG Quality:          [{status_str}] (Live execution on {summary.total_scenarios} scenarios)"
+        )
         print("  Gate D Applicability:         [NOT APPLICABLE TO TIER 2]")
-        print("    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications).")
-        print("       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark.")
+        print(
+            "    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 (Reference Applications)."
+        )
+        print(
+            "       Tier 2 Pattern Examples execute RAG evaluation as a voluntary quality benchmark."
+        )
         if not summary.reference_thresholds_met:
             for k, v in summary.reference_threshold_details.items():
                 if not v["passed"]:
-                    print(f"    Deficiency: {k} (measured: {v['measured']}, required: {v['required']})")
+                    print(
+                        f"    Deficiency: {k} (measured: {v['measured']}, required: {v['required']})"
+                    )
     print("=" * 70)
 
 
-def save_report(summary: RAGEvalSummary, results: List[ScenarioEvalResult], output_dir: Path) -> Path:
+def save_report(
+    summary: RAGEvalSummary, results: List[ScenarioEvalResult], output_dir: Path
+) -> Path:
     """Save structured evaluation report JSON file."""
     output_dir.mkdir(parents=True, exist_ok=True)
     report_file = output_dir / f"eval_report_{int(time.time())}.json"
@@ -472,16 +590,38 @@ def save_report(summary: RAGEvalSummary, results: List[ScenarioEvalResult], outp
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate Knowledge Intelligence and RAG capability.")
-    parser.add_argument("--mode", choices=["fake", "live"], default="fake", help="Execution mode (default: fake)")
-    parser.add_argument("--dataset", default=str(RAG_DIR / "eval_dataset.jsonl"), help="Path to eval_dataset.jsonl")
-    parser.add_argument("--corpus", default=str(RAG_DIR / "corpus"), help="Path to corpus directory")
-    parser.add_argument("--endpoint", default="http://localhost:11434", help="Ollama API base URL for live mode")
+    parser = argparse.ArgumentParser(
+        description="Evaluate Knowledge Intelligence and RAG capability."
+    )
+    parser.add_argument(
+        "--mode", choices=["fake", "live"], default="fake", help="Execution mode (default: fake)"
+    )
+    parser.add_argument(
+        "--dataset", default=str(RAG_DIR / "eval_dataset.jsonl"), help="Path to eval_dataset.jsonl"
+    )
+    parser.add_argument(
+        "--corpus", default=str(RAG_DIR / "corpus"), help="Path to corpus directory"
+    )
+    parser.add_argument(
+        "--endpoint", default="http://localhost:11434", help="Ollama API base URL for live mode"
+    )
     parser.add_argument("--embed-model", default="nomic-embed-text", help="Embedding model tag")
-    parser.add_argument("--gen-model", default="llama3.2", help="Generation model tag")
-    parser.add_argument("--top-k", type=int, default=2, help="Retrieval top-k depth (default: 2)")
+    parser.add_argument("--gen-model", default="qwen2.5:7b", help="Generation model tag")
+    parser.add_argument(
+        "--timeout", type=float, default=240.0, help="Bounded provider request timeout in seconds"
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Maximum retrieval depth (default: 3; primary-document tail policy)",
+    )
     parser.add_argument("--output-dir", default=str(RAG_DIR / "results"), help="Results directory")
-    parser.add_argument("--allow-unverified", action="store_true", help="Exit 0 when live infrastructure is unavailable")
+    parser.add_argument(
+        "--allow-unverified",
+        action="store_true",
+        help="Exit 0 when live infrastructure is unavailable",
+    )
     args = parser.parse_args()
 
     dataset_path = Path(args.dataset)
@@ -498,6 +638,8 @@ def main() -> int:
             endpoint=args.endpoint,
             top_k=args.top_k,
             allow_unverified=args.allow_unverified,
+            progress_path=output_dir / "eval_progress.json",
+            timeout_seconds=args.timeout,
         )
     )
 
@@ -516,4 +658,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

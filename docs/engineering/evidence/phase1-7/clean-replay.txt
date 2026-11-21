@@ -1,0 +1,8 @@
+
+[DEMO RESUME] Resuming workflow 'wf-clean-live-final' from 'D:\company\products\ai-application-architecture\.quality\clean-live-final.db'...
+Decision: APPROVED
+Approver: manager_jane
+Reason:   CLI APPROVED action
+
+
+Execution halted with error: Workflow 'wf-clean-live-final' cannot be resumed from status 'completed'. Expected 'awaiting_approval' (already in progress or terminal).

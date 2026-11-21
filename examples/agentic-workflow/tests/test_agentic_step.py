@@ -23,7 +23,6 @@ from contracts.agent import (
 )
 from contracts.workflow import StepExecutionStatus, WorkflowDefinitionRef, WorkflowStatus
 from workflow.state import (
-    RemediationProposal,
     RemediationType,
     WorkflowActorSnapshot,
     WorkflowState,
@@ -79,6 +78,7 @@ class MockAgentEngine:
                 self.status = "COMPLETED"
                 self.run_id = "run-mock-123"
                 self.episodes = ()
+
         return MockResult(self.answer_text)
 
 
@@ -87,7 +87,9 @@ class TestAgenticInvestigationStep(unittest.IsolatedAsyncioTestCase):
 
     def test_enforces_read_only_registry_invariant(self) -> None:
         """Investigation step MUST reject any registry containing STATE_MUTATING tools."""
-        mutating_registry = CapabilityRegistry([DummyReadOnlyCapability(), DummyMutatingCapability()])
+        mutating_registry = CapabilityRegistry(
+            [DummyReadOnlyCapability(), DummyMutatingCapability()]
+        )
         with self.assertRaises(ValueError) as ctx:
             AgenticInvestigationStep(
                 agent_engine=MockAgentEngine(""),
@@ -105,8 +107,7 @@ class TestAgenticInvestigationStep(unittest.IsolatedAsyncioTestCase):
             "{\n"
             '  "proposal_type": "fee_credit",\n'
             '  "summary": "Refund accidental overdraft fee",\n'
-            '  "suggested_arguments": {"amount": 3500},\n'
-            '  "confidence": 0.95,\n'
+            '  "suggested_arguments": {"amount_cents": 3500, "reason": "Verified duplicate fee"},\n'
             '  "requires_human_approval": true\n'
             "}\n"
             "```\n"
@@ -136,7 +137,7 @@ class TestAgenticInvestigationStep(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(proposal_dict)
         assert proposal_dict is not None
         self.assertEqual(proposal_dict["proposal_type"], "fee_credit")
-        self.assertEqual(proposal_dict["suggested_arguments"]["amount"], 3500)
+        self.assertEqual(proposal_dict["suggested_arguments"]["amount_cents"], 3500)
 
     async def test_unstructured_output_defaults_to_informational(self) -> None:
         """Unparseable or non-JSON model answer safely defaults to INFORMATIONAL proposal."""
@@ -160,12 +161,8 @@ class TestAgenticInvestigationStep(unittest.IsolatedAsyncioTestCase):
 
         outcome = await step.execute(state)
 
-        self.assertEqual(outcome.status, StepExecutionStatus.SUCCEEDED)
-        self.assertEqual(outcome.outcome_type, RemediationType.INFORMATIONAL.value)
-        proposal_dict = outcome.context_updates.get("remediation_proposal")
-        self.assertIsNotNone(proposal_dict)
-        assert proposal_dict is not None
-        self.assertEqual(proposal_dict["proposal_type"], "informational")
+        self.assertEqual(outcome.status, StepExecutionStatus.FAILED)
+        self.assertEqual(outcome.outcome_type, "invalid_proposal")
 
 
 if __name__ == "__main__":

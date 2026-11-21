@@ -1,0 +1,44 @@
+======================================================================
+PHASE 7 LIVE LOCAL OLLAMA SMOKE VERIFICATION
+======================================================================
+Target Endpoint:  http://localhost:11434
+Target Model:     test
+Allow Unverified: False
+
+Ollama Daemon: Reachable (HTTP 200 OK)
+Installed Models: ['test:latest']
+Using Model:   test:latest
+
+----------------------------------------------------------------------
+Scenario 1: Live Read-Only Account Status Investigation
+----------------------------------------------------------------------
+Workflow ID:      wf-live-001
+Terminal Status:  FAILED
+Current Step:     terminal_failed
+Duration:         106.4ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation']
+Failure evidence: [('valid_input', None), ('context_loaded', None), ('agent_failed', 'Execution failed: The model repeatedly emitted malformed decision output.')]
+STATUS: FAILED — read-only scenario did not complete
+..............Executing <Task pending name='Task-26' coro=<TestConcurrentResume.test_competing_resumes_result_in_exactly_one_winner_and_one_conflict() running at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_concurrency.py:138> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()] created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py:749> cb=[_run_until_complete_cb() at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:181] created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.347 seconds
+Executing <Task finished name='Task-27' coro=<TestConcurrentResume.test_competing_resumes_result_in_exactly_one_winner_and_one_conflict.<locals>.attempt_resume() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_concurrency.py:123> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py:732> took 0.310 seconds
+..........Executing <Task finished name='Task-75' coro=<TestEvaluatorRegressions.test_failed_workflows_never_report_verified_smoke() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_evaluator_regressions.py:47> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.133 seconds
+.Executing <Task finished name='Task-80' coro=<TestEvaluatorRegressions.test_infrastructure_error_cannot_count_as_terminal_rejection() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_evaluator_regressions.py:64> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.151 seconds
+.Executing <Task finished name='Task-85' coro=<TestEvaluatorRegressions.test_multiple_business_credits_cannot_count_as_one_mutation() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_evaluator_regressions.py:17> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.300 seconds
+.Executing <Task finished name='Task-90' coro=<TestEvaluatorRegressions.test_wrong_expected_mutation_count_fails() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_evaluator_regressions.py:39> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.122 seconds
+.Executing <Task finished name='Task-95' coro=<TestHitlProcessRestart.test_hitl_approval_and_execution_across_independent_instances() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_hitl_restart.py:117> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.453 seconds
+.Executing <Task finished name='Task-100' coro=<TestHitlProcessRestart.test_hitl_rejection_across_restart_prevents_all_mutations() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_hitl_restart.py:184> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.402 seconds
+.........Executing <Task finished name='Task-124' coro=<TestMutationBoundaries.test_compensation_prior_failure_ambiguity_and_missing_receipt() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_mutation_boundaries.py:96> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.379 seconds
+.Executing <Task finished name='Task-129' coro=<TestMutationBoundaries.test_missing_approval_and_reconciler_failure_fail_closed() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_mutation_boundaries.py:55> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.423 seconds
+.Executing <Task finished name='Task-134' coro=<TestMutationBoundaries.test_prior_failure_ambiguity_and_identity_conflict_never_execute() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_mutation_boundaries.py:26> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.435 seconds
+.Executing <Task finished name='Task-139' coro=<TestDurableRecovery.test_claim_without_decision_returns_to_approval() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_recovery.py:101> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.440 seconds
+..Executing <Task finished name='Task-148' coro=<TestDurableRecovery.test_invalid_approver_or_decision_does_not_claim() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_recovery.py:112> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.343 seconds
+.Executing <Task finished name='Task-153' coro=<TestDurableRecovery.test_model_cannot_change_the_workflow_customer_scope() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_recovery.py:52> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.295 seconds
+.Executing <Task finished name='Task-158' coro=<TestDurableRecovery.test_note_requires_approval_and_inquiry_is_delivered() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_recovery.py:85> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.581 seconds
+...............Executing <Task finished name='Task-214' coro=<TestWorkflowSecurity.test_model_transition_injection_ignored() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_security.py:200> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.195 seconds
+.Executing <Task finished name='Task-219' coro=<TestWorkflowSecurity.test_toctou_authorization_revocation() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_security.py:120> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.454 seconds
+.Executing <Task finished name='Task-224' coro=<TestWorkflowSecurity.test_workflow_definition_version_drift() done, defined at D:\company\products\ai-application-architecture\examples\agentic-workflow\tests\test_security.py:230> result=None created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.257 seconds
+................
+----------------------------------------------------------------------
+Ran 78 tests in 33.951s
+
+OK

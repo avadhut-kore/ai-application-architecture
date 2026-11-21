@@ -57,7 +57,9 @@ class StubAgentEngine:
 
 
 class StubApprovalHandler(ApprovalPort):
-    async def request_approval(self, actor: AgentActor, capability: CapabilityMetadata, arguments: Any) -> ApprovalDecision:
+    async def request_approval(
+        self, actor: AgentActor, capability: CapabilityMetadata, arguments: Any
+    ) -> ApprovalDecision:
         return ApprovalDecision(approved=True, approver="test_approver")
 
 

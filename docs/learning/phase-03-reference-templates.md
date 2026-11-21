@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  03 — Tiered Reference Implementation Templates
-Status:                 Frozen & Accepted
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete
 Primary Audience:       Software Architects, Platform Engineers, Open Source Contributors
 Implementation:         templates/, scripts/artifact_validator.py, ADR-0002
@@ -57,7 +57,7 @@ graph TD
     subgraph Monorepo["ai-application-architecture"]
         T1["Tier 1: Reference Application<br/>(Full end-to-end enterprise solution in apps/)<br/>Applicable Gates: ALL (Gates A–J)"]
         T2["Tier 2: Pattern Example<br/>(Isolated architectural pattern in examples/)<br/>Applicable Gates: B, C, H, I"]
-        T3["Tier 3: Platform Component<br/>(Reusable adapter / infrastructure in platform/)<br/>Applicable Gates: A, B, C, F, H"]
+        T3["Tier 3: Platform Component<br/>(Reusable adapter / infrastructure in platform/)<br/>Applicable Gates: A, B, C, E, F, H"]
         T4["Tier 4: Template Artifact<br/>(Archetype scaffold in templates/)<br/>Applicable Gates: B, H"]
     end
 
@@ -270,7 +270,7 @@ Phase 3: Reference Implementation Templates
 ├── Four Tiers
 │   ├── Tier 1: Reference Application (apps/, Gates A–J)
 │   ├── Tier 2: Pattern Example (examples/, Gates B, C, H, I)
-│   ├── Tier 3: Platform Component (platform/, Gates A, B, C, F, H)
+│   ├── Tier 3: Platform Component (platform/, Gates A, B, C, E, F, H)
 │   └── Tier 4: Template Artifact (templates/, Gates B, H)
 ├── Governance Tooling
 │   ├── artifact.json (Standard metadata schema)

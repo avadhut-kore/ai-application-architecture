@@ -7,7 +7,6 @@ import os
 import sys
 import unittest
 from pathlib import Path
-from typing import Any, Mapping
 from unittest.mock import MagicMock, patch
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -183,7 +182,9 @@ class TestMcpSubprocessTransport(unittest.TestCase):
             f"{posix_contracts}:{posix_adapter}",
         )
         self.assertEqual(
-            build_subprocess_pythonpath(posix_contracts, posix_adapter, posix_existing, pathsep=":"),
+            build_subprocess_pythonpath(
+                posix_contracts, posix_adapter, posix_existing, pathsep=":"
+            ),
             f"{posix_contracts}:{posix_adapter}:{posix_existing}",
         )
 
@@ -192,9 +193,13 @@ class TestMcpSubprocessTransport(unittest.TestCase):
             with self.subTest(pathsep=sep):
                 mock_proc = MagicMock()
                 with (
-                    patch.dict(os.environ, {"PYTHONPATH": existing, "MCP_TEST_ENV": "keep-me"}, clear=False),
+                    patch.dict(
+                        os.environ, {"PYTHONPATH": existing, "MCP_TEST_ENV": "keep-me"}, clear=False
+                    ),
                     patch.object(os, "pathsep", sep),
-                    patch("mcp_adapter.client.subprocess.Popen", return_value=mock_proc) as mock_popen,
+                    patch(
+                        "mcp_adapter.client.subprocess.Popen", return_value=mock_proc
+                    ) as mock_popen,
                 ):
                     client = McpClient(command=[sys.executable, "-m", "mcp_adapter.server"])
                     try:
@@ -202,7 +207,9 @@ class TestMcpSubprocessTransport(unittest.TestCase):
                         kwargs = mock_popen.call_args.kwargs
                         passed_env = kwargs["env"]
                         self.assertEqual(passed_env["MCP_TEST_ENV"], "keep-me")
-                        expected_pypath = sep.join([str(BUILDING_BLOCKS_DIR), str(MCP_ADAPTER_DIR), existing])
+                        expected_pypath = sep.join(
+                            [str(BUILDING_BLOCKS_DIR), str(MCP_ADAPTER_DIR), existing]
+                        )
                         self.assertEqual(passed_env["PYTHONPATH"], expected_pypath)
                     finally:
                         client.close()
@@ -246,7 +253,9 @@ class TestMcpTimeoutAndResponsiveness(unittest.IsolatedAsyncioTestCase):
         await ticker_task
 
         # 1. Bounded preemption: elapsed time must be bounded around 0.25s, well under 1.0s
-        self.assertLess(elapsed, 0.8, f"Execution blocked for {elapsed:.2f}s instead of timing out at 0.25s")
+        self.assertLess(
+            elapsed, 0.8, f"Execution blocked for {elapsed:.2f}s instead of timing out at 0.25s"
+        )
         self.assertGreaterEqual(elapsed, 0.20)
 
         # 2. Event loop was responsive: background task progressed concurrently

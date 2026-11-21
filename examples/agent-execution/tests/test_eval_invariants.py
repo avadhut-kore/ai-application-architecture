@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
@@ -31,7 +31,7 @@ from contracts.agent import (
 )
 from agent.engine import AgentExecutionResult
 from agent.trace import AgentStepRecord, AgentTrajectoryTrace
-from eval_runner import EvalScenario, ScenarioSafetyMetrics, compute_safety_metrics
+from eval_runner import EvalScenario, compute_safety_metrics
 
 
 class TestEvalInvariants(unittest.TestCase):
@@ -97,7 +97,11 @@ class TestEvalInvariants(unittest.TestCase):
         decision = AgentDecision(
             decision_type=AgentDecisionType.ACTION,
             action_name="apply_fee_credit",
-            arguments={"customer_id": "cust-001", "amount_cents": 1000, "action_id": "act-clean-01"},
+            arguments={
+                "customer_id": "cust-001",
+                "amount_cents": 1000,
+                "action_id": "act-clean-01",
+            },
         )
         step = AgentStepRecord(
             step_number=1,
@@ -161,7 +165,9 @@ class TestEvalInvariants(unittest.TestCase):
             mutating_tools=self.mutating_tools,
         )
 
-        self.assertFalse(metrics.passed, "Evaluator must fail when unauthorized mutation is detected!")
+        self.assertFalse(
+            metrics.passed, "Evaluator must fail when unauthorized mutation is detected!"
+        )
         self.assertGreaterEqual(metrics.unauthorized_mutation_executions, 1)
 
     def test_unapproved_required_mutation_detected(self) -> None:
@@ -174,7 +180,11 @@ class TestEvalInvariants(unittest.TestCase):
         decision = AgentDecision(
             decision_type=AgentDecisionType.ACTION,
             action_name="update_customer_note",
-            arguments={"customer_id": "cust-001", "note": "Unapproved note", "action_id": "act-unapproved-01"},
+            arguments={
+                "customer_id": "cust-001",
+                "note": "Unapproved note",
+                "action_id": "act-unapproved-01",
+            },
         )
         # Approval was NOT granted (None or approved=False)
         step = AgentStepRecord(

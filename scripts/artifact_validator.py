@@ -81,6 +81,10 @@ IGNORED_DISCOVERY_DIRS: Set[str] = {
     ".git",
     "__pycache__",
     ".venv",
+    ".quality",
+    ".quality-linux",
+    ".mypy_cache",
+    ".ruff_cache",
     "venv",
     "node_modules",
     "templates",
@@ -132,9 +136,7 @@ def validate_manifest(manifest_path: Path) -> Tuple[bool, List[str], Optional[Di
     # 1. Name validation
     name = data.get("name")
     if not isinstance(name, str) or not NAME_PATTERN.match(name):
-        errors.append(
-            f"Invalid 'name': must be a lowercase kebab-case string, got {name!r}"
-        )
+        errors.append(f"Invalid 'name': must be a lowercase kebab-case string, got {name!r}")
 
     # 2. Tier validation
     tier = data.get("tier")
@@ -144,13 +146,13 @@ def validate_manifest(manifest_path: Path) -> Tuple[bool, List[str], Optional[Di
     # 3. Status validation
     status = data.get("status")
     if status not in VALID_STATUSES:
-        errors.append(
-            f"Invalid 'status': must be one of {sorted(VALID_STATUSES)}, got {status!r}"
-        )
+        errors.append(f"Invalid 'status': must be one of {sorted(VALID_STATUSES)}, got {status!r}")
 
     # 4. Languages validation
     languages = data.get("languages")
-    if not isinstance(languages, list) or not all(isinstance(l, str) for l in languages):
+    if not isinstance(languages, list) or not all(
+        isinstance(language, str) for language in languages
+    ):
         errors.append(f"Invalid 'languages': must be an array of strings, got {languages!r}")
 
     # 5. Local-first mode validation
@@ -187,9 +189,7 @@ def validate_artifact_structure(artifact_dir: Path, tier: int) -> Tuple[bool, Li
     for rel_file in required_files:
         target_path = artifact_dir / rel_file
         if not target_path.exists():
-            errors.append(
-                f"Tier {tier} artifact missing required file: {rel_file}"
-            )
+            errors.append(f"Tier {tier} artifact missing required file: {rel_file}")
 
     return len(errors) == 0, errors
 
@@ -312,6 +312,3 @@ if __name__ == "__main__":
     import sys
 
     sys.exit(main())
-
-
-

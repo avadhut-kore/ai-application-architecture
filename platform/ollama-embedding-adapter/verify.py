@@ -32,13 +32,15 @@ KNOWN_EMBEDDING_MODELS = (
 )
 
 
-async def run_verification(endpoint: str, model: Optional[str] = None, allow_unverified: bool = False) -> int:
+async def run_verification(
+    endpoint: str, model: Optional[str] = None, allow_unverified: bool = False
+) -> int:
     print("=" * 60)
     print("ai-application-architecture — Ollama Embedding Verification")
     print("=" * 60)
     print(f"Target Endpoint: {endpoint}")
 
-    adapter = OllamaEmbeddingAdapter(endpoint=endpoint, timeout_seconds=10.0)
+    adapter = OllamaEmbeddingAdapter(endpoint=endpoint, timeout_seconds=60.0)
     is_healthy = await adapter.check_health()
 
     if not is_healthy:
@@ -50,7 +52,7 @@ async def run_verification(endpoint: str, model: Optional[str] = None, allow_unv
         return 0 if allow_unverified else 1
 
     installed_models = await adapter.get_installed_models()
-    print(f"Connection: Reachable (HTTP 200 OK)")
+    print("Connection: Reachable (HTTP 200 OK)")
     print(f"Installed Models: {installed_models if installed_models else 'None'}")
 
     if not installed_models:
@@ -72,8 +74,12 @@ async def run_verification(endpoint: str, model: Optional[str] = None, allow_unv
 
     if not target_model:
         print("\nStatus: NOT VERIFIED")
-        print(f"Reason: Installed models ({installed_models}) do not appear to include a dedicated embedding model.")
-        print("Resolution: Run `ollama pull nomic-embed-text` to install the recommended local embedding model.")
+        print(
+            f"Reason: Installed models ({installed_models}) do not appear to include a dedicated embedding model."
+        )
+        print(
+            "Resolution: Run `ollama pull nomic-embed-text` to install the recommended local embedding model."
+        )
         print("=" * 60)
         return 0 if allow_unverified else 1
 
@@ -123,9 +129,17 @@ def main() -> int:
     args = parser.parse_args()
 
     return asyncio.run(
-        run_verification(endpoint=args.endpoint, model=args.model, allow_unverified=args.allow_unverified)
+        run_verification(
+            endpoint=args.endpoint, model=args.model, allow_unverified=args.allow_unverified
+        )
     )
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

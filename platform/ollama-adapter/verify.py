@@ -23,13 +23,18 @@ from contracts.models import CompletionRequest
 from ollama_adapter.adapter import OllamaAdapter
 
 
-async def run_verification(endpoint: str, model: Optional[str] = None, allow_unverified: bool = False) -> int:
+async def run_verification(
+    endpoint: str,
+    model: Optional[str] = None,
+    allow_unverified: bool = False,
+    timeout_seconds: float = 60.0,
+) -> int:
     print("=" * 60)
     print("ai-application-architecture — Ollama Runtime Verification")
     print("=" * 60)
     print(f"Target Endpoint: {endpoint}")
 
-    adapter = OllamaAdapter(endpoint=endpoint, timeout_seconds=10.0)
+    adapter = OllamaAdapter(endpoint=endpoint, timeout_seconds=timeout_seconds)
     is_healthy = await adapter.check_health()
 
     if not is_healthy:
@@ -41,13 +46,15 @@ async def run_verification(endpoint: str, model: Optional[str] = None, allow_unv
         return 0 if allow_unverified else 1
 
     installed_models = await adapter.get_installed_models()
-    print(f"Connection: Reachable (HTTP 200 OK)")
+    print("Connection: Reachable (HTTP 200 OK)")
     print(f"Installed Models: {installed_models if installed_models else 'None'}")
 
     if not installed_models:
         print("\nStatus: NOT VERIFIED")
         print("Reason: Ollama daemon is running, but no models are installed.")
-        print("Resolution: Run `ollama pull <model>` (e.g. `ollama pull llama3.2`) to install a model.")
+        print(
+            "Resolution: Run `ollama pull <model>` (e.g. `ollama pull llama3.2`) to install a model."
+        )
         print("=" * 60)
         return 0 if allow_unverified else 1
 
@@ -63,10 +70,15 @@ async def run_verification(endpoint: str, model: Optional[str] = None, allow_unv
 
     try:
         response = await adapter.generate(request)
+        if response.text.strip().strip("\"'") != "PONG":
+            print("Status: FAIL — expected PONG response was not produced")
+            return 1
         print(f"\nModel Response: {response.text.strip()!r}")
         print(f"Latency: {response.latency_ms:.1f}ms" if response.latency_ms else "Latency: N/A")
         if response.usage:
-            print(f"Tokens: prompt={response.usage.input_tokens}, completion={response.usage.output_tokens}")
+            print(
+                f"Tokens: prompt={response.usage.input_tokens}, completion={response.usage.output_tokens}"
+            )
         print(f"Finish Reason: {response.finish_reason.value}")
         print("\nRESULT: PASS — Live Ollama execution successfully verified.")
         print("=" * 60)
@@ -80,6 +92,9 @@ async def run_verification(endpoint: str, model: Optional[str] = None, allow_unv
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify local Ollama runtime execution.")
+    parser.add_argument(
+        "--timeout", type=float, default=240.0, help="Bounded provider timeout in seconds"
+    )
     parser.add_argument(
         "--endpoint",
         default=os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434"),
@@ -98,9 +113,20 @@ def main() -> int:
     args = parser.parse_args()
 
     return asyncio.run(
-        run_verification(endpoint=args.endpoint, model=args.model, allow_unverified=args.allow_unverified)
+        run_verification(
+            endpoint=args.endpoint,
+            model=args.model,
+            allow_unverified=args.allow_unverified,
+            timeout_seconds=args.timeout,
+        )
     )
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

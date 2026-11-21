@@ -1,0 +1,15 @@
+============================================================
+ai-application-architecture — Ollama Runtime Verification
+============================================================
+Target Endpoint: http://127.0.0.1:11435
+Connection: Reachable (HTTP 200 OK)
+Installed Models: ['qwen2.5:7b', 'nomic-embed-text:latest']
+Executing Generation Test using model: 'qwen2.5:7b'...
+
+Model Response: 'PONG'
+Latency: 124793.5ms
+Tokens: prompt=42, completion=3
+Finish Reason: stop
+
+RESULT: PASS — Live Ollama execution successfully verified.
+============================================================

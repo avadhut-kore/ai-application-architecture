@@ -14,7 +14,7 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 # Ensure repository root and building-blocks are on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -27,7 +27,7 @@ for p in (BUILDING_BLOCKS_PYTHON, PLATFORM_OLLAMA, THIS_DIR):
         sys.path.insert(0, str(p))
 
 from contracts.models import CompletionRequest, CompletionResponse, UsageMetrics
-from contracts.ports import TextGenerationPort
+from contracts.telemetry import AiOperationContext
 from structured_generation.service import FeedbackExtractionService
 
 
@@ -38,7 +38,9 @@ class DemoStubLlmClient:
         self._responses = list(responses)
         self._index = 0
 
-    async def generate(self, request: CompletionRequest) -> CompletionResponse:
+    async def generate(
+        self, request: CompletionRequest, context: AiOperationContext | None = None
+    ) -> CompletionResponse:
         if self._index < len(self._responses):
             text = self._responses[self._index]
             self._index += 1
@@ -62,13 +64,15 @@ async def run_fake_demo() -> int:
 
     # Scenario 1: Clean, valid extraction
     print("\n[Scenario 1] Clean Extraction (Valid Schema)")
-    input_text_1 = "The checkout page throws a 500 error when clicking Apply Coupon. We are losing sales!"
+    input_text_1 = (
+        "The checkout page throws a 500 error when clicking Apply Coupon. We are losing sales!"
+    )
     valid_json = (
         '{"category": "bug", "sentiment": "negative", "urgency": "critical", '
         '"summary": "Checkout 500 error on coupon apply causing lost sales", "confidence": 0.98}'
     )
     client_1 = DemoStubLlmClient([valid_json])
-    service_1 = FeedbackExtractionService(client=client_1, model="llama3.2")
+    service_1 = FeedbackExtractionService(client=client_1, model="qwen2.5:7b")
     res_1 = await service_1.extract_feedback(input_text_1)
 
     print(f"Input:    {input_text_1}")
@@ -86,7 +90,9 @@ async def run_fake_demo() -> int:
     input_text_2 = "Can I pay with annual invoicing?"
     malformed_text = "Sure! Here is the response: category: inquiry, sentiment: neutral"
     client_2 = DemoStubLlmClient([malformed_text, malformed_text])
-    service_2 = FeedbackExtractionService(client=client_2, model="llama3.2", max_corrective_retries=1)
+    service_2 = FeedbackExtractionService(
+        client=client_2, model="qwen2.5:7b", max_corrective_retries=1
+    )
     res_2 = await service_2.extract_feedback(input_text_2)
 
     print(f"Input:    {input_text_2}")
@@ -107,7 +113,9 @@ async def run_fake_demo() -> int:
         '"summary": "Dark mode request for mobile app", "confidence": 0.92}'
     )
     client_3 = DemoStubLlmClient([invalid_category_json, corrected_json])
-    service_3 = FeedbackExtractionService(client=client_3, model="llama3.2", max_corrective_retries=1)
+    service_3 = FeedbackExtractionService(
+        client=client_3, model="qwen2.5:7b", max_corrective_retries=1
+    )
     res_3 = await service_3.extract_feedback(input_text_3)
 
     print(f"Input:    {input_text_3}")
@@ -138,7 +146,9 @@ async def run_live_demo(base_url: str, model: str) -> int:
         print(f"Error importing OllamaAdapter: {ex}")
         return 1
 
-    adapter = OllamaAdapter(endpoint=base_url, default_model=model)
+    adapter = OllamaAdapter(
+        endpoint=base_url, default_model=model, timeout_seconds=240.0, max_retries=0
+    )
     is_healthy = await adapter.check_health()
     if not is_healthy:
         print("\n[LIVE EXECUTION STATUS: NOT VERIFIED]")
@@ -152,7 +162,7 @@ async def run_live_demo(base_url: str, model: str) -> int:
 
     service = FeedbackExtractionService(client=adapter, model=model, max_corrective_retries=1)
     input_text = "The system crashes every time I export more than 1000 items to CSV. This is blocking our audit!"
-    print(f"\nProcessing input: \"{input_text}\"")
+    print(f'\nProcessing input: "{input_text}"')
 
     try:
         result = await service.extract_feedback(input_text)
@@ -181,11 +191,11 @@ def main() -> int:
     parser.add_argument(
         "--mode",
         choices=["fake", "live"],
-        default="fake",
+        default="live",
         help="Execution mode: 'fake' (offline stub) or 'live' (local Ollama daemon)",
     )
     parser.add_argument("--base-url", default="http://localhost:11434", help="Ollama base URL")
-    parser.add_argument("--model", default="llama3.2", help="Model name for extraction")
+    parser.add_argument("--model", default="qwen2.5:7b", help="Model name for extraction")
     args = parser.parse_args()
 
     if args.mode == "fake":
@@ -195,4 +205,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

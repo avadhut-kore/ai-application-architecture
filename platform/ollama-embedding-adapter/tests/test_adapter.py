@@ -24,7 +24,6 @@ from contracts.errors import (
     AiInvalidRequestError,
     AiModelNotFoundError,
     AiProviderUnavailableError,
-    AiRateLimitError,
     AiTimeoutError,
 )
 from contracts.models import EmbeddingRequest
@@ -34,6 +33,60 @@ from ollama_embedding_adapter.adapter import OllamaEmbeddingAdapter
 
 
 class TestOllamaEmbeddingAdapter(unittest.TestCase):
+    def test_nomic_task_prefixes_are_applied_at_adapter_boundary(self):
+        adapter = OllamaEmbeddingAdapter(max_retries=0)
+        for purpose, prefix in (("query", "search_query"), ("document", "search_document")):
+            with patch.object(
+                adapter, "_execute_embed_api", return_value={"embeddings": [[0.1, 0.2]]}
+            ) as request:
+                asyncio.run(
+                    adapter.embed(
+                        EmbeddingRequest(
+                            ["content"], "nomic-embed-text", metadata={"input_type": purpose}
+                        )
+                    )
+                )
+                self.assertEqual(request.call_args.args[1], [prefix + ": content"])
+        with self.assertRaises(AiInvalidRequestError):
+            asyncio.run(
+                adapter.embed(
+                    EmbeddingRequest(
+                        ["content"], "nomic-embed-text", metadata={"input_type": "unknown"}
+                    )
+                )
+            )
+
+    def test_configuration_and_provider_validation_fail_closed(self):
+        for config in (
+            {"endpoint": "file:///etc/passwd"},
+            {"timeout_seconds": 0},
+            {"timeout_seconds": float("nan")},
+            {"backoff_base_seconds": float("inf")},
+        ):
+            with self.subTest(config=config), self.assertRaises(ValueError):
+                OllamaEmbeddingAdapter(**config)
+        error = urllib.error.HTTPError("http://local", 400, "Bad request", {}, io.BytesIO(b"{}"))
+        with (
+            patch("urllib.request.urlopen", side_effect=error),
+            self.assertRaises(AiInvalidRequestError),
+        ):
+            OllamaEmbeddingAdapter()._send_http_request("/api/embed", {})
+        with patch.object(
+            OllamaEmbeddingAdapter, "_send_http_request", return_value={"embedding": None}
+        ):
+            with self.assertRaises(AiInvalidRequestError):
+                OllamaEmbeddingAdapter()._execute_legacy_embeddings_api("model", "text")
+
+    def test_invalid_response_cardinality_and_values(self):
+        adapter = OllamaEmbeddingAdapter(max_retries=0)
+        for vectors in ([[1.0], [2.0]], [[float("nan")]], [[]]):
+            with (
+                self.subTest(vectors=vectors),
+                patch.object(adapter, "_execute_embed_api", return_value={"embeddings": vectors}),
+            ):
+                with self.assertRaises(AiInvalidRequestError):
+                    asyncio.run(adapter.embed(EmbeddingRequest(["document"], "model")))
+
     """Hermetic unit tests verifying OllamaEmbeddingAdapter functionality and error handling."""
 
     def setUp(self) -> None:

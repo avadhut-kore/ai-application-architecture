@@ -53,7 +53,9 @@ class CapabilityRegistry:
             lines.append("")
         return "\n".join(lines).strip()
 
-    def validate_arguments(self, capability_name: str, arguments: Mapping[str, Any]) -> ValidationResult:
+    def validate_arguments(
+        self, capability_name: str, arguments: Mapping[str, Any]
+    ) -> ValidationResult[Any]:
         """Perform strict deterministic schema validation on model-proposed capability arguments.
 
         Validates required parameter presence, data types, and prohibits unknown fields.
@@ -62,7 +64,9 @@ class CapabilityRegistry:
         if not capability:
             return ValidationResult(
                 is_valid=False,
-                errors=[f"Unknown capability '{capability_name}'. Tool is not present in registered allowlist."],
+                errors=[
+                    f"Unknown capability '{capability_name}'. Tool is not present in registered allowlist."
+                ],
             )
 
         schema = capability.metadata.input_schema
@@ -72,28 +76,46 @@ class CapabilityRegistry:
         required_fields = schema.get("required", [])
         for field_name in required_fields:
             if field_name not in arguments:
-                errors.append(f"Missing required parameter '{field_name}' for capability '{capability_name}'")
+                errors.append(
+                    f"Missing required parameter '{field_name}' for capability '{capability_name}'"
+                )
 
         # 2. Check property types
         properties: Mapping[str, Any] = schema.get("properties", {})
         for prop_name, prop_val in arguments.items():
             if prop_name not in properties:
                 if schema.get("additionalProperties") is False:
-                    errors.append(f"Unexpected parameter '{prop_name}' is not allowed for capability '{capability_name}'")
+                    errors.append(
+                        f"Unexpected parameter '{prop_name}' is not allowed for capability '{capability_name}'"
+                    )
                 continue
 
             expected_type = properties[prop_name].get("type")
             if expected_type == "string" and not isinstance(prop_val, str):
-                errors.append(f"Parameter '{prop_name}' must be a string, got {type(prop_val).__name__}")
-            elif expected_type == "integer" and (not isinstance(prop_val, int) or isinstance(prop_val, bool)):
-                errors.append(f"Parameter '{prop_name}' must be an integer, got {type(prop_val).__name__}")
+                errors.append(
+                    f"Parameter '{prop_name}' must be a string, got {type(prop_val).__name__}"
+                )
+            elif expected_type == "integer" and (
+                not isinstance(prop_val, int) or isinstance(prop_val, bool)
+            ):
+                errors.append(
+                    f"Parameter '{prop_name}' must be an integer, got {type(prop_val).__name__}"
+                )
             elif expected_type == "number" and not isinstance(prop_val, (int, float)):
-                errors.append(f"Parameter '{prop_name}' must be a number, got {type(prop_val).__name__}")
+                errors.append(
+                    f"Parameter '{prop_name}' must be a number, got {type(prop_val).__name__}"
+                )
             elif expected_type == "boolean" and not isinstance(prop_val, bool):
-                errors.append(f"Parameter '{prop_name}' must be a boolean, got {type(prop_val).__name__}")
+                errors.append(
+                    f"Parameter '{prop_name}' must be a boolean, got {type(prop_val).__name__}"
+                )
             elif expected_type == "array" and not isinstance(prop_val, (list, tuple)):
-                errors.append(f"Parameter '{prop_name}' must be a list, got {type(prop_val).__name__}")
+                errors.append(
+                    f"Parameter '{prop_name}' must be a list, got {type(prop_val).__name__}"
+                )
             elif expected_type == "object" and not isinstance(prop_val, dict):
-                errors.append(f"Parameter '{prop_name}' must be an object, got {type(prop_val).__name__}")
+                errors.append(
+                    f"Parameter '{prop_name}' must be an object, got {type(prop_val).__name__}"
+                )
 
         return ValidationResult(is_valid=len(errors) == 0, errors=errors)

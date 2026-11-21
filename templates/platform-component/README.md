@@ -72,7 +72,7 @@ Document all explicit exceptions raised by this component:
 
 ## 7. Quality Gate Checklist (Scaled for Tier 3)
 
-Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, F, and H:
+Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 3 platform components are evaluated against Gates A, B, C, E, F, and H:
 - [ ] **Gate A — Architecture & Structural Boundaries**: Inward dependency direction maintained; zero reverse dependencies on applications; ports decouple core contracts from infrastructure.
 - [ ] **Gate B — Code Quality & Type Safety**: Source code is strictly typed, linter clean, with zero compiler warnings.
 - [ ] **Gate C — Software Testing**: Hermetic unit tests achieve $\ge 85\%$ statement coverage using test doubles; integration tests verify wiring.

@@ -1,0 +1,15 @@
+services:
+  ollama:
+    build:
+      context: ./platform/ollama-adapter
+      dockerfile: Dockerfile.security
+    image: ai-architecture-ollama:0.40.16-security.1
+    pull_policy: build
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - type: bind
+        source: ${OLLAMA_MODEL_DIR:?Set OLLAMA_MODEL_DIR to an existing model directory}
+        target: /root/.ollama
+    mem_limit: 8g
+    restart: unless-stopped

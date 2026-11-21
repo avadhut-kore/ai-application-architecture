@@ -72,7 +72,7 @@ Checkpoints store a SHA-256 hash computed over state attributes. Mismatched chec
 
 ### Positive
 * 100% offline, durable persistence across OS process restarts.
-* Complete elimination of double-mutation risks across process crashes through stable action IDs and domain reconciliation.
+* Duplicate suppression under verified local recovery conditions across process crashes through stable action IDs and domain reconciliation.
 * Guaranteed race-free resume semantics via atomic SQLite compare-and-swap.
 * Clean separation of durable business state from ephemeral LLM reasoning traces.
 
@@ -84,6 +84,6 @@ Checkpoints store a SHA-256 hash computed over state attributes. Mismatched chec
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 6 (Local-First)**: Fully persistent under Mode A without external database engines.
-* **Principle 7 (Observability & Auditability)**: Complete append-oriented audit log of all checkpoints, approvals, and mutations.
-* **Principle 13 (Capability Safety)**: Strict protection against duplicate state mutations during crash recovery.
+* **Local-First Policy**: Fully persistent under Mode A without external database engines.
+* **Principle 9 (AI Systems Must Be Observable)**: Complete append-oriented audit log of all checkpoints, approvals, and mutations.
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Strict protection against duplicate state mutations during crash recovery.

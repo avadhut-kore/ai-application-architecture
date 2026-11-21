@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  02 — Repository Foundation & Minimum Core Contracts
-Status:                 Frozen & Accepted
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete
 Primary Audience:       Software Engineers, Platform Engineers, Systems Architects
 Implementation:         building-blocks/python/, scripts/validate.py, CI Workflow, ADR-0001
@@ -223,9 +223,11 @@ Create a quick inline Python test in your terminal:
 from contracts.ports import TextGenerationPort
 from contracts.models import CompletionRequest, CompletionResponse
 
+
 class CustomStub:
     async def generate(self, request: CompletionRequest, context=None) -> CompletionResponse:
         return CompletionResponse(text="Hello", model="stub", latency_ms=1.0)
+
 
 # Verify structural subtyping without inheritance
 assert isinstance(CustomStub(), TextGenerationPort)

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from typing import Any, Mapping
 
 from contracts.agent import AgentActor, ExecutionReceipt
-from contracts.workflow import MutationStatus, StepExecutionStatus, WorkflowStatus
+from contracts.workflow import ApprovalStatus, MutationStatus, StepExecutionStatus, WorkflowStatus
 
-from .approval import canonicalize_arguments
+from .approval import DurableApprovalRecord, WorkflowApprovalVerifier, canonicalize_arguments
 from .definition import StepDefinition, TransitionRule, WorkflowDefinition
 from .ledger import DurableMutationRecord, generate_stable_action_id
 from .state import RemediationType, StepOutcome, WorkflowState
@@ -31,35 +32,27 @@ def build_customer_remediation_workflow(
     tool_executor: Any,
     workflow_store: Any,
     auth_policy: Any,
-    definition_version: str = "1.0.0",
+    definition_version: str = "1.1.0",
     max_transitions: int = 15,
 ) -> WorkflowDefinition:
     """Construct the canonical Customer Account Remediation workflow graph."""
 
     # 1. Domain Reconcilers for In-Flight Recovery
-    def reconcile_credit_mutation(action_id: str, capability_name: str, args: Mapping[str, Any]) -> str:
+    def reconcile_credit_mutation(
+        action_id: str, capability_name: str, args: Mapping[str, Any]
+    ) -> str:
         """Reconcile apply_fee_credit against customer account balance and activity log."""
-        customer_id = args.get("customer_id")
-        amount_cents = int(args.get("amount_cents", 0))
-        reason = str(args.get("reason", ""))
-        account = customer_store.get_account(customer_id)
-        if not account:
-            return "inconclusive"
-        expected_log = f"Credit applied: +${amount_cents / 100:.2f} (Reason: {reason})"
-        if expected_log in account.activity_log:
-            return "executed"
-        return "not_executed"
+        if hasattr(customer_store, "action_status"):
+            return str(customer_store.action_status(action_id))
+        return "inconclusive"
 
-    def reconcile_note_mutation(action_id: str, capability_name: str, args: Mapping[str, Any]) -> str:
+    def reconcile_note_mutation(
+        action_id: str, capability_name: str, args: Mapping[str, Any]
+    ) -> str:
         """Reconcile update_customer_note against customer account notes."""
-        customer_id = args.get("customer_id")
-        note = str(args.get("note", "")).strip()
-        account = customer_store.get_account(customer_id)
-        if not account:
-            return "inconclusive"
-        if note in account.notes:
-            return "executed"
-        return "not_executed"
+        if hasattr(customer_store, "action_status"):
+            return str(customer_store.action_status(action_id))
+        return "inconclusive"
 
     # 2. Instantiate step handlers
     intake_step = IntakeValidationStep(customer_store=customer_store)
@@ -110,6 +103,17 @@ def build_customer_remediation_workflow(
         # 1. Check ledger for prior execution & ambiguous in-flight recovery
         existing = workflow_store.load_mutation(action_id)
         if existing:
+            if (
+                existing.workflow_id != state.workflow_id
+                or existing.capability_name != note_capability.metadata.name
+                or existing.canonical_args != canonical_comp_args
+            ):
+                return StepOutcome(
+                    StepExecutionStatus.FAILED,
+                    "compensation_failed",
+                    error_message="Compensation action identity mismatch",
+                    context_updates={"manual_intervention_required": True},
+                )
             if existing.status == MutationStatus.EXECUTED:
                 receipt = existing.execution_receipt or ExecutionReceipt(
                     action_id=action_id,
@@ -132,7 +136,9 @@ def build_customer_remediation_workflow(
                 # Invariant: Never blindly re-execute! Reconcile domain state before any tool invocation.
                 reconciliation_result = "inconclusive"
                 try:
-                    res = reconcile_note_mutation(action_id, note_capability.metadata.name, comp_args)
+                    res = reconcile_note_mutation(
+                        action_id, note_capability.metadata.name, comp_args
+                    )
                     reconciliation_result = str(res)
                 except Exception:
                     reconciliation_result = "inconclusive"
@@ -156,7 +162,19 @@ def build_customer_remediation_workflow(
                         created_at=existing.created_at,
                         updated_at=now,
                     )
-                    workflow_store.save_mutation(reconciled_record)
+                    approval = workflow_store.load_approval_by_action_id(action_id)
+                    if approval and approval.status == ApprovalStatus.APPROVED:
+                        workflow_store.atomic_commit_mutation_and_approval(
+                            reconciled_record,
+                            replace(
+                                approval,
+                                status=ApprovalStatus.CONSUMED,
+                                consumed_at=now,
+                                execution_receipt_id=action_id,
+                            ),
+                        )
+                    else:
+                        workflow_store.save_mutation(reconciled_record)
                     return StepOutcome(
                         status=StepExecutionStatus.SUCCEEDED,
                         outcome_type="compensation_completed",
@@ -236,6 +254,44 @@ def build_customer_remediation_workflow(
             )
 
         # 3. Record intent in durable mutation ledger: EXECUTION_STARTED
+        approval = workflow_store.load_approval_by_action_id(action_id)
+        if approval is None:
+            approval = DurableApprovalRecord(
+                approval_id=f"approval-{action_id}",
+                workflow_id=state.workflow_id,
+                workflow_definition_id=state.definition.definition_id,
+                workflow_definition_version=state.definition.version,
+                action_id=action_id,
+                capability_name=note_capability.metadata.name,
+                canonical_arguments_json=canonical_comp_args,
+                actor_id=actor.actor_id,
+                actor_role=actor.role,
+                expires_at=time.time() + 86400,
+            )
+            workflow_store.save_approval(approval)
+            return StepOutcome(
+                StepExecutionStatus.SUSPENDED,
+                "compensation_approval_required",
+                context_updates={"pending_approval_id": approval.approval_id},
+            )
+        try:
+            WorkflowApprovalVerifier.verify(
+                approval,
+                state.workflow_id,
+                action_id,
+                note_capability.metadata,
+                comp_args,
+                actor,
+                expected_definition_id=state.definition.definition_id,
+                expected_definition_version=state.definition.version,
+            )
+        except Exception as exc:
+            return StepOutcome(
+                StepExecutionStatus.FAILED,
+                "compensation_failed",
+                error_message=str(exc),
+                context_updates={"manual_intervention_required": True},
+            )
         now = time.time()
         in_flight = DurableMutationRecord(
             action_id=action_id,
@@ -253,7 +309,9 @@ def build_customer_remediation_workflow(
         args_with_id = dict(comp_args)
         args_with_id["action_id"] = action_id
         try:
-            receipt, raw_output = await tool_executor.execute_tool(note_capability, args_with_id, action_id=action_id)
+            receipt, raw_output = await tool_executor.execute_tool(
+                note_capability, args_with_id, action_id=action_id
+            )
         except Exception as exc:
             receipt = ExecutionReceipt(
                 action_id=action_id,
@@ -277,7 +335,15 @@ def build_customer_remediation_workflow(
                 created_at=in_flight.created_at,
                 updated_at=now,
             )
-            workflow_store.save_mutation(executed_record)
+            workflow_store.atomic_commit_mutation_and_approval(
+                executed_record,
+                replace(
+                    approval,
+                    status=ApprovalStatus.CONSUMED,
+                    consumed_at=now,
+                    execution_receipt_id=receipt.action_id,
+                ),
+            )
             return StepOutcome(
                 status=StepExecutionStatus.SUCCEEDED,
                 outcome_type="compensation_completed",
@@ -294,7 +360,9 @@ def build_customer_remediation_workflow(
                 step_name="compensate_mutation",
                 capability_name=note_capability.metadata.name,
                 canonical_args=canonical_comp_args,
-                status=MutationStatus.FAILED,
+                status=MutationStatus.AMBIGUOUS
+                if receipt.status == "ambiguous"
+                else MutationStatus.FAILED,
                 execution_receipt=receipt,
                 created_at=in_flight.created_at,
                 updated_at=now,
@@ -352,7 +420,9 @@ def build_customer_remediation_workflow(
                 ),
                 TransitionRule(
                     target_step="terminal_escalated",
-                    condition_fn=lambda s, o: o.outcome_type == RemediationType.SECURITY_ESCALATION.value,
+                    condition_fn=lambda s, o: (
+                        o.outcome_type == RemediationType.SECURITY_ESCALATION.value
+                    ),
                     description="Security hold or fraud detection escalates to compliance",
                 ),
                 TransitionRule(
@@ -361,7 +431,7 @@ def build_customer_remediation_workflow(
                     description="Fee credit mutation routes to human approval checkpoint",
                 ),
                 TransitionRule(
-                    target_step="mutate_note",
+                    target_step="human_approval",
                     condition_fn=lambda s, o: o.outcome_type == RemediationType.CUSTOMER_NOTE.value,
                     description="Customer note routes to direct mutation step",
                 ),
@@ -373,6 +443,14 @@ def build_customer_remediation_workflow(
             name="human_approval",
             handler=human_step.execute,
             transitions=(
+                TransitionRule(
+                    target_step="mutate_note",
+                    condition_fn=lambda s, o: (
+                        o.outcome_type == "approval_granted"
+                        and s.domain_context.get("target_capability") == "update_customer_note"
+                    ),
+                    description="Approved note advances to execution",
+                ),
                 TransitionRule(
                     target_step="mutation_execution",
                     condition_fn=lambda s, o: o.outcome_type == "approval_granted",
@@ -398,8 +476,10 @@ def build_customer_remediation_workflow(
                 ),
                 TransitionRule(
                     target_step="compensate_mutation",
-                    condition_fn=lambda s, o: o.status == StepExecutionStatus.FAILED
-                    and bool(s.domain_context.get("has_prior_note")),
+                    condition_fn=lambda s, o: (
+                        o.status == StepExecutionStatus.FAILED
+                        and bool(s.domain_context.get("has_prior_note"))
+                    ),
                     description="Multi-step failure triggers local saga backward compensation",
                 ),
             ),
@@ -424,7 +504,11 @@ def build_customer_remediation_workflow(
         StepDefinition(
             name="compensate_mutation",
             handler=compensate_step_handler,
-            transitions=(),
+            transitions=(
+                TransitionRule(
+                    "compensate_mutation", lambda s, o: o.outcome_type == "approval_granted"
+                ),
+            ),
             default_transition="terminal_failed",
             is_mutating=True,
         ),
@@ -438,7 +522,9 @@ def build_customer_remediation_workflow(
         # Terminal Steps
         StepDefinition(
             name="terminal_completed",
-            handler=lambda s: StepOutcome(status=StepExecutionStatus.SUCCEEDED, outcome_type="completed"),
+            handler=lambda s: StepOutcome(
+                status=StepExecutionStatus.SUCCEEDED, outcome_type="completed"
+            ),
             is_terminal=True,
             terminal_status=WorkflowStatus.COMPLETED,
         ),
@@ -450,13 +536,17 @@ def build_customer_remediation_workflow(
         ),
         StepDefinition(
             name="terminal_rejected",
-            handler=lambda s: StepOutcome(status=StepExecutionStatus.SUCCEEDED, outcome_type="rejected"),
+            handler=lambda s: StepOutcome(
+                status=StepExecutionStatus.SUCCEEDED, outcome_type="rejected"
+            ),
             is_terminal=True,
             terminal_status=WorkflowStatus.REJECTED,
         ),
         StepDefinition(
             name="terminal_escalated",
-            handler=lambda s: StepOutcome(status=StepExecutionStatus.SUCCEEDED, outcome_type="escalated"),
+            handler=lambda s: StepOutcome(
+                status=StepExecutionStatus.SUCCEEDED, outcome_type="escalated"
+            ),
             is_terminal=True,
             terminal_status=WorkflowStatus.ESCALATED,
         ),

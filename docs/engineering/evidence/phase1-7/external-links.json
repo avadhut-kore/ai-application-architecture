@@ -1,0 +1,107 @@
+[
+  {
+    "url": "https://docs.pytest.org/en/stable/how-to/cache.html",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      ".pytest_cache/README.md:8"
+    ]
+  },
+  {
+    "url": "https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/dotnet.md:7"
+    ]
+  },
+  {
+    "url": "https://github.com/nodejs/Release",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/typescript.md:9"
+    ]
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct/raw/main/LICENSE",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/dependencies.md:52"
+    ]
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/LICENSE",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/dependencies.md:51"
+    ]
+  },
+  {
+    "url": "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/dependencies.md:53",
+      "platform/ollama-embedding-adapter/README.md:95"
+    ]
+  },
+  {
+    "url": "https://img.shields.io/badge/Architecture-First-blue.svg",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "README.md:3"
+    ]
+  },
+  {
+    "url": "https://img.shields.io/badge/Policy-Local--First-purple.svg",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "README.md:4"
+    ]
+  },
+  {
+    "url": "https://img.shields.io/badge/Quality--Gates-A--J-red.svg",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "README.md:5"
+    ]
+  },
+  {
+    "url": "https://ollama.com",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/setup/local-ai-environment.md:47"
+    ]
+  },
+  {
+    "url": "https://pkg.go.dev/vuln/GO-2026-6860",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "platform/ollama-adapter/README.md:152"
+    ]
+  },
+  {
+    "url": "https://ubuntu.com/security/notices/USN-8996-1",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "platform/ollama-adapter/README.md:153"
+    ]
+  },
+  {
+    "url": "https://www.conventionalcommits.org/",
+    "status": "reachable",
+    "http_status": 200,
+    "locations": [
+      "docs/engineering/git-workflow.md:28"
+    ]
+  }
+]

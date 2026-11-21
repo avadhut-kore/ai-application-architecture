@@ -37,24 +37,41 @@ def main() -> int:
 
     # 1. Validate artifact.json manifest and tier structure
     print("[1/4] Validating artifact.json schema and Tier 2 structure...")
-    code, out = run_cmd([sys.executable, str(REPO_ROOT / "scripts" / "artifact_validator.py"), str(WORKFLOW_DIR)], REPO_ROOT)
+    code, out = run_cmd(
+        [sys.executable, str(REPO_ROOT / "scripts" / "artifact_validator.py"), str(WORKFLOW_DIR)],
+        REPO_ROOT,
+    )
     if code != 0:
         print(f"FAILED: artifact_validator error:\n{out}")
         return 1
     print("      -> artifact.json and Tier 2 required files valid.")
 
     # 2. Gate B: AST and Syntax Compilation Verification
-    print("[2/4] Verifying Gate B code quality (AST compilation & syntax integrity)...")
+    print("[2/4] Verifying syntax integrity (partial Gate B evidence)...")
     ok, py_count, err = check_syntax_and_ast(WORKFLOW_DIR)
     if not ok:
         print(f"FAILED: {err}")
         return 1
     print(f"      -> {py_count} Python files compiled successfully without syntax errors.")
-    print("      -> Static Type/Lint Note: mypy/ruff external tooling NOT VERIFIED (unavailable in standard-library Mode A).")
+    print(
+        "      -> Run scripts/quality.py in the locked environment for lint, strict types and coverage."
+    )
 
     # 3. Gate C: Run hermetic unit tests
     print("[3/4] Running Gate C hermetic unit tests...")
-    code, out = run_cmd([sys.executable, "-m", "unittest", "discover", "-s", str(WORKFLOW_DIR / "tests")], REPO_ROOT)
+    code, out = run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            str(WORKFLOW_DIR / "tests"),
+            "-t",
+            str(WORKFLOW_DIR),
+        ],
+        REPO_ROOT,
+    )
     if code != 0:
         print(f"FAILED: Unit tests failed:\n{out}")
         return 1
@@ -72,23 +89,39 @@ def main() -> int:
     if code != 0:
         print(f"FAILED: Evaluation harness failed:\n{out}")
         return 1
-    print("      -> 30/30 deterministic evaluation scenarios passed with zero safety invariant violations.")
+    print(
+        "      -> 30/30 deterministic evaluation scenarios passed with zero safety invariant violations."
+    )
 
     print("=" * 70)
     print("VERIFICATION RESULT: PHASE 7 DETERMINISTIC VERIFICATION PASSED")
     print("  Tier Classification: Tier 2 Pattern Example")
     print("  Authoritative Applicable Quality Gates: Gates B, C, H, I")
-    print("  Gate B (Code Quality): AST/Syntax PASSED; third-party mypy/ruff NOT VERIFIED (Mode A standard library)")
-    print("  Gate C (Testing): Hermetic unit test suite PASSED (including in-flight reconciliation & true OS restart)")
-    print("  Gate D (Voluntary Evaluation): 30/30 scenarios PASSED; all 6 safety invariants derived from runtime evidence")
-    print("  Separation of Authority: Workflow Engine owns state machine; Agent owns bounded diagnosis only")
-    print("  Ambiguous Execution Safety: Domain reconciliation required for EXECUTION_STARTED; zero duplicate mutations")
-    print("  Offline Execution: Mode A (100% Hermetic / Standard-library only)")
-    print("  Note: Exit 0 certifies deterministic reference verification for Tier 2 under Mode A.")
-    print("        It does not certify all repository quality gates across all tiers.")
+    print("  Gate B: AST/Syntax checked here; run scripts/quality.py for strict mypy and Ruff.")
+    print(
+        "  Gate C (Testing): Hermetic unit test suite PASSED (including in-flight reconciliation & true OS restart)"
+    )
+    print(
+        "  Gate D (Voluntary Evaluation): 30/30 scenarios PASSED; all 6 safety invariants derived from runtime evidence"
+    )
+    print(
+        "  Separation of Authority: Workflow Engine owns state machine; Agent owns bounded diagnosis only"
+    )
+    print(
+        "  Ambiguous Execution Safety: Domain reconciliation required for EXECUTION_STARTED; zero duplicate mutations"
+    )
+    print(
+        "  Offline Execution: Mode A deterministic harness; locked telemetry dependencies required."
+    )
+    print(
+        "  Exit 0 records this harness result. It does not certify gate completion or independent acceptance."
+    )
     print("=" * 70)
     return 0
 
 
 if __name__ == "__main__":
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

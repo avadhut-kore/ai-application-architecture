@@ -1,0 +1,27 @@
+
+[DEMO START] Initializing workflow 'wf-clean-live-final' against 'D:\company\products\ai-application-architecture\.quality\clean-live-final.db'...
+Customer ID:  cust-001
+Actor ID:     operator_bob (Role: senior_agent)
+Inquiry:      Please review and propose a $10 fee credit for the accidental overdraft fee during the platform outage.
+
+======================================================================
+WORKFLOW INSTANCE: wf-clean-live-final
+======================================================================
+  Definition:         customer_account_remediation (v1.1.0)
+  Status:             AWAITING_APPROVAL
+  Current Step:       human_approval
+  Checkpoint Version: 5
+  Initiator Actor:    operator_bob (senior_agent)
+  Integrity Checksum: bad4c70ceba0dc2c...
+  Step History Count: 3
+----------------------------------------------------------------------
+>>> WORKFLOW SUSPENDED: Awaiting Human Authorization <<<
+  Pending Approval ID: app-c5eced50b3b9
+  Stable Action ID:    act-wf-clean-live-final-mutation_execution-3d12578b8e5e6277
+  Target Capability:   apply_fee_credit
+  Proposed Arguments:  {'amount_cents': 1000, 'reason': 'Accidental overdraft fee during platform outage; verified by recent activity log.', 'customer_id': 'cust-001'}
+
+Process is now cleanly terminating. State is safely persisted in SQLite.
+To inspect or resume in another terminal:
+  python3 demo.py status --workflow-id wf-clean-live-final
+  python3 demo.py approve --workflow-id wf-clean-live-final --approver manager_jane

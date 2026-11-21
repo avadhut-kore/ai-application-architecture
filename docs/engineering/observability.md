@@ -12,7 +12,7 @@ This document establishes the distributed tracing, structured logging, performan
 
 Enterprise AI applications require unified instrumentation across three complementary pillars:
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ 1. Distributed Tracing (OpenTelemetry GenAI Spans)     │
 │    • Prompt construction  • Vector similarity search   │
@@ -50,7 +50,7 @@ Applications instrumenting LLM operations must conform to the **OpenTelemetry Se
 | `gen_ai.response.finish_reasons` | string[] | Termination reason (`["stop"]`, `["length"]`, `["content_filter"]`). |
 
 ### Trace Hierarchy Example
-```
+```text
 [HTTP POST /api/v1/documents/summarize] (Root Span)
   └── [rag.retrieve_chunks] (Retrieval Span - 45ms)
   │     ├── vector_db.query (15ms)

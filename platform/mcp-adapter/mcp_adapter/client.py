@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
-import sys
+import threading
+import queue
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
 from .protocol import (
-    JsonRpcError,
     JsonRpcRequest,
     JsonRpcResponse,
 )
@@ -42,11 +43,16 @@ class McpClient:
         self,
         server_instance: Optional[McpServer] = None,
         command: Optional[Sequence[str]] = None,
+        request_timeout_seconds: float = 10.0,
     ) -> None:
         self._server_instance = server_instance
         self._command = command
         self._process: Optional[subprocess.Popen[str]] = None
         self._next_id = 1
+        if not math.isfinite(request_timeout_seconds) or request_timeout_seconds <= 0:
+            raise ValueError("request_timeout_seconds must be positive")
+        self.request_timeout_seconds = request_timeout_seconds
+        self._request_lock = threading.RLock()
 
         if not self._server_instance and not self._command:
             raise ValueError("McpClient requires either server_instance or command")
@@ -78,7 +84,15 @@ class McpClient:
             env=env,
         )
 
-    def _send_request(self, method: str, params: Optional[Mapping[str, Any]] = None) -> JsonRpcResponse:
+    def _send_request(
+        self, method: str, params: Optional[Mapping[str, Any]] = None
+    ) -> JsonRpcResponse:
+        with self._request_lock:
+            return self._send_request_locked(method, params)
+
+    def _send_request_locked(
+        self, method: str, params: Optional[Mapping[str, Any]] = None
+    ) -> JsonRpcResponse:
         """Send a JSON-RPC 2.0 request and parse the response."""
         req_id = self._next_id
         self._next_id += 1
@@ -96,12 +110,31 @@ class McpClient:
             self._process.stdin.write(line_out)
             self._process.stdin.flush()
 
-            line_in = self._process.stdout.readline()
+            stream = self._process.stdout
+            lines: queue.Queue[str] = queue.Queue(maxsize=1)
+
+            def read_response() -> None:
+                try:
+                    lines.put(stream.readline())
+                except (OSError, ValueError):
+                    lines.put("")
+
+            reader = threading.Thread(target=read_response, daemon=True)
+            reader.start()
+            try:
+                line_in = lines.get(timeout=self.request_timeout_seconds)
+            except queue.Empty as exc:
+                self.close()
+                reader.join(timeout=1)
+                raise McpClientError("MCP response deadline exceeded") from exc
             if not line_in:
                 raise McpClientError("MCP server process closed stream without responding")
 
             data = json.loads(line_in.strip())
-            return JsonRpcResponse.from_dict(data)
+            response = JsonRpcResponse.from_dict(data)
+            if type(response.id) is not int or response.id != req_id:
+                raise McpClientError("MCP response ID mismatch")
+            return response
         except Exception as exc:
             raise McpClientError(f"Failed to communicate with MCP server: {exc}") from exc
 

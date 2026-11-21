@@ -82,7 +82,11 @@ class TestWorkflowApprovalVerifier(unittest.TestCase):
     def test_verify_rejects_already_consumed_approval(self) -> None:
         """Replay check: A CONSUMED approval must raise ApprovalReplayError."""
         consumed_record = DurableApprovalRecord(
-            **{**self.valid_record.to_dict(), "status": ApprovalStatus.CONSUMED.value, "consumed_at": time.time()}
+            **{
+                **self.valid_record.to_dict(),
+                "status": ApprovalStatus.CONSUMED.value,
+                "consumed_at": time.time(),
+            }
         )
         with self.assertRaises(ApprovalReplayError):
             WorkflowApprovalVerifier.verify(

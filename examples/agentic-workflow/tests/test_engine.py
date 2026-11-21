@@ -1,6 +1,5 @@
 """Unit tests for WorkflowEngine, graph routing, and transition validation."""
 
-import asyncio
 import sys
 import unittest
 from pathlib import Path
@@ -16,18 +15,16 @@ for p in (BUILDING_BLOCKS_DIR, AGENT_EXEC_DIR, WORKFLOW_DIR):
 
 from contracts.workflow import (
     StepExecutionStatus,
-    WorkflowDefinitionRef,
     WorkflowStatus,
 )
 
 from workflow.definition import StepDefinition, TransitionRule, WorkflowDefinition
 from workflow.engine import WorkflowEngine
 from workflow.errors import (
-    InvalidTransitionError,
     MaxTransitionsExceededError,
     WorkflowDefinitionError,
 )
-from workflow.state import StepOutcome, WorkflowActorSnapshot, WorkflowState
+from workflow.state import StepOutcome, WorkflowActorSnapshot
 from workflow.store import InMemoryWorkflowStore
 
 
@@ -79,7 +76,11 @@ class TestWorkflowEngine(unittest.IsolatedAsyncioTestCase):
                     StepDefinition(
                         name="step1",
                         handler=lambda s: StepOutcome(StepExecutionStatus.SUCCEEDED, "ok"),
-                        transitions=(TransitionRule(target_step="ghost_step", condition_fn=lambda s, o: True),),
+                        transitions=(
+                            TransitionRule(
+                                target_step="ghost_step", condition_fn=lambda s, o: True
+                            ),
+                        ),
                     ),
                     StepDefinition(
                         name="terminal",
@@ -112,7 +113,9 @@ class TestWorkflowEngine(unittest.IsolatedAsyncioTestCase):
             StepDefinition(
                 name="step_b",
                 handler=lambda s: StepOutcome(
-                    StepExecutionStatus.SUCCEEDED, "b_done", context_updates={"doubled": s.domain_context["val"] * 2}
+                    StepExecutionStatus.SUCCEEDED,
+                    "b_done",
+                    context_updates={"doubled": s.domain_context["val"] * 2},
                 ),
                 default_transition="term_complete",
             ),
@@ -199,11 +202,15 @@ class TestWorkflowEngine(unittest.IsolatedAsyncioTestCase):
         engine = WorkflowEngine(definition=definition, store=self.store)
 
         # Route A -> COMPLETED
-        state_a = await engine.start_workflow("wf-route-a", actor=self.actor, domain_context={"route_choice": "branch_a"})
+        state_a = await engine.start_workflow(
+            "wf-route-a", actor=self.actor, domain_context={"route_choice": "branch_a"}
+        )
         self.assertEqual(state_a.status, WorkflowStatus.COMPLETED)
 
         # Route B -> REJECTED
-        state_b = await engine.start_workflow("wf-route-b", actor=self.actor, domain_context={"route_choice": "branch_b"})
+        state_b = await engine.start_workflow(
+            "wf-route-b", actor=self.actor, domain_context={"route_choice": "branch_b"}
+        )
         self.assertEqual(state_b.status, WorkflowStatus.REJECTED)
 
     async def test_max_transitions_ceiling_cycle_protection(self) -> None:

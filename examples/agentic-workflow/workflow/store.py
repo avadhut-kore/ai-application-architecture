@@ -5,22 +5,23 @@ from __future__ import annotations
 import json
 import sqlite3
 import time
+import threading
+from contextlib import AbstractContextManager
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from contracts.workflow import (
-    ApprovalStatus,
     CheckpointStorePort,
-    MutationStatus,
     WorkflowStatus,
 )
 
 from .approval import DurableApprovalRecord
 from .audit import WorkflowAuditEvent
-from .errors import ConcurrentResumeConflictError, CorruptedCheckpointError
+from .errors import CorruptedCheckpointError
 from .ledger import DurableMutationRecord
 from .state import WorkflowState
+from .ownership import file_ownership, memory_ownership
 
 
 class InMemoryWorkflowStore(CheckpointStorePort):
@@ -32,6 +33,10 @@ class InMemoryWorkflowStore(CheckpointStorePort):
         self.approvals_by_action: Dict[str, str] = {}
         self.mutations: Dict[str, DurableMutationRecord] = {}
         self.audit_events: List[WorkflowAuditEvent] = []
+        self._execution_locks: dict[str, threading.Lock] = {}
+
+    def execution_lock(self, workflow_id: str) -> AbstractContextManager[None]:
+        return memory_ownership(self._execution_locks, workflow_id)
 
     async def save_checkpoint(
         self,
@@ -58,7 +63,9 @@ class InMemoryWorkflowStore(CheckpointStorePort):
         if state is None:
             return None
         if state.compute_checksum() != state.checksum:
-            raise CorruptedCheckpointError(f"Integrity checksum verification failed for workflow '{workflow_id}'.")
+            raise CorruptedCheckpointError(
+                f"Integrity checksum verification failed for workflow '{workflow_id}'."
+            )
         return state
 
     def compare_and_swap_resume(
@@ -70,7 +77,10 @@ class InMemoryWorkflowStore(CheckpointStorePort):
         state = self.checkpoints.get(workflow_id)
         if not state:
             return False
-        if state.checkpoint_version == expected_version and state.status == WorkflowStatus.AWAITING_APPROVAL:
+        if (
+            state.checkpoint_version == expected_version
+            and state.status == WorkflowStatus.AWAITING_APPROVAL
+        ):
             updated = WorkflowState(
                 workflow_id=state.workflow_id,
                 definition=state.definition,
@@ -131,6 +141,9 @@ class SQLiteWorkflowStore(CheckpointStorePort):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
+
+    def execution_lock(self, workflow_id: str) -> AbstractContextManager[None]:
+        return file_ownership(self.db_path, workflow_id)
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path), timeout=10.0)

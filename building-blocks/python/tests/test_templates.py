@@ -65,9 +65,21 @@ class TestTemplatesAndManifests(unittest.TestCase):
         fixture_dir = FIXTURES_DIR / "invalid_missing_docs"
         ok, errors = validate_artifact(fixture_dir)
         self.assertFalse(ok)
-        self.assertTrue(any("Tier 1 artifact missing required file: docs/requirements.md" in err for err in errors))
-        self.assertTrue(any("Tier 1 artifact missing required file: docs/architecture.md" in err for err in errors))
-        self.assertTrue(any("Tier 1 artifact missing required file: docs/quality.md" in err for err in errors))
+        self.assertTrue(
+            any(
+                "Tier 1 artifact missing required file: docs/requirements.md" in err
+                for err in errors
+            )
+        )
+        self.assertTrue(
+            any(
+                "Tier 1 artifact missing required file: docs/architecture.md" in err
+                for err in errors
+            )
+        )
+        self.assertTrue(
+            any("Tier 1 artifact missing required file: docs/quality.md" in err for err in errors)
+        )
 
     def test_invalid_status_rejected(self) -> None:
         fixture_dir = FIXTURES_DIR / "invalid_status"
@@ -79,7 +91,9 @@ class TestTemplatesAndManifests(unittest.TestCase):
         fixture_dir = FIXTURES_DIR / "invalid_taxonomy"
         ok, errors = validate_artifact(fixture_dir)
         self.assertFalse(ok)
-        self.assertTrue(any("Unknown application domain: 'not-a-real-domain'" in err for err in errors))
+        self.assertTrue(
+            any("Unknown application domain: 'not-a-real-domain'" in err for err in errors)
+        )
 
     def test_invalid_local_first_mode_rejected(self) -> None:
         fixture_dir = FIXTURES_DIR / "invalid_mode"
@@ -99,7 +113,12 @@ class TestTemplatesAndManifests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(any("Unknown application domain: 'bogus-domain'" in err for err in errors))
         self.assertTrue(any("Invalid 'local_first_mode'" in err for err in errors))
-        self.assertTrue(any("Tier 1 artifact missing required file: docs/requirements.md" in err for err in errors))
+        self.assertTrue(
+            any(
+                "Tier 1 artifact missing required file: docs/requirements.md" in err
+                for err in errors
+            )
+        )
 
     def test_artifact_discovery_finds_nested_manifests(self) -> None:
         discovered = find_all_artifacts(FIXTURES_DIR, approved_roots=["nested_discovery"])

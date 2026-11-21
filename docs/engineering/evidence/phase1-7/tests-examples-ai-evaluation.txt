@@ -1,0 +1,40 @@
+===========================================================================
+GATE D AI EVALUATION (MODE: LIVE)
+===========================================================================
+[STATUS: NOT VERIFIED] Model 'test' not found in installed models: [].
+Steps to resolve: ollama pull test
+===========================================================================
+Tier 2 voluntary structured-output benchmark; this does not certify full Gate D.
+===========================================================================
+AI EVALUATION REPORT (EXECUTION: LIVE RUNTIME)
+===========================================================================
+Total Scenarios Evaluated: 30
+Schema Adherence Rate:     100.0% (30/30) [Schema benchmark target: >=98.0%]
+Category Accuracy:         100.0% [Artifact Target: >=70.0%]
+Sentiment Accuracy:        100.0%
+Urgency Accuracy:          100.0%
+Average Round-Trip Latency:0.04 ms
+---------------------------------------------------------------------------
+Breakdown by Scenario Type:
+  * ADVERSARIAL  (n=8) -> Schema Adherence: 100.0% | Category Accuracy: 100.0%
+  * AMBIGUOUS    (n=7) -> Schema Adherence: 100.0% | Category Accuracy: 100.0%
+  * BOUNDARY     (n=5) -> Schema Adherence: 100.0% | Category Accuracy: 100.0%
+  * NORMAL       (n=10) -> Schema Adherence: 100.0% | Category Accuracy: 100.0%
+---------------------------------------------------------------------------
+Gate D Real-Model Evaluation:  [PASSED] (Criteria: >=30 cases, >=98.0% schema adherence)
+===========================================================================
+===========================================================================
+GATE D AI EVALUATION (MODE: LIVE)
+===========================================================================
+[STATUS: NOT VERIFIED] Ollama daemon is not reachable at http://localhost:59999.
+Live model evaluation requires an active Ollama instance.
+Steps to verify live:
+  1. ollama serve
+  2. ollama pull llama3.2
+  3. python3 examples/ai-evaluation/runner.py --mode live --model llama3.2
+===========================================================================
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 6.251s
+
+OK

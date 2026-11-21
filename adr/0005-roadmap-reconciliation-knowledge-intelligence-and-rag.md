@@ -17,7 +17,7 @@ During initial Phase 0 repository governance drafting, the roadmap entry for Pha
 * Reciprocal Rank Fusion (RRF);
 * Grounded citation extraction and automated evaluation.
 
-During Phase 5 implementation, architectural analysis and repository principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Principle 4: Architecture Complexity Rule* and *Principle 12: Knowledge Grounding & Citation Integrity*) established that adding lexical search (BM25) and score fusion (RRF) before establishing and measuring a clean dense semantic retrieval baseline violates evidence-driven engineering. Consequently, [`ADR-0004`](0004-knowledge-intelligence-and-rag-architecture.md) formally established a **baseline-first retrieval policy**:
+During Phase 5 implementation, architectural analysis and repository principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Architecture Complexity Rule (engineering/general.md)* and *Principle 8: Evaluation Is Mandatory for Probabilistic Behavior*) established that adding lexical search (BM25) and score fusion (RRF) before establishing and measuring a clean dense semantic retrieval baseline violates evidence-driven engineering. Consequently, [`ADR-0004`](0004-knowledge-intelligence-and-rag-architecture.md) formally established a **baseline-first retrieval policy**:
 1. Build a modular, decoupled Tier 2 Pattern Example (`examples/rag`) establishing provider-neutral embeddings, structural chunking, vector indexing, context budgeting, grounded generation, and application-level citation validation;
 2. Build a Tier 3 Platform Component (`platform/ollama-embedding-adapter`) providing the standard-library HTTP adapter for local embedding models;
 3. Measure baseline retrieval and generation metrics across 32 ground-truth evaluation scenarios;
@@ -104,4 +104,4 @@ Decision Gate: Hybrid Search              Decision Gate: Persistent Vector DB
 * [`ROADMAP.md`](../ROADMAP.md) — Phase 5 Roadmap Definition
 * [`adr/0004-knowledge-intelligence-and-rag-architecture.md`](0004-knowledge-intelligence-and-rag-architecture.md) — Baseline-First RAG Architecture
 * [`QUALITY-GATES.md`](../QUALITY-GATES.md) — Tier Applicability Governance
-* [`docs/architecture/principles.md`](../docs/architecture/principles.md) — Principle 4 (Complexity Rule) & Principle 12 (Knowledge Grounding)
+* [`docs/architecture/principles.md`](../docs/architecture/principles.md) — Principle 4 (Complexity Rule) & Principle 8 (Evaluation)

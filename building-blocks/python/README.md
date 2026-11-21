@@ -9,3 +9,8 @@ This package contains the bounded, vendor-agnostic minimum core contracts for en
 3. **OpenTelemetry Semantic Conventions**: Telemetry context adheres to OpenTelemetry GenAI standards.
 4. **Bounded Exception Taxonomy**: Distinguishes transient (retriable), non-transient, and semantic AI errors.
 5. **Structured Parsing Envelopes**: Type-safe `ValidationResult[T]` for robust structured output extraction.
+
+The `contracts` namespace stays dependency-free. Runtime span emission lives in
+the separate `ai_telemetry` namespace and requires the optional `telemetry` extra
+when this distribution is installed independently. Repository examples use the
+locked root environment, which already includes those dependencies.

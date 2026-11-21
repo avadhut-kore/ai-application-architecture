@@ -63,13 +63,13 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
     def test_successful_feedback_extraction(self) -> None:
         valid_json = (
-            '{\n'
+            "{\n"
             '  "category": "bug",\n'
             '  "sentiment": "negative",\n'
             '  "urgency": "high",\n'
             '  "summary": "Application crashes on login",\n'
             '  "confidence": 0.95\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([valid_json])
         service = FeedbackExtractionService(client=fake_client)
@@ -87,17 +87,17 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
     def test_markdown_code_fence_handling(self) -> None:
         markdown_json = (
-            'Here is the extracted information:\n'
-            '```json\n'
-            '{\n'
+            "Here is the extracted information:\n"
+            "```json\n"
+            "{\n"
             '  "category": "feature_request",\n'
             '  "sentiment": "positive",\n'
             '  "urgency": "low",\n'
             '  "summary": "Request dark mode theme",\n'
             '  "confidence": 0.88\n'
-            '}\n'
-            '```\n'
-            'Hope this helps!'
+            "}\n"
+            "```\n"
+            "Hope this helps!"
         )
         fake_client = FakeLlmClient([markdown_json])
         service = FeedbackExtractionService(client=fake_client)
@@ -122,12 +122,12 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
     def test_missing_field_failure(self) -> None:
         missing_category_json = (
-            '{\n'
+            "{\n"
             '  "sentiment": "neutral",\n'
             '  "urgency": "low",\n'
             '  "summary": "Question about pricing",\n'
             '  "confidence": 0.9\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([missing_category_json, missing_category_json])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=1)
@@ -139,13 +139,13 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
     def test_invalid_enum_value_failure(self) -> None:
         invalid_enum_json = (
-            '{\n'
+            "{\n"
             '  "category": "outrage",\n'
             '  "sentiment": "furious",\n'
             '  "urgency": "catastrophic",\n'
             '  "summary": "User is very angry",\n'
             '  "confidence": 0.99\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([invalid_enum_json, invalid_enum_json])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=1)
@@ -159,13 +159,13 @@ class TestFeedbackExtractionService(unittest.TestCase):
 
     def test_confidence_out_of_range_failure(self) -> None:
         invalid_confidence_json = (
-            '{\n'
+            "{\n"
             '  "category": "billing",\n'
             '  "sentiment": "neutral",\n'
             '  "urgency": "medium",\n'
             '  "summary": "Double charge on invoice",\n'
             '  "confidence": 1.5\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([invalid_confidence_json, invalid_confidence_json])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=1)
@@ -173,18 +173,20 @@ class TestFeedbackExtractionService(unittest.TestCase):
         result = asyncio.run(service.extract_feedback("I see two charges on my invoice."))
 
         self.assertFalse(result.is_valid)
-        self.assertTrue(any("Field 'confidence' must be between 0.0 and 1.0" in err for err in result.errors))
+        self.assertTrue(
+            any("Field 'confidence' must be between 0.0 and 1.0" in err for err in result.errors)
+        )
 
     def test_corrective_retry_succeeds_on_second_attempt(self) -> None:
         invalid_first = '{"category": "bug", "summary": "App crashed"}'  # missing sentiment, urgency, confidence
         valid_second = (
-            '{\n'
+            "{\n"
             '  "category": "bug",\n'
             '  "sentiment": "negative",\n'
             '  "urgency": "high",\n'
             '  "summary": "App crashed on launch",\n'
             '  "confidence": 0.92\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([invalid_first, valid_second])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=1)
@@ -200,13 +202,13 @@ class TestFeedbackExtractionService(unittest.TestCase):
     def test_boolean_confidence_rejected(self) -> None:
         """Verify that boolean true/false in confidence field is rejected."""
         bool_confidence_json = (
-            '{\n'
+            "{\n"
             '  "category": "bug",\n'
             '  "sentiment": "negative",\n'
             '  "urgency": "high",\n'
             '  "summary": "Crash on save",\n'
             '  "confidence": true\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([bool_confidence_json, bool_confidence_json])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=0)
@@ -214,12 +216,14 @@ class TestFeedbackExtractionService(unittest.TestCase):
         result = asyncio.run(service.extract_feedback("Crash on save"))
 
         self.assertFalse(result.is_valid)
-        self.assertTrue(any("Field 'confidence' must be a numeric float" in err for err in result.errors))
+        self.assertTrue(
+            any("Field 'confidence' must be a numeric float" in err for err in result.errors)
+        )
 
     def test_unexpected_fields_rejected(self) -> None:
         """Verify strict schema rejects unpermitted unexpected fields."""
         extra_fields_json = (
-            '{\n'
+            "{\n"
             '  "category": "bug",\n'
             '  "sentiment": "negative",\n'
             '  "urgency": "medium",\n'
@@ -227,7 +231,7 @@ class TestFeedbackExtractionService(unittest.TestCase):
             '  "confidence": 0.95,\n'
             '  "admin_override": true,\n'
             '  "injected_field": "unauthorized"\n'
-            '}'
+            "}"
         )
         fake_client = FakeLlmClient([extra_fields_json])
         service = FeedbackExtractionService(client=fake_client, max_corrective_retries=0)
@@ -235,20 +239,22 @@ class TestFeedbackExtractionService(unittest.TestCase):
         result = asyncio.run(service.extract_feedback("Export error"))
 
         self.assertFalse(result.is_valid)
-        self.assertTrue(any("Unexpected fields not permitted in strict schema" in err for err in result.errors))
+        self.assertTrue(
+            any("Unexpected fields not permitted in strict schema" in err for err in result.errors)
+        )
         self.assertTrue(any("admin_override" in err for err in result.errors))
 
     def test_valid_numeric_confidence_boundaries(self) -> None:
         """Verify confidence boundaries at 0.0, 0.5, and 1.0 pass validation."""
         for val in [0.0, 0.5, 1.0]:
             json_str = (
-                f'{{\n'
+                f"{{\n"
                 f'  "category": "inquiry",\n'
                 f'  "sentiment": "neutral",\n'
                 f'  "urgency": "low",\n'
                 f'  "summary": "API limits query",\n'
                 f'  "confidence": {val}\n'
-                f'}}'
+                f"}}"
             )
             fake_client = FakeLlmClient([json_str])
             service = FeedbackExtractionService(client=fake_client)

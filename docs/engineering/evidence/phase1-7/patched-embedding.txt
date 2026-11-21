@@ -1,0 +1,17 @@
+============================================================
+ai-application-architecture — Ollama Embedding Verification
+============================================================
+Target Endpoint: http://127.0.0.1:11435
+Connection: Reachable (HTTP 200 OK)
+Installed Models: ['qwen2.5:7b', 'nomic-embed-text:latest']
+Executing Embedding Test using model: 'nomic-embed-text'...
+
+Model: nomic-embed-text
+Dimensions: 768
+Vectors Generated: 1
+Latency: 11077.5ms
+Input Tokens: 9
+Vector Sample (first 3 dims): [-0.02218164, 0.0757499, -0.1502462]
+
+RESULT: PASS — Live Ollama embedding execution successfully verified.
+============================================================

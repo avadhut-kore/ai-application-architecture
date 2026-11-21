@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from contracts.models import CompletionRequest
 from contracts.ports import TextGenerationPort
@@ -31,6 +31,19 @@ Respond ONLY with the JSON object. Do not include markdown preamble, commentary,
 
 JSON_BLOCK_PATTERN = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "category": {"type": "string", "enum": [item.value for item in FeedbackCategory]},
+        "sentiment": {"type": "string", "enum": [item.value for item in FeedbackSentiment]},
+        "urgency": {"type": "string", "enum": [item.value for item in FeedbackUrgency]},
+        "summary": {"type": "string", "minLength": 1},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    },
+    "required": ["category", "sentiment", "urgency", "summary", "confidence"],
+    "additionalProperties": False,
+}
+
 
 class FeedbackExtractionService:
     """Enterprise application use case demonstrating structured AI output extraction.
@@ -43,7 +56,7 @@ class FeedbackExtractionService:
     def __init__(
         self,
         client: TextGenerationPort,
-        model: str = "llama3.2",
+        model: str = "qwen2.5:7b",
         max_corrective_retries: int = 1,
     ) -> None:
         self.client = client
@@ -138,11 +151,20 @@ class FeedbackExtractionService:
         if confidence is None:
             errors.append("Missing required field: 'confidence'")
         elif isinstance(confidence, bool) or not isinstance(confidence, (int, float)):
-            errors.append(f"Field 'confidence' must be a numeric float between 0.0 and 1.0, got {type(confidence).__name__}")
+            errors.append(
+                f"Field 'confidence' must be a numeric float between 0.0 and 1.0, got {type(confidence).__name__}"
+            )
         elif not (0.0 <= float(confidence) <= 1.0):
             errors.append(f"Field 'confidence' must be between 0.0 and 1.0, got {confidence}")
 
-        if errors or category is None or sentiment is None or urgency is None or not summary or confidence is None:
+        if (
+            errors
+            or category is None
+            or sentiment is None
+            or urgency is None
+            or not summary
+            or confidence is None
+        ):
             return ValidationResult.failure(errors=errors, raw_text=raw_text)
 
         return ValidationResult.success(
@@ -158,13 +180,23 @@ class FeedbackExtractionService:
 
     async def extract_feedback(self, text: str) -> ValidationResult[CustomerFeedbackExtraction]:
         """Extract structured domain feedback from raw text with bounded corrective retry."""
-        user_prompt = f"Extract structured feedback from this customer message:\n\n\"{text}\""
+        if (
+            not isinstance(text, str)
+            or not text.strip()
+            or len(text) > 16384
+            or any(ord(c) < 32 and c not in "\n\r\t" for c in text)
+        ):
+            return ValidationResult.failure(
+                errors=["Input must be nonempty text within 16384 characters without control bytes"]
+            )
+        user_prompt = f'Extract structured feedback from this customer message:\n\n"{text}"'
         request = CompletionRequest(
             prompt=user_prompt,
             system_prompt=SYSTEM_PROMPT,
             model=self.model,
             temperature=0.0,
-            metadata={"format": "json"},
+            max_tokens=256,
+            metadata={"format": "json", "response_schema": RESPONSE_SCHEMA},
         )
 
         response = await self.client.generate(request)
@@ -175,8 +207,8 @@ class FeedbackExtractionService:
         while not result.is_valid and retry_count < self.max_corrective_retries:
             retry_count += 1
             corrective_prompt = (
-                f"Your previous JSON output was invalid for the following reasons:\n"
-                f"- " + "\n- ".join(result.errors) + "\n\n"
+                "Your previous JSON output was invalid for the following reasons:\n"
+                "- " + "\n- ".join(result.errors) + "\n\n"
                 f"Previous raw output was:\n{response.text}\n\n"
                 f"Please fix all errors and return ONLY the valid JSON object adhering to the schema."
             )
@@ -185,7 +217,12 @@ class FeedbackExtractionService:
                 system_prompt=SYSTEM_PROMPT,
                 model=self.model,
                 temperature=0.0,
-                metadata={"format": "json", "is_corrective_retry": True},
+                max_tokens=256,
+                metadata={
+                    "format": "json",
+                    "response_schema": RESPONSE_SCHEMA,
+                    "is_corrective_retry": True,
+                },
             )
             response = await self.client.generate(corrective_request)
             result = self.validate_output(response.text)

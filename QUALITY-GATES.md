@@ -5,7 +5,7 @@ To ensure that contributions and reference implementations meet objective engine
 Applicability varies by the [Reference Implementation Tier](docs/architecture/reference-standard.md):
 * **Tier 1 (Reference Application)**: Subject to **all** Quality Gates (Gates A–J).
 * **Tier 2 (Pattern Example)**: Subject to Gates B, C, H, and I.
-* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, F, and H.
+* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, E, F, and H.
 * **Tier 4 (Template)**: Subject to Gates B and H.
 
 ---
@@ -91,6 +91,10 @@ All verification reports must classify evidence into one of three explicit types
 ---
 
 ## Gate F — Observability & Telemetry
+
+Static protocol/data-only artifacts that execute no external operations mark Gate F
+not applicable with an explicit explanation. Runtime adapters must emit real spans;
+returning timing metadata alone does not satisfy this gate.
 
 * **Requirement**: External model interactions, retrieval queries, and tool executions must emit structured OpenTelemetry trace spans. Telemetry spans must capture:
   * `gen_ai.system` (provider identifier).

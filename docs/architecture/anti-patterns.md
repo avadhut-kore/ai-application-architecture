@@ -44,7 +44,7 @@ Every pull request, design review, and AI coding agent execution is validated ag
 
 ### 9. Unnecessary Abstractions and Premature Shared Frameworks
 * **Anti-Pattern**: Building extensive speculative inheritance hierarchies, generic interface layers, or shared multi-app frameworks before a concrete use case proves the need.
-* **Rule**: Adhere to the Just-in-Time Abstraction Policy (Principle 18). Introduce abstractions only when a concrete implementation requires them.
+* **Rule**: Adhere to the Just-in-Time Abstraction Policy (the Just-in-Time Abstraction Policy). Introduce abstractions only when a concrete implementation requires them.
 
 ### 10. Unbounded Autonomous Agents
 * **Anti-Pattern**: Running agent reasoning loops with `while True` logic, open-ended tool access, no timeout caps, and no iteration limits.

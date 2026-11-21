@@ -2,7 +2,7 @@
 
 ## 1. Executive Mission
 
-While [Phase 0](../../ROADMAP.md#phase-0-vision-scope--architecture-governance-current) established the **architecture constitution** for `ai-application-architecture`, Phase 1 establishes the **engineering constitution**.
+While [Phase 0](../../ROADMAP.md#phase-0-vision-scope--architecture-governance) established the **architecture constitution** for `ai-application-architecture`, Phase 1 establishes the **engineering constitution**.
 
 These standards define how future code, tests, AI behavior, security controls, configuration, telemetry, APIs, data persistence, and Git workflows must be engineered and verified across the repository.
 
@@ -12,7 +12,7 @@ These standards define how future code, tests, AI behavior, security controls, c
 
 All contributors and AI coding agents operate under a strict governance hierarchy:
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ 1. AGENTS.md (Operational Constitution)                │
 └───────────────────────────┬────────────────────────────┘
@@ -76,9 +76,9 @@ To prevent competing requirements and documentation divergence, each concern in 
 | Standard Document | Focus Area | Primary Topics |
 | :--- | :--- | :--- |
 | **[`general.md`](general.md)** | Core Principles | Simplicity before abstraction, Architecture Complexity Rule, explicit boundaries. |
-| **[`dotnet.md`](dotnet.md)** | .NET / C# | .NET 8 LTS baseline, modern C#, async/cancellation, DI, options, analyzers. |
+| **[`dotnet.md`](dotnet.md)** | .NET / C# | .NET 10 LTS baseline, modern C#, async/cancellation, DI, options, analyzers. |
 | **[`python.md`](python.md)** | Python | Python 3.11+, `mypy --strict`, `ruff`, `pytest`, `uv`/`pyproject.toml`, Pydantic v2. |
-| **[`typescript.md`](typescript.md)** | TypeScript | Node 20+, strict TypeScript, no unsafe `any`, Zod, Vitest, streaming clients. |
+| **[`typescript.md`](typescript.md)** | TypeScript | Node 24+, strict TypeScript, no unsafe `any`, Zod, Vitest, streaming clients. |
 | **[`java.md`](java.md)** | Java / Spring Boot | Java 21 LTS, Spring Boot conventions, JPA/transactions, JUnit 5, secondary role. |
 | **[`testing.md`](testing.md)** | Software Testing | Risk-based portfolio, deterministic vs. eval separation, test doubles, coverage. |
 | **[`ai-evaluation.md`](ai-evaluation.md)** | AI Evaluation | Probabilistic metrics, `eval_dataset.jsonl`, golden benchmarks, regression gating. |
@@ -101,5 +101,5 @@ Engineering standards must be applied proportionally to the artifact's [Referenc
 
 * **Tier 1 (Reference Application)**: Subject to **all** Quality Gates (Gates A–J). Full production rigor across architecture, types, tests, evals, security, telemetry, performance, documentation, local demo, and resilience.
 * **Tier 2 (Pattern Example)**: Subject to Gates B, C, H, and I. Focused standards: clean types, deterministic unit/boundary tests, clean documentation, and local execution demo.
-* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, F, and H. Strict architectural boundary isolation, type safety, hermetic test doubles, OpenTelemetry spans, and contract documentation.
+* **Tier 3 (Platform Component)**: Subject to Gates A, B, C, E, F, and H. Strict architectural boundary isolation, type safety, hermetic test doubles, OpenTelemetry spans, and contract documentation.
 * **Tier 4 (Enterprise Template)**: Subject to Gates B and H. Validated scaffolding baseline, strict type safety, and scaffold usage documentation.

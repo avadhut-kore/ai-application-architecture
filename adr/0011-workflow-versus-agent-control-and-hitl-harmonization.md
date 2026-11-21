@@ -78,7 +78,7 @@ The compensating step deterministically executes the inverse action (appending a
 ## 5. Consequences
 
 ### Positive
-* Mathematical guarantee that models cannot force arbitrary workflow transitions.
+* Tested enforcement that models cannot force arbitrary workflow transitions.
 * Zero mutation risk during agent investigation.
 * Complete protection against approval replay, argument tampering, and TOCTOU privilege drift.
 * Deterministic backward compensation restores consistency upon partial multi-step failure.
@@ -91,5 +91,5 @@ The compensating step deterministically executes the inverse action (appending a
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 1 (System Integrity)**: Models are never granted unmediated or unvalidated execution authority.
-* **Principle 13 (Capability Safety & Human Agency Preservation)**: Human judgment governs state mutations through strictly bound, single-use approval records.
+* **Principle 1 (Model Output Is Untrusted)**: Models are never granted unmediated or unvalidated execution authority.
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Human judgment governs state mutations through strictly bound, single-use approval records.

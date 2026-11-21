@@ -8,6 +8,7 @@ from typing import Any, List, Mapping, Optional
 from contracts.models import EmbeddingRequest
 from contracts.ports import EmbeddingPort
 from contracts.telemetry import AiOperationContext
+from ai_telemetry import traced
 
 from .document import Chunk
 from .vector_index import VectorIndexPort
@@ -44,13 +45,16 @@ class Retriever:
         embedding_model: str = "nomic-embed-text",
         default_top_k: int = 3,
         min_relevance_score: Optional[float] = None,
+        prefer_primary_document: bool = False,
     ) -> None:
         self.embedding_port = embedding_port
         self.vector_index = vector_index
         self.embedding_model = embedding_model
         self.default_top_k = default_top_k
         self.min_relevance_score = min_relevance_score
+        self.prefer_primary_document = prefer_primary_document
 
+    @traced("rag.retrieve", "local")
     async def retrieve(
         self,
         query: str,
@@ -70,7 +74,9 @@ class Retriever:
         k = top_k if top_k is not None else self.default_top_k
 
         # 1. Embed query text using the configured EmbeddingPort
-        request = EmbeddingRequest(inputs=[clean_query], model=self.embedding_model)
+        request = EmbeddingRequest(
+            inputs=[clean_query], model=self.embedding_model, metadata={"input_type": "query"}
+        )
         response = await self.embedding_port.embed(request, context=context)
 
         query_vector = response.embeddings[0]
@@ -97,5 +103,14 @@ class Retriever:
         threshold = min_score if min_score is not None else self.min_relevance_score
         if threshold is not None:
             results = [r for r in results if r.score >= threshold]
+
+        if self.prefer_primary_document and len(results) > 2:
+            primary_document = results[0].document_id
+            selected = results[:2] + [
+                row for row in results[2:] if row.document_id == primary_document
+            ]
+            results = [
+                RetrievalResult(row.chunk, row.score, rank) for rank, row in enumerate(selected, 1)
+            ]
 
         return results

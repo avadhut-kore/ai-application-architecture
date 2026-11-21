@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  04 — AI Foundations
-Status:                 Frozen & Accepted
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete
 Primary Audience:       AI Systems Architects, Senior Backend Engineers, Platform Engineers
 Implementation:         platform/ollama-adapter/, examples/structured-generation/, examples/ai-evaluation/, ADR-0003
@@ -118,7 +118,7 @@ platform/
     │   ├── __init__.py
     │   └── adapter.py                  # OllamaAdapter (TextGenerationPort implementation)
     └── tests/
-        └── test_adapter.py             # 15 hermetic unit tests (test doubles)
+        └── test_adapter.py             # unit tests (current counts in the remediation evidence report) (test doubles)
 
 examples/
 ├── structured-generation/
@@ -140,7 +140,7 @@ examples/
     ├── results/
     │   └── live_eval_llama3.2.json     # Genuine live evaluation output
     └── tests/
-        └── test_runner.py              # 9 hermetic unit tests
+        └── test_runner.py              # unit tests (current counts in the remediation evidence report)
 ```
 
 ---
@@ -288,7 +288,7 @@ Follow this 10-stage reading order to trace the actual symbols, contracts, and r
 ### Stage 10: Monorepo Test Discovery Integration
 * **Exact Path**: [`scripts/validate.py`](../../scripts/validate.py)
 * **Exact Symbols**: `discover_all_test_suites()`, `run_template_and_artifact_validation()`, `check_contract_import_boundaries()`.
-* **Why Read It**: Learn how dynamic test discovery finds all 63 unit tests across 4 suites and enforces monorepo quality gates.
+* **Why Read It**: Learn how dynamic test discovery finds all unit tests (current counts in the remediation evidence report) and enforces monorepo quality gates.
 * **Core Concept**: Automated Monorepo Quality Governance.
 
 ---
@@ -298,7 +298,7 @@ Follow this 10-stage reading order to trace the actual symbols, contracts, and r
 ### 9.1 Deterministic Offline Commands (No Ollama Required)
 
 ```bash
-# 1. Run all 63 monorepo unit tests across all 4 suites
+# 1. Run all unit tests (current counts in the remediation evidence report)
 python3 scripts/validate.py
 
 # 2. Run structured generation demo in hermetic fake mode
@@ -334,7 +334,7 @@ python3 examples/ai-evaluation/runner.py --mode live
 
 Understanding the difference between these five verification disciplines is an essential architectural competency:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────┐
 │ 1. UNIT TEST (`test_service.py`, `test_adapter.py`)                        │
 │    - Deterministic, runs in memory in < 0.01s.                            │
@@ -476,7 +476,7 @@ Phase 4: AI Foundations
 │   ├── Boundary validation (rejects boolean confidence)
 │   └── Corrective retry loop with error reflection
 └── Quantitative Quality Verification
-    ├── Deterministic unit tests (63 tests across monorepo)
+    ├── Deterministic unit tests (current counts in the remediation evidence report)
     ├── Standalone verification CLI (strict exit code 1)
     ├── Versioned evaluation dataset (30 golden scenarios)
     └── Gate D runner (Schema >= 98%, Adversarial evaluated)
@@ -544,7 +544,7 @@ Compare the resulting **Schema Adherence Rate**, **Category Accuracy**, and **Av
 ## 21. You Are Ready to Move On When...
 
 - [ ] You can trace a request through `TextGenerationPort` and `OllamaAdapter`.
-- [ ] You have executed `python3 scripts/validate.py` and observed all 63 unit tests passing.
+- [ ] You have executed `python3 scripts/validate.py` and observed all unit tests (current counts in the remediation evidence report) passing.
 - [ ] You have executed `python3 platform/ollama-adapter/verify.py` against local Ollama.
 - [ ] You have executed `python3 examples/ai-evaluation/runner.py --mode live` and achieved $\ge 98.0\%$ schema adherence.
 - [ ] You can explain why RAG and vector databases were excluded from Phase 4.

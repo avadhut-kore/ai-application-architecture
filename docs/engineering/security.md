@@ -12,7 +12,7 @@ This document establishes the threat modeling principles, security architecture,
 
 Enterprise AI applications operate across four distinct untrusted boundaries:
 
-```
+```text
 ┌─────────────────────┐
 │ 1. External User    │ ──► [Direct Prompt Injection / Jailbreak / Malformed Input]
 └─────────────────────┘

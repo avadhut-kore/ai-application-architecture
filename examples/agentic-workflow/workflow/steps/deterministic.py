@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any
 
 from contracts.workflow import StepExecutionStatus
 
@@ -10,7 +10,7 @@ from ..state import StepOutcome, WorkflowState
 
 
 class IntakeValidationStep:
-    """Validates initial customer inquiry payload and verifies customer identity."""
+    """Validate the customer identifier and record existence; this does not authenticate a person."""
 
     def __init__(self, customer_store: Any) -> None:
         self.customer_store = customer_store
@@ -76,7 +76,9 @@ class FinalizationStep:
     """Concludes workflow, emits audit summary, and transitions to terminal state."""
 
     async def execute(self, state: WorkflowState) -> StepOutcome:
-        resolution_summary = state.domain_context.get("resolution_summary", "Workflow completed successfully.")
+        resolution_summary = state.domain_context.get(
+            "resolution_summary", "Workflow completed successfully."
+        )
         return StepOutcome(
             status=StepExecutionStatus.SUCCEEDED,
             outcome_type="finalized",

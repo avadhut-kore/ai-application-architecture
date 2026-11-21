@@ -10,8 +10,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 import sys
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-for p in (REPO_ROOT / "building-blocks" / "python", REPO_ROOT / "examples" / "structured-generation", Path(__file__).resolve().parent.parent):
+for p in (
+    REPO_ROOT / "building-blocks" / "python",
+    REPO_ROOT / "examples" / "structured-generation",
+    Path(__file__).resolve().parent.parent,
+):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
@@ -21,7 +26,6 @@ from structured_generation.service import FeedbackExtractionService
 
 from runner import (
     DeterministicEvalStub,
-    EvalScenario,
     evaluate_service,
     load_dataset,
     print_report,
@@ -54,7 +58,9 @@ class TestEvaluationRunner(unittest.TestCase):
         scenarios = load_dataset(self.dataset_path)
         self.assertEqual(len(scenarios), 30)
         self.assertEqual(scenarios[0].id, "eval-001")
-        self.assertIn(scenarios[0].scenario_type, {"normal", "boundary", "ambiguous", "adversarial"})
+        self.assertIn(
+            scenarios[0].scenario_type, {"normal", "boundary", "ambiguous", "adversarial"}
+        )
         self.assertTrue(scenarios[0].expected_category)
 
     def test_load_dataset_file_not_found(self) -> None:
@@ -112,7 +118,9 @@ class TestEvaluationRunner(unittest.TestCase):
                 return True
 
         stub = OneFailureStub(DeterministicEvalStub(scenarios))
-        service = FeedbackExtractionService(client=stub, model="test-model", max_corrective_retries=0)
+        service = FeedbackExtractionService(
+            client=stub, model="test-model", max_corrective_retries=0
+        )
         summary, results = asyncio.run(evaluate_service(service, scenarios, mode="live"))
 
         self.assertEqual(summary.total, 30)
@@ -137,7 +145,9 @@ class TestEvaluationRunner(unittest.TestCase):
         """Verify that evaluation with a broken client records failures and rejects Gate D."""
         scenarios = load_dataset(self.dataset_path)
         failing_client = FailingStubClient()
-        service = FeedbackExtractionService(client=failing_client, model="test-model", max_corrective_retries=0)
+        service = FeedbackExtractionService(
+            client=failing_client, model="test-model", max_corrective_retries=0
+        )
 
         summary, results = asyncio.run(evaluate_service(service, scenarios, mode="fake"))
 
@@ -177,6 +187,45 @@ class TestEvaluationRunner(unittest.TestCase):
             )
         )
         self.assertEqual(exit_code, 1)
+
+
+class TestEvaluationEntrypoints(unittest.TestCase):
+    def test_live_wiring_and_missing_model_are_scored(self):
+        from unittest.mock import AsyncMock
+        import runner
+
+        dataset = Path(runner.__file__).with_name("eval_dataset.jsonl")
+        stub = DeterministicEvalStub(load_dataset(dataset))
+        with patch("ollama_adapter.adapter.OllamaAdapter") as factory:
+            adapter = factory.return_value
+            adapter.check_health = AsyncMock(return_value=True)
+            adapter.get_installed_models = AsyncMock(return_value=[])
+            self.assertEqual(
+                asyncio.run(runner.run_evaluation(dataset, "live", "http://local", "test")), 1
+            )
+            adapter.get_installed_models = AsyncMock(return_value=["test:latest"])
+            adapter.generate = AsyncMock(side_effect=stub.generate)
+            self.assertEqual(
+                asyncio.run(runner.run_evaluation(dataset, "live", "http://local", "test")), 0
+            )
+
+    def test_fake_cli_and_live_report(self):
+        import subprocess
+        import runner
+
+        result = subprocess.run(
+            [sys.executable, str(Path(runner.__file__)), "--mode", "fake"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        dataset = Path(runner.__file__).with_name("eval_dataset.jsonl")
+        scenarios = load_dataset(dataset)
+        service = FeedbackExtractionService(client=DeterministicEvalStub(scenarios), model="test")
+        summary, _ = asyncio.run(evaluate_service(service, scenarios, mode="live"))
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            print_report(summary)
+        self.assertIn("[PASSED]", output.getvalue())
 
 
 if __name__ == "__main__":

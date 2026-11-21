@@ -67,7 +67,7 @@ This isolates the model context from indirect prompt injections contained within
 ## 5. Consequences
 
 ### Positive
-* Deterministic mathematical guarantee that unauthorized state mutations cannot occur, even under full model compromise or jailbreak.
+* Deterministic tested enforcement that unauthorized state mutations cannot occur, even under full model compromise or jailbreak.
 * Complete traceability of every action proposal and human approval decision.
 * Eliminates double-charging or duplicate mutations through idempotency keys.
 
@@ -79,5 +79,5 @@ This isolates the model context from indirect prompt injections contained within
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 1 (System Integrity)**: Models are never granted unmediated access to persistent systems.
-* **Principle 13 (Capability Safety & Human Agency Preservation)**: Absolute enforcement of human-in-the-loop authorization for high-impact operations.
+* **Principle 1 (Model Output Is Untrusted)**: Models are never granted unmediated access to persistent systems.
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Absolute enforcement of human-in-the-loop authorization for high-impact operations.

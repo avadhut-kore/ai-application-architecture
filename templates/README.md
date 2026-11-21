@@ -6,7 +6,7 @@ This directory contains the canonical reference artifact templates for the `ai-a
 
 To prevent both shallow documentation on complex systems and excessive ceremony on simple mechanisms, this repository classifies all reference implementations into **Four Reference Tiers**:
 
-```
+```text
  ┌────────────────────────────────────────────────────────────────────────┐
  │ TIER 1: REFERENCE APPLICATION                                          │
  │ Full end-to-end production architecture with complete enterprise rigor │
@@ -100,11 +100,11 @@ Authoritative quality gate names and definitions are defined exclusively in [`QU
 
 | Authoritative Quality Gate | Tier 1 (Reference App) | Tier 2 (Pattern Example) | Tier 3 (Platform Component) | Tier 4 (Template Artifact) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Gate A — Architecture & Structural Boundaries** | **Mandatory** | Recommended / Scaled | **Mandatory** | **Mandatory** (Structure) |
+| **Gate A — Architecture & Structural Boundaries** | **Mandatory** | Recommended / Scaled | **Mandatory** | Recommended (Structure) |
 | **Gate B — Code Quality & Type Safety** | **Mandatory** (Strict typing & lint) | **Mandatory** (Strict typing & lint) | **Mandatory** (Strict typing & lint) | **Mandatory** (Clean scaffold) |
 | **Gate C — Software Testing** | **Mandatory** ($\ge 85\%$ coverage) | **Mandatory** (Hermetic unit tests) | **Mandatory** ($\ge 85\%$ coverage) | Recommended baseline |
 | **Gate D — AI Evaluation** | **Mandatory** (if AI behavior exists) | Scaled (if AI demonstrated) | Recommended (if probabilistic) | **Not Applicable** |
-| **Gate E — Security & Safety** | **Mandatory** (Threat model + audit) | Scaled / Risk-based | **Mandatory** (Boundary validation) | **Mandatory** (Zero secrets) |
+| **Gate E — Security & Safety** | **Mandatory** (Threat model + audit) | Scaled / Risk-based | **Mandatory** (Boundary validation) | Safe defaults (Zero secrets) |
 | **Gate F — Observability & Telemetry** | **Mandatory** (OTel GenAI spans) | Optional / Scaled | **Mandatory** (if runtime middleware) | **Not Applicable** |
 | **Gate G — Performance & Sizing** | **Mandatory** (TTFT, streaming, sizing)| Optional / Scaled | Recommended (Low overhead) | **Not Applicable** |
 | **Gate H — Documentation & Architectural Integrity** | **Mandatory** (Docs, C4, link check)| **Mandatory** (README, diagrams) | **Mandatory** (API docs, contracts) | **Mandatory** (Usage, non-prod notice) |

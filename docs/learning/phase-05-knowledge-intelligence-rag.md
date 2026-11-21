@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  05 — Knowledge Intelligence & RAG
-Status:                 Accepted & Freeze-Ready
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete
 Primary Audience:       AI Systems Architects, Senior Backend Engineers, Search & RAG Engineers
 Implementation:         platform/ollama-embedding-adapter/, examples/rag/, ADR-0004, ADR-0005
@@ -181,7 +181,7 @@ examples/
     │   └── test_doubles.py             # Deterministic embedding and generation stubs
     ├── results/
     │   └── canonical_eval_report.json  # Stable version-controlled reference evidence
-    └── tests/                          # 38 hermetic unit tests (< 0.1s execution)
+    └── tests/                          # unit tests (current counts in the remediation evidence report) (< 0.1s execution)
         ├── test_chunker.py
         ├── test_citation_validator.py
         ├── test_context_builder.py
@@ -316,7 +316,9 @@ Example: `sec-01#c1` denotes Document `sec-01`, chunk index `1`.
 ### Why a Separate `EmbeddingPort`?
 In Phase 4, the repository established `TextGenerationPort`:
 ```python
-async def generate(self, request: CompletionRequest, context: Optional[AiOperationContext] = None) -> CompletionResponse: ...
+async def generate(
+    self, request: CompletionRequest, context: Optional[AiOperationContext] = None
+) -> CompletionResponse: ...
 ```
 Why not add an `embed()` method directly to `TextGenerationPort`?
 * **Interface Segregation Principle (ISP)**: An application doing offline document indexing should not depend on text generation capabilities, and a classification service should not depend on LLM generation methods.
@@ -525,7 +527,7 @@ Phase 5 implements a 32-scenario reference evaluation harness ([`examples/rag/ev
 
 To evaluate and reason about RAG systems accurately, architects must distinguish between **Local-First Architectural Policy Modes** and **CLI Evaluation & Execution Modes**:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ ARCHITECTURAL POLICY MODES (docs/architecture/local-first.md)          │
 │ • Mode A: Offline Local (100% on-device; zero cloud/internet egress)   │
@@ -586,7 +588,7 @@ Per [`QUALITY-GATES.md`](../../QUALITY-GATES.md#gate-d--ai-evaluation):
 
 ### ADR-0005: Roadmap Reconciliation & Decision-Gated Enhancements
 * **Decision**: Advanced retrieval capabilities are decision-gated behind measured retrieval failure:
-  * **Lexical Search (BM25) & RRF**: Deferred until dense embedding retrieval demonstrates keyword failure on specialized domain jargon. (Current baseline achieves 100% Hit Rate on the reference corpus).
+  * **Lexical Search (BM25) & RRF**: Deferred until dense embedding retrieval demonstrates keyword failure on specialized domain jargon. Current live scores are recorded in the remediation evidence report.
   * **Cross-Encoder Reranking**: Deferred until candidate retrieval sets become large enough that candidate ordering errors impact groundedness.
   * **GraphRAG**: Deferred because entity-knowledge graphs introduce significant computational extraction overhead unnecessary for semi-structured text.
 
@@ -609,11 +611,12 @@ Per [`QUALITY-GATES.md`](../../QUALITY-GATES.md#gate-d--ai-evaluation):
 
 ## 20. Performance, Sizing & Scaling Evolution
 
-### Current Measured Baseline (Reference Corpus)
-* **Corpus Size**: 7 documents, 18 chunks.
-* **Indexing Latency**: $< 20$ms (in-memory).
-* **Query Retrieval Latency**: $< 1$ms (offline stub), $\sim 15$ms (live `nomic-embed-text`).
-* **Memory Footprint**: $< 50$KB for the vector index.
+### Current measured baseline
+
+The small synthetic corpus is a reference benchmark, not an enterprise sizing
+study. Model-specific corpus/chunk counts, retrieval scores and measured CPU
+latencies belong in the [remediation evidence report](../engineering/phase1-7-remediation.md).
+Offline fixture timing does not establish live embedding or generation latency.
 
 ### Architecture Evolution Path
 When transitioning from a Tier 2 Pattern Example to an enterprise-scale Tier 1 system:

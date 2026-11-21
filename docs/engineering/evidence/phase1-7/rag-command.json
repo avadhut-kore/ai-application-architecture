@@ -1,0 +1,20 @@
+{
+  "command": [
+    "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+    "-u",
+    "examples/rag/eval_runner.py",
+    "--mode",
+    "live",
+    "--gen-model",
+    "qwen2.5:7b",
+    "--embed-model",
+    "nomic-embed-text",
+    "--top-k",
+    "3",
+    "--timeout",
+    "240",
+    "--output-dir",
+    ".quality/live-rag-final"
+  ],
+  "exit_code": 0
+}

@@ -6,7 +6,7 @@ import hashlib
 import json
 import math
 import re
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional
 
 from contracts.models import (
     CompletionRequest,
@@ -21,10 +21,43 @@ from contracts.telemetry import AiOperationContext
 
 
 STOP_WORDS = {
-    "what", "is", "the", "for", "in", "to", "how", "a", "an", "and",
-    "of", "on", "are", "be", "do", "does", "with", "this", "that",
-    "it", "from", "by", "as", "at", "all", "must", "many", "we", "can",
-    "before", "after", "during", "which", "when", "where", "there", "their",
+    "what",
+    "is",
+    "the",
+    "for",
+    "in",
+    "to",
+    "how",
+    "a",
+    "an",
+    "and",
+    "of",
+    "on",
+    "are",
+    "be",
+    "do",
+    "does",
+    "with",
+    "this",
+    "that",
+    "it",
+    "from",
+    "by",
+    "as",
+    "at",
+    "all",
+    "must",
+    "many",
+    "we",
+    "can",
+    "before",
+    "after",
+    "during",
+    "which",
+    "when",
+    "where",
+    "there",
+    "their",
 }
 
 
@@ -62,7 +95,6 @@ class DeterministicEmbeddingStub(EmbeddingPort):
         if norm > 1e-9:
             vec = [x / norm for x in vec]
         return vec
-
 
     async def embed(
         self,
@@ -117,10 +149,10 @@ class DeterministicRAGGenerationStub(TextGenerationPort):
                 selected = dict(ans)
                 evidence_ids = set(re.findall(r"\[Source ID:\s*([^\]]+)\]", request.prompt))
                 if "citations" in selected and evidence_ids:
-                    selected["citations"] = [cid for cid in selected["citations"] if cid in evidence_ids]
+                    selected["citations"] = [
+                        cid for cid in selected["citations"] if cid in evidence_ids
+                    ]
                 break
-
-
 
         if not selected:
             # Check if evidence contains source IDs

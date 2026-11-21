@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import json
 import socket
 import time
 import urllib.error
 import urllib.request
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from urllib.parse import urlsplit
+from typing import Any, Dict, List, Optional, Sequence
 
 from contracts.errors import (
     AiError,
@@ -26,6 +28,7 @@ from contracts.models import (
 )
 from contracts.ports import EmbeddingPort
 from contracts.telemetry import AiOperationContext
+from ai_telemetry import traced
 
 
 class OllamaEmbeddingAdapter(EmbeddingPort):
@@ -44,6 +47,25 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
         backoff_base_seconds: float = 0.5,
     ) -> None:
         """Initialize the Ollama embedding adapter with endpoint and execution policies."""
+        parsed = urlsplit(endpoint)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "Ollama endpoint must be an HTTP(S) URL without credentials, query or fragment"
+            )
+        if (
+            not math.isfinite(timeout_seconds)
+            or not math.isfinite(backoff_base_seconds)
+            or timeout_seconds <= 0
+            or max_retries < 0
+            or backoff_base_seconds < 0
+        ):
+            raise ValueError("Invalid timeout or retry configuration")
         self.endpoint = endpoint.rstrip("/")
         self.default_model = default_model
         self.timeout_seconds = timeout_seconds
@@ -58,10 +80,12 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST" if data else "GET")
+        req = urllib.request.Request(
+            url, data=data, headers=headers, method="POST" if data else "GET"
+        )
 
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as response:
+            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as response:  # nosec B310 -- constructor restricts endpoint to HTTP(S)
                 body = response.read().decode("utf-8")
                 return json.loads(body) if body else {}
         except urllib.error.HTTPError as ex:
@@ -113,7 +137,11 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
             ):
                 raise AiTimeoutError(
                     message=f"Operation timed out after {self.timeout_seconds}s waiting for Ollama embedding: {ex.reason}",
-                    details={"endpoint": url, "timeout_seconds": self.timeout_seconds, "reason": str(ex.reason)},
+                    details={
+                        "endpoint": url,
+                        "timeout_seconds": self.timeout_seconds,
+                        "reason": str(ex.reason),
+                    },
                 ) from ex
             raise AiProviderUnavailableError(
                 message=f"Failed to reach Ollama endpoint at {url}: {ex.reason}",
@@ -148,6 +176,7 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
             )
         return [float(x) for x in embedding]
 
+    @traced("gen_ai.embed", "ollama")
     async def embed(
         self,
         request: EmbeddingRequest,
@@ -155,6 +184,18 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
     ) -> EmbeddingResponse:
         """Execute embedding generation with retry on transient errors."""
         model = request.model or self.default_model
+        inputs = list(request.inputs)
+        purpose = (request.metadata or {}).get("input_type")
+        if model.split(":")[0] == "nomic-embed-text" and purpose is not None:
+            prefixes = {
+                "query": "search_query",
+                "document": "search_document",
+                "classification": "classification",
+                "clustering": "clustering",
+            }
+            if not isinstance(purpose, str) or purpose not in prefixes:
+                raise AiInvalidRequestError("Unsupported embedding input_type")
+            inputs = [f"{prefixes[purpose]}: {text}" for text in inputs]
         attempt = 0
         last_transient_error: Optional[AiTransientError] = None
 
@@ -167,8 +208,9 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
                 start_time = time.monotonic()
 
                 # Attempt primary /api/embed endpoint
+                fallback_used = False
                 try:
-                    raw = await asyncio.to_thread(self._execute_embed_api, model, request.inputs)
+                    raw = await asyncio.to_thread(self._execute_embed_api, model, inputs)
                     raw_vectors = raw.get("embeddings", [])
                     total_duration_ns = raw.get("total_duration")
                     prompt_eval_count = raw.get("prompt_eval_count", 0)
@@ -177,9 +219,12 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
                 except AiError as ex:
                     # If /api/embed is not supported (404 or method not allowed), fallback to legacy /api/embeddings
                     if ex.details.get("http_status") == 404:
+                        fallback_used = True
                         raw_vectors = []
-                        for inp in request.inputs:
-                            vec = await asyncio.to_thread(self._execute_legacy_embeddings_api, model, inp)
+                        for inp in inputs:
+                            vec = await asyncio.to_thread(
+                                self._execute_legacy_embeddings_api, model, inp
+                            )
                             raw_vectors.append(vec)
                         total_duration_ns = None
                         prompt_eval_count = 0
@@ -194,6 +239,17 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
 
                 dimensions = len(raw_vectors[0])
                 embeddings = [[float(val) for val in vec] for vec in raw_vectors]
+                if (
+                    len(embeddings) != len(request.inputs)
+                    or dimensions <= 0
+                    or any(
+                        len(vec) != dimensions or any(not math.isfinite(value) for value in vec)
+                        for vec in embeddings
+                    )
+                ):
+                    raise AiInvalidRequestError(
+                        "Embedding response has invalid cardinality, dimensions or values"
+                    )
 
                 latency_ms = (
                     (total_duration_ns / 1_000_000.0)
@@ -201,11 +257,14 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
                     else round((time.monotonic() - start_time) * 1000.0, 2)
                 )
 
-                usage = UsageMetrics(input_tokens=prompt_eval_count) if prompt_eval_count > 0 else None
+                usage = (
+                    UsageMetrics(input_tokens=prompt_eval_count) if prompt_eval_count > 0 else None
+                )
 
                 metadata: Dict[str, Any] = {
                     "endpoint": self.endpoint,
                     "inputs_count": len(request.inputs),
+                    "fallback_used": fallback_used,
                 }
                 if context:
                     metadata["trace_id"] = context.trace_id

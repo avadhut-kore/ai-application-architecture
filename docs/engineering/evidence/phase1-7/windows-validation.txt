@@ -1,0 +1,25 @@
+============================================================
+ai-application-architecture � Unified Repository Validator
+============================================================
+Repository Root: D:\company\products\ai-application-architecture
+
+1. Checking physical repository structure & governance rules...
+   PASS � Repository structure
+
+2. Checking contract dependency boundaries (no vendor SDKs)...
+   PASS � Contract boundaries
+
+3. Validating documentation links & markdown formatting...
+   PASS � Documentation validation
+
+4. Validating reference artifact templates & manifests...
+   PASS � Templates & artifact manifests
+
+5. Executing automated unit test suite...
+   PASS � Automated unit tests
+      - Ran 323 unit tests across 9 suites: building-blocks\python (56), examples\agent-execution (65), examples\agentic-workflow (78), examples\ai-evaluation (11), examples\rag (50), examples\structured-generation (10), platform\mcp-adapter (21), platform\ollama-adapter (18), platform\ollama-embedding-adapter (14).
+
+============================================================
+RESULT: REPOSITORY VALIDATION PASSED
+Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests
+============================================================

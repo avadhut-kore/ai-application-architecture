@@ -36,7 +36,7 @@ graph TD
     LLM -->|Execute Reads| RO_TOOLS
     RO_TOOLS -->|Observations| LLM
     WF -->|TOCTOU Check| AUTH
-    WF -->|7-Point Binding Check| VERIF
+    WF -->|Approval Binding Check| VERIF
     WF -->|Persist Checkpoint & CAS| STORE
     WF -->|Record Intent / Receipt| LEDGER
     WF -->|Physical Execution| EXEC
@@ -59,7 +59,7 @@ graph TD
 ### 2.3 Approval/Action Mismatch & Argument Substitution
 * **Threat**: An operator approves an action for capability A with arguments X (e.g. $25.00 credit to customer cust-001). Before execution, an attacker or compromised component swaps the target capability to B or the arguments to Y (e.g. $2,500.00 credit or a different customer).
 * **Impact**: Unauthorized financial disbursement or account manipulation.
-* **Mitigation**: 7-Point Security Binding Verification. `WorkflowApprovalVerifier.verify(...)` cryptographically verifies:
+* **Mitigation**: Approval Binding Verification. `WorkflowApprovalVerifier.verify(...)` compares stored authorization bindings; it does not authenticate a cryptographic signature:
   1. Approval status == `APPROVED` and not `CONSUMED`.
   2. Exact `workflow_id` matches.
   3. Stable `action_id` matches.
@@ -67,12 +67,14 @@ graph TD
   5. Canonical argument JSON (`json.dumps(args, sort_keys=True, separators=(',', ':'))`) matches byte-for-byte.
   6. Initiating actor ID and role match.
   7. Expiration timestamp has not elapsed.
-  Any discrepancy raises `ApprovalMismatchError`.
+  8. Workflow definition ID and version match the executing definition.
+  Discrepancies raise typed approval errors, including mismatch and replay errors.
 
 ### 2.4 Time-of-Check to Time-of-Use (TOCTOU) Privilege Drift
 * **Threat**: An actor initiates a workflow while holding a privileged role (e.g. `senior_agent`). The workflow suspends for human approval. During suspension, the actor is demoted or their permissions are revoked. Upon resume, the workflow executes relying on the stale snapshot.
 * **Impact**: Execution of privileged mutations by an unauthorized actor.
-* **Mitigation**: Resume-Time Authorization Revalidation. In `MutationExecutionStep`, the actor snapshot is re-evaluated against the live `CustomerSupportAuthorizationPolicy` immediately before physical execution. If the policy rejects the actor's current role or threshold, execution fails closed (`StepExecutionStatus.FAILED`).
+* **Implemented control**: Immediately before mutation, the persisted actor snapshot is re-evaluated against current domain policy, including the account's current security hold. A policy rejection fails closed.
+* **Residual risk**: This local pattern has no trusted enterprise identity refresh. External role demotion or permission revocation is not detected from an unchanged snapshot. CLI identities are synthetic demonstration inputs. A Tier 1 integration must resolve current identity and bind fresh authority before executing; this example does not claim that integration is complete.
 
 ### 2.5 Concurrent Resume & Race Conditions
 * **Threat**: Two operators or automated workers concurrently attempt to resume the same suspended workflow (`AWAITING_APPROVAL`). Both load version $N$ and attempt physical execution.

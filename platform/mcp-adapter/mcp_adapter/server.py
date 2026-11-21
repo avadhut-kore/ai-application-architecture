@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import sys
 import time
-from typing import Any, Callable, Dict, Mapping, Optional, Sequence
+from typing import Any, Callable, Dict, Mapping
 
 from .protocol import (
     JsonRpcError,
@@ -45,21 +45,11 @@ class McpServer:
             description="Send a latency ping to verify MCP server responsiveness.",
             input_schema={
                 "type": "object",
-                "properties": {
-                    "echo": {"type": "string", "description": "Optional echo message"}
-                },
+                "properties": {"echo": {"type": "string", "description": "Optional echo message"}},
                 "additionalProperties": False,
             },
             handler=self._handle_ping,
         )
-
-    def register_tool(
-        name: str,  # type: ignore[misc]
-        description: str,
-        input_schema: Mapping[str, Any],
-        handler: Callable[[Mapping[str, Any]], Any],
-    ) -> None:
-        ...
 
     def register_tool(
         self,
@@ -153,7 +143,9 @@ class McpServer:
                         "content": [
                             {
                                 "type": "text",
-                                "text": json.dumps(result_content) if not isinstance(result_content, str) else result_content,
+                                "text": json.dumps(result_content)
+                                if not isinstance(result_content, str)
+                                else result_content,
                             }
                         ],
                         "isError": False,
@@ -212,5 +204,8 @@ class McpServer:
 
 
 if __name__ == "__main__":
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     server = McpServer()
     server.run_stdio()

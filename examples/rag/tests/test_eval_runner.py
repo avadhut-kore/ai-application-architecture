@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import sys
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 for p in (REPO_ROOT / "building-blocks" / "python", Path(__file__).resolve().parent.parent):
     if str(p) not in sys.path:
@@ -18,6 +19,8 @@ for p in (REPO_ROOT / "building-blocks" / "python", Path(__file__).resolve().par
 
 from eval_runner import (
     EvalScenario,
+    ScenarioEvalResult,
+    adversarial_handling_passed,
     RAGEvalSummary,
     evaluate_single_scenario,
     load_dataset,
@@ -34,6 +37,35 @@ from rag.service import RAGResponse
 
 class TestEvalRunner(unittest.TestCase):
     """Test suite verifying RAG evaluation runner mechanics, dataset loading, and metrics."""
+
+    def test_adversarial_summary_uses_measured_results(self) -> None:
+        from dataclasses import replace
+
+        good = ScenarioEvalResult(
+            scenario_id="attack",
+            scenario_type="adversarial_injection",
+            query="request",
+            retrieved_chunk_ids=[],
+            recall_at_k=1.0,
+            hit=True,
+            reciprocal_rank=1.0,
+            context_relevance=1.0,
+            schema_valid=True,
+            grounded=True,
+            citation_accuracy=1.0,
+            abstention_accurate=True,
+            latency_ms=0.0,
+            answer="refused",
+        )
+        self.assertFalse(adversarial_handling_passed([]))
+        self.assertTrue(adversarial_handling_passed([good]))
+        for changes in (
+            {"schema_valid": False},
+            {"abstention_accurate": False},
+            {"citation_accuracy": 0.0},
+            {"error": "provider unavailable"},
+        ):
+            self.assertFalse(adversarial_handling_passed([good, replace(good, **changes)]))
 
     def setUp(self) -> None:
         self.rag_dir = Path(__file__).resolve().parent.parent
@@ -73,7 +105,9 @@ class TestEvalRunner(unittest.TestCase):
             metadata_filter=None,
             description="test",
         )
-        chunk = Chunk(chunk_id="sec-01#c1", document_id="sec-01", chunk_index=1, text="Retention is 7 years.")
+        chunk = Chunk(
+            chunk_id="sec-01#c1", document_id="sec-01", chunk_index=1, text="Retention is 7 years."
+        )
         ret_res = RetrievalResult(chunk=chunk, score=0.95, rank=1)
         cit = Citation(
             chunk_id="sec-01#c1",
@@ -82,7 +116,9 @@ class TestEvalRunner(unittest.TestCase):
             source_title="Policy",
             source_uri="sec-01.md",
         )
-        val_res = CitationValidationResult(is_valid=True, verified_citations=[cit], rejected_citation_ids=[])
+        val_res = CitationValidationResult(
+            is_valid=True, verified_citations=[cit], rejected_citation_ids=[]
+        )
 
         resp = RAGResponse(
             query="Audit retention?",
@@ -117,7 +153,12 @@ class TestEvalRunner(unittest.TestCase):
             metadata_filter=None,
             description="test",
         )
-        val_res = CitationValidationResult(is_valid=True, verified_citations=[], rejected_citation_ids=[], has_insufficient_evidence=True)
+        val_res = CitationValidationResult(
+            is_valid=True,
+            verified_citations=[],
+            rejected_citation_ids=[],
+            has_insufficient_evidence=True,
+        )
         resp = RAGResponse(
             query="Quantum flight upgrades?",
             answer="I do not have sufficient evidence.",
@@ -231,7 +272,9 @@ class TestEvalRunner(unittest.TestCase):
             metadata_filter=None,
             description="test",
         )
-        chunk = Chunk(chunk_id="sec-01#c1", document_id="sec-01", chunk_index=1, text="Retention is 7 years.")
+        chunk = Chunk(
+            chunk_id="sec-01#c1", document_id="sec-01", chunk_index=1, text="Retention is 7 years."
+        )
         ret_res = RetrievalResult(chunk=chunk, score=0.95, rank=1)
         cit = Citation(
             chunk_id="sec-01#c1",
@@ -240,7 +283,9 @@ class TestEvalRunner(unittest.TestCase):
             source_title="Policy",
             source_uri="sec-01.md",
         )
-        val_res = CitationValidationResult(is_valid=True, verified_citations=[cit], rejected_citation_ids=[])
+        val_res = CitationValidationResult(
+            is_valid=True, verified_citations=[cit], rejected_citation_ids=[]
+        )
 
         # RAGResponse with schema_valid=False and schema_error populated
         resp = RAGResponse(
@@ -255,7 +300,10 @@ class TestEvalRunner(unittest.TestCase):
             raw_model_output="Audit logs must be kept for 7 years according to sec-01#c1.",
             schema_valid=False,
             schema_error="JSONDecodeError: Expecting value: line 1 column 1",
-            metadata={"schema_valid": False, "schema_error": "JSONDecodeError: Expecting value: line 1 column 1"},
+            metadata={
+                "schema_valid": False,
+                "schema_error": "JSONDecodeError: Expecting value: line 1 column 1",
+            },
         )
 
         res = evaluate_single_scenario(sc, resp)

@@ -8,7 +8,7 @@
 
 ## 1. System Boundary & Trust Zones
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        UNTRUSTED EXTERNAL ZONE                         │
 │                                                                        │
@@ -61,7 +61,7 @@
 ### 2.3 Repudiation
 * **Threat**: An agent applies a financial credit or alters records without an auditable receipt or accountable operator.
 * **Mitigation**:
-  1. Every tool execution returns a cryptographically unique `ExecutionReceipt` containing `action_id`, `status`, `timestamp`, and `capability_name`.
+  1. Every tool execution returns a action-identified `ExecutionReceipt` containing `action_id`, `status`, `timestamp`, and `capability_name`.
   2. The `AgentTrajectoryTrace` records the full chronological history of proposals, validations, authorizations, approvals, and receipts.
   3. Chain-of-thought (CoT) internal monologues are omitted from persisted audit trails to prevent sensitive operational leakage.
 

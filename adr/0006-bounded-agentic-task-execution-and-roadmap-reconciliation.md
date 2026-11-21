@@ -13,7 +13,7 @@
 
 In early Phase 0 repository roadmapping, Phase 6 was briefly sketched as a speculative "Tier 1 Enterprise Agent" with broad requirements encompassing autonomous multi-step reasoning, external tool execution, and Model Context Protocol (MCP) integrations.
 
-During Phase 6 architectural research and implementation design, repository principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Principle 4: Architecture Complexity Rule*, *Principle 6: Local-First Principle*, and *Principle 13: Capability Safety & Human Agency Preservation*) mandated that autonomous execution must be approached with extreme architectural discipline:
+During Phase 6 architectural research and implementation design, repository principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Architecture Complexity Rule (engineering/general.md)*, *Local-First Policy*, and *Principle 7: State-Mutating Tools Require Authorization*) mandated that autonomous execution must be approached with extreme architectural discipline:
 1. **Separation of Authority**: A probabilistic language model must never be granted direct, unsupervised execution authority. The model proposes actions; the host application deterministically validates schemas, enforces policy authorization, and requests Human-in-the-Loop (HITL) approval.
 2. **Phase Boundary Discipline**: Speculative constructs such as multi-agent negotiation swarms, durable workflow engines (Temporal/Camunda), persistent vector memory stores, and autonomous code execution belong strictly to subsequent phases (Phase 7 and beyond).
 3. **Artifact Tier Alignment**: Following the precedent set in [`ADR-0005`](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md), Phase 6 delivers its core capabilities as a **Tier 2 Pattern Example** (`examples/agent-execution`) demonstrating the bounded ReAct loop with HITL safety, and a **Tier 3 Platform Component** (`platform/mcp-adapter`) establishing the provider-neutral MCP JSON-RPC protocol boundary.
@@ -79,6 +79,6 @@ The following capabilities are deliberately excluded from Phase 6 and deferred t
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 4 (Architecture Complexity Rule)**: Bounded single-agent execution before complex multi-agent swarms.
-* **Principle 6 (Local-First)**: 100% runnable under Mode A (offline standard library) and Mode B (local Ollama).
-* **Principle 13 (Capability Safety & Human Agency Preservation)**: Absolute separation of proposal authority from execution authority.
+* **Architecture Complexity Rule (engineering/general.md)**: Bounded single-agent execution before complex multi-agent swarms.
+* **Local-First Policy**: 100% runnable under Mode A (offline standard library) and Mode B (local Ollama).
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Absolute separation of proposal authority from execution authority.

@@ -15,7 +15,7 @@ This repository enforces a **Purpose-Driven Language Strategy**:
 
 The repository categorizes supported languages into **Primary Implementation Languages** and an **Approved Secondary Implementation Language**:
 
-```
+```text
                        Language Governance Classification
 
  ┌────────────────────────────────────────────────────────────────────────┐
@@ -24,7 +24,7 @@ The repository categorizes supported languages into **Primary Implementation Lan
  ├────────────────────────────────────────────────────────────────────────┤
  │ • Python (3.11+)          AI-native pipelines, RAG, evals, ML tooling  │
  │ • .NET / C#               Enterprise APIs, services, saga workflows   │
- │ • TypeScript (Node 20+)   Web frontends, streaming, browser clients    │
+ │ • TypeScript (Node 24+)   Web frontends, streaming, browser clients    │
  └────────────────────────────────────────────────────────────────────────┘
  ┌────────────────────────────────────────────────────────────────────────┐
  │ APPROVED SECONDARY IMPLEMENTATION LANGUAGE                             │
@@ -47,7 +47,7 @@ The repository categorizes supported languages into **Primary Implementation Lan
   * AI ecosystem integration and local model adapters.
 
 ### .NET / C#
-* **Runtime & Language Baseline**: **.NET using modern supported C# versions** (with .NET 8 LTS as the current enterprise baseline).
+* **Runtime & Language Baseline**: **.NET using modern supported C# versions** (with .NET 10 LTS as the current enterprise baseline).
 * **Primary Scope**: Preferred where justified for:
   * High-performance enterprise APIs and microservices.
   * Core business systems, transactional domain logic, and saga orchestrators.
@@ -55,7 +55,7 @@ The repository categorizes supported languages into **Primary Implementation Lan
   * Microsoft enterprise ecosystem integration (e.g., Semantic Kernel).
   * Enterprise architecture reference examples.
 
-### TypeScript (Node 20+)
+### TypeScript (Node 24+)
 * **Primary Scope**: Preferred where justified for:
   * Web frontend demonstration interfaces and client UIs.
   * Node.js-based services where asynchronous event I/O is justified.
@@ -94,7 +94,7 @@ Detailed standards are formalized in Phase 1 for the primary languages:
 
 | Standard | Python | .NET (C#) | TypeScript |
 | :--- | :--- | :--- | :--- |
-| **Runtime / Version** | Python 3.11+ | .NET 8 LTS (modern supported C#) | Node 20+ / Modern ECMAScript |
+| **Runtime / Version** | Python 3.11+ | .NET 10 LTS (modern supported C#) | Node 24+ / Modern ECMAScript |
 | **Type Safety** | `mypy --strict` | Nullable reference types enabled | `"strict": true` |
 | **Data Validation** | Pydantic v2 | Strongly typed records / FluentValidation | Zod |
 | **Formatting/Lint** | `ruff` | `dotnet format` | `eslint` + `prettier` |

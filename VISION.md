@@ -18,7 +18,7 @@ The contemporary landscape of Artificial Intelligence software development is ch
 
 This repository does not build ephemeral demos or disconnected tutorial snippets. It establishes a standard for **Reference Implementations**:
 
-```
+```text
     TOY EXPERIMENT                                REFERENCE IMPLEMENTATION
  ┌──────────────────────┐                       ┌─────────────────────────────────────────┐
  │ Single Script File   │                       │ Clean / Hexagonal Boundaries            │

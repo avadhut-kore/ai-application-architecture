@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
@@ -39,8 +39,6 @@ from contracts.agent import (
 )
 from contracts.workflow import (
     ApprovalStatus,
-    MutationStatus,
-    StepExecutionStatus,
     WorkflowDefinitionRef,
     WorkflowStatus,
 )
@@ -71,11 +69,14 @@ class StubAgentEngine:
                 self.status = "COMPLETED"
                 self.execution_receipts = []
                 self.run_id = "stub-run-sec"
+
         return Res(self.output)
 
 
 class StubApprovalHandler(ApprovalPort):
-    async def request_approval(self, actor: AgentActor, capability: CapabilityMetadata, arguments: Any) -> ApprovalDecision:
+    async def request_approval(
+        self, actor: AgentActor, capability: CapabilityMetadata, arguments: Any
+    ) -> ApprovalDecision:
         return ApprovalDecision(approved=True, approver="test_approver")
 
 
@@ -170,7 +171,9 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
             workflow_definition_version="1.0.0",
             action_id="act-1234",
             capability_name="apply_fee_credit",
-            canonical_arguments_json=canonicalize_arguments({"amount_cents": 1000, "customer_id": "cust-001"}),
+            canonical_arguments_json=canonicalize_arguments(
+                {"amount_cents": 1000, "customer_id": "cust-001"}
+            ),
             actor_id="bob",
             actor_role="senior_agent",
             status=ApprovalStatus.CONSUMED,
@@ -221,13 +224,15 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         )
 
         # Must still enter human_approval because fee_credit declaratively routes there!
-        self.assertEqual(state.status, WorkflowStatus.AWAITING_APPROVAL)
-        self.assertEqual(state.current_step, "human_approval")
+        self.assertEqual(state.status, WorkflowStatus.FAILED)
         self.assertEqual(self.customer_store.get_account("cust-001").balance_cents, 15000)
 
     async def test_workflow_definition_version_drift(self) -> None:
         """Workflow persisted with v1 cannot be resumed if active runtime supports only v2."""
-        engine_v1 = self._create_engine('{"proposal_type": "fee_credit"}', version="1.0.0")
+        engine_v1 = self._create_engine(
+            '{"proposal_type": "fee_credit", "summary": "Verified fee", "suggested_arguments": {"amount_cents": 1000, "reason": "Verified fee"}}',
+            version="1.0.0",
+        )
         wf_id = "wf-drift-001"
         actor = WorkflowActorSnapshot(actor_id="operator_bob", role="senior_agent")
 
@@ -239,7 +244,10 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(state.status, WorkflowStatus.AWAITING_APPROVAL)
 
         # Construct runtime engine expecting version 2.0.0
-        engine_v2 = self._create_engine('{"proposal_type": "fee_credit"}', version="2.0.0")
+        engine_v2 = self._create_engine(
+            '{"proposal_type": "fee_credit", "summary": "Verified fee", "suggested_arguments": {"amount_cents": 1000, "reason": "Verified fee"}}',
+            version="2.0.0",
+        )
 
         with self.assertRaises(IncompatibleWorkflowDefinitionError) as ctx:
             await engine_v2.resume_workflow(
@@ -248,7 +256,10 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
                 approver_id="manager_sarah",
             )
 
-        self.assertIn("was persisted using definition 'customer_account_remediation' v1.0.0", str(ctx.exception))
+        self.assertIn(
+            "was persisted using definition 'customer_account_remediation' v1.0.0",
+            str(ctx.exception),
+        )
         self.assertIn("supports 'customer_account_remediation' v2.0.0", str(ctx.exception))
 
     def test_checkpoint_corruption_fails_closed(self) -> None:
@@ -310,12 +321,16 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         # Read the raw state JSON from SQLite
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT state_json FROM workflow_checkpoints WHERE workflow_id = ?", (wf_id,))
+        cursor.execute(
+            "SELECT state_json FROM workflow_checkpoints WHERE workflow_id = ?", (wf_id,)
+        )
         raw_json = cursor.fetchone()[0]
         data = json.loads(raw_json)
 
         # Tamper ONLY with suggested arguments: increase amount_cents from 1500 to 99999
-        data["domain_context"]["suggested_remediation"]["suggested_arguments"]["amount_cents"] = 99999
+        data["domain_context"]["suggested_remediation"]["suggested_arguments"]["amount_cents"] = (
+            99999
+        )
         tampered_json = json.dumps(data)
 
         # Write tampered JSON back without modifying the checksum column

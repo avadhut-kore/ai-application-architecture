@@ -16,7 +16,6 @@ for p in (BUILDING_BLOCKS_DIR, AGENT_EXEC_DIR, WORKFLOW_DIR):
         sys.path.insert(0, str(p))
 
 from agent.capabilities import (
-    ApplyFeeCreditCapability,
     GetAccountStatusCapability,
     GetCustomerCapability,
     SearchPolicyCapability,
@@ -32,7 +31,7 @@ from contracts.agent import (
     CapabilityPort,
     SideEffectLevel,
 )
-from contracts.workflow import StepExecutionStatus, WorkflowStatus
+from contracts.workflow import WorkflowStatus, MutationStatus
 from workflow.approval import canonicalize_arguments
 from workflow.engine import WorkflowEngine
 from workflow.errors import SagaCompensationError
@@ -43,7 +42,6 @@ from workflow.state import WorkflowActorSnapshot
 from workflow.store import (
     DurableMutationRecord,
     InMemoryWorkflowStore,
-    MutationStatus,
 )
 
 
@@ -65,6 +63,10 @@ class FailingCapability(CapabilityPort):
         raise RuntimeError("Core banking gateway timeout: transaction aborted.")
 
 
+async def approve_compensation(action):
+    return True
+
+
 class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
     """Verify local linear saga compensation and manual intervention signaling."""
 
@@ -75,7 +77,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
 
     async def test_coordinator_lifo_backward_compensation(self) -> None:
         """SagaCompensationCoordinator executes registered compensations in reverse order."""
-        coordinator = SagaCompensationCoordinator(workflow_id="wf-saga-001")
+        coordinator = SagaCompensationCoordinator(
+            workflow_id="wf-saga-001", authorize=approve_compensation
+        )
         note_cap = UpdateCustomerNoteCapability(self.customer_store)
 
         coordinator.register(
@@ -93,7 +97,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
 
     async def test_coordinator_handles_compensation_failure(self) -> None:
         """When compensation action itself fails, coordinator raises SagaCompensationError."""
-        coordinator = SagaCompensationCoordinator(workflow_id="wf-saga-002")
+        coordinator = SagaCompensationCoordinator(
+            workflow_id="wf-saga-002", authorize=approve_compensation
+        )
         failing_cap = FailingCapability()
 
         coordinator.register(
@@ -129,6 +135,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
                     status = "COMPLETED"
                     execution_receipts = []
                     run_id = "stub-1"
+
                 return Res()
 
         workflow_def = build_customer_remediation_workflow(
@@ -160,6 +167,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             decision="approved",
             approver_id="manager_jane",
         )
+        if final_state.status == WorkflowStatus.AWAITING_APPROVAL:
+            self.assertEqual(final_state.current_step, "compensate_mutation")
+            final_state = await engine.resume_workflow(wf_id, "approved", "manager_jane")
 
         # Reached terminal_failed after compensate_mutation
         self.assertEqual(final_state.status, WorkflowStatus.FAILED)
@@ -168,8 +178,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
 
         # Assert compensation was recorded in the durable mutation ledger
         comp_mutations = [
-            m for m in self.store.mutations.values()
-            if m.step_name == "compensate_mutation"
+            m for m in self.store.mutations.values() if m.step_name == "compensate_mutation"
         ]
         self.assertEqual(len(comp_mutations), 1)
         self.assertEqual(comp_mutations[0].status, "executed")
@@ -192,6 +201,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
                     status = "COMPLETED"
                     execution_receipts = []
                     run_id = "stub-2"
+
                 return Res()
 
         workflow_def = build_customer_remediation_workflow(
@@ -220,17 +230,19 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             decision="approved",
             approver_id="manager_jane",
         )
+        if final_state.status == WorkflowStatus.AWAITING_APPROVAL:
+            self.assertEqual(final_state.current_step, "compensate_mutation")
+            final_state = await engine.resume_workflow(wf_id, "approved", "manager_jane")
 
         self.assertEqual(final_state.status, WorkflowStatus.FAILED)
         self.assertFalse(final_state.domain_context.get("compensation_applied", False))
         self.assertTrue(final_state.domain_context.get("manual_intervention_required"))
 
         comp_mutations = [
-            m for m in self.store.mutations.values()
-            if m.step_name == "compensate_mutation"
+            m for m in self.store.mutations.values() if m.step_name == "compensate_mutation"
         ]
         self.assertEqual(len(comp_mutations), 1)
-        self.assertEqual(comp_mutations[0].status, "failed")
+        self.assertEqual(comp_mutations[0].status, "ambiguous")
 
     async def test_compensation_executed_before_commit_reconciled_without_duplicate(self) -> None:
         """Adversarial probe: when crash occurs after compensation note was physically added
@@ -238,6 +250,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
         resume reconciles against customer notes, suppresses duplicate tool execution,
         and keeps note count at 2 (not 3).
         """
+        self.customer_store.action_status = lambda action_id: (
+            "executed"
+        )  # Explicit test-only receipt oracle.
         failing_credit = FailingCapability("apply_fee_credit")
         note_cap = UpdateCustomerNoteCapability(self.customer_store)
         read_only_caps = [
@@ -254,6 +269,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
                     status = "COMPLETED"
                     execution_receipts = []
                     run_id = "stub-probe"
+
                 return Res()
 
         workflow_def = build_customer_remediation_workflow(
@@ -318,6 +334,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             decision="approved",
             approver_id="manager_jane",
         )
+        if final_state.status == WorkflowStatus.AWAITING_APPROVAL:
+            self.assertEqual(final_state.current_step, "compensate_mutation")
+            final_state = await engine.resume_workflow(wf_id, "approved", "manager_jane")
 
         self.assertEqual(final_state.status, WorkflowStatus.FAILED)
 
@@ -337,6 +356,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
         """When crash occurred while ledger was EXECUTION_STARTED but note was not physically written,
         reconciliation confirms not_executed and safely executes the compensation note once.
         """
+        self.customer_store.action_status = lambda action_id: (
+            "not_executed"
+        )  # Explicit test-only receipt oracle.
         failing_credit = FailingCapability("apply_fee_credit")
         note_cap = UpdateCustomerNoteCapability(self.customer_store)
         read_only_caps = [
@@ -353,6 +375,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
                     status = "COMPLETED"
                     execution_receipts = []
                     run_id = "stub-unexec"
+
                 return Res()
 
         workflow_def = build_customer_remediation_workflow(
@@ -410,6 +433,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             decision="approved",
             approver_id="manager_jane",
         )
+        if final_state.status == WorkflowStatus.AWAITING_APPROVAL:
+            self.assertEqual(final_state.current_step, "compensate_mutation")
+            final_state = await engine.resume_workflow(wf_id, "approved", "manager_jane")
 
         self.assertEqual(final_state.status, WorkflowStatus.FAILED)
         # Note count should be exactly 2 (1 default + 1 compensation)
@@ -441,6 +467,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
                     status = "COMPLETED"
                     execution_receipts = []
                     run_id = "stub-inconc"
+
                 return Res()
 
         workflow_def = build_customer_remediation_workflow(
@@ -500,6 +527,9 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             decision="approved",
             approver_id="manager_jane",
         )
+        if final_state.status == WorkflowStatus.AWAITING_APPROVAL:
+            self.assertEqual(final_state.current_step, "compensate_mutation")
+            final_state = await engine.resume_workflow(wf_id, "approved", "manager_jane")
 
         self.assertEqual(final_state.status, WorkflowStatus.FAILED)
         self.assertTrue(final_state.domain_context.get("manual_intervention_required"))

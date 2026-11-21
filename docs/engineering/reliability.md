@@ -12,7 +12,7 @@ This document establishes the error taxonomy, retry policies, circuit breaking m
 
 To prevent cascading system collapse, failures must be classified into three distinct categories before deciding on a recovery strategy:
 
-```
+```text
                           ┌────────────────────────┐
                           │    System Exception    │
                           └───────────┬────────────┘
@@ -74,7 +74,7 @@ var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
 
 When downstream AI inference providers or vector databases experience persistent outages, a circuit breaker must trip to prevent thread exhaustion and queue pileups:
 
-```
+```text
         Successes
      ┌─────────────┐
      │             ▼

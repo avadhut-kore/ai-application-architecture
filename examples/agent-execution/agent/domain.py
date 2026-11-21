@@ -77,19 +77,28 @@ class InMemoryCustomerStore:
                 customer_id="cust-001",
                 balance_cents=15000,  # $150.00
                 notes=["Account opened via mobile app."],
-                activity_log=["2026-09-01: Standard subscription charge $15.00", "2026-09-10: Late fee charged $10.00"],
+                activity_log=[
+                    "2026-09-01: Standard subscription charge $15.00",
+                    "2026-09-10: Late fee charged $10.00",
+                ],
             ),
             "cust-002": Account(
                 customer_id="cust-002",
                 balance_cents=2000,  # $20.00
                 notes=["Flagged for high transaction velocity."],
-                activity_log=["2026-09-05: Disputed transaction $45.00", "2026-09-12: Chargeback request received"],
+                activity_log=[
+                    "2026-09-05: Disputed transaction $45.00",
+                    "2026-09-12: Chargeback request received",
+                ],
             ),
             "cust-003": Account(
                 customer_id="cust-003",
                 balance_cents=50000,  # $500.00
                 notes=["Account frozen pending identity verification."],
-                activity_log=["2026-08-30: Multiple failed MFA attempts", "2026-09-01: Administrative freeze applied"],
+                activity_log=[
+                    "2026-08-30: Multiple failed MFA attempts",
+                    "2026-09-01: Administrative freeze applied",
+                ],
             ),
             "cust-004": Account(
                 customer_id="cust-004",
@@ -107,7 +116,7 @@ class InMemoryCustomerStore:
         """Fetch account state by customer ID."""
         return self._accounts.get(customer_id)
 
-    def add_note(self, customer_id: str, note: str) -> bool:
+    def add_note(self, customer_id: str, note: str, action_id: str = "") -> bool:
         """Append an operational note to customer account."""
         account = self._accounts.get(customer_id)
         if not account:
@@ -117,7 +126,9 @@ class InMemoryCustomerStore:
         account.activity_log.append(f"Note added: {clean_note}")
         return True
 
-    def apply_credit(self, customer_id: str, amount_cents: int, reason: str) -> bool:
+    def apply_credit(
+        self, customer_id: str, amount_cents: int, reason: str, action_id: str = ""
+    ) -> bool:
         """Apply financial credit to customer account balance."""
         account = self._accounts.get(customer_id)
         if not account:
@@ -126,5 +137,7 @@ class InMemoryCustomerStore:
             raise ValueError("Credit amount must be strictly positive")
         account.balance_cents += amount_cents
         account.credits_applied_cents += amount_cents
-        account.activity_log.append(f"Credit applied: +${amount_cents / 100:.2f} (Reason: {reason})")
+        account.activity_log.append(
+            f"Credit applied: +${amount_cents / 100:.2f} (Reason: {reason})"
+        )
         return True

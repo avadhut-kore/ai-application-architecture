@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
+import asyncio
+import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Callable, Awaitable
 
 from contracts.agent import CapabilityPort, ExecutionReceipt
 from contracts.telemetry import AiOperationContext
@@ -50,10 +52,15 @@ class SagaCompensationRecord:
 class SagaCompensationCoordinator:
     """Coordinates local linear backward compensation when a multi-step mutation fails."""
 
-    def __init__(self, workflow_id: str) -> None:
+    def __init__(
+        self,
+        workflow_id: str,
+        authorize: Callable[[CompensatingAction], Awaitable[bool]] | None = None,
+    ) -> None:
         self.workflow_id = workflow_id
         self._registered_compensations: List[CompensatingAction] = []
         self.executed_compensations: List[SagaCompensationRecord] = []
+        self.authorize = authorize
 
     def register(
         self,
@@ -88,14 +95,26 @@ class SagaCompensationCoordinator:
                 workflow_id=self.workflow_id,
                 step_name=f"comp_{action.step_name}",
                 capability_name=action.capability.metadata.name,
-                canonical_args=str(action.arguments),
+                canonical_args=json.dumps(dict(action.arguments), sort_keys=True, allow_nan=False),
             )
             # Merge action_id into arguments for capability execution
             args_with_id = dict(action.arguments)
             args_with_id["action_id"] = comp_action_id
 
             try:
-                result = await action.capability.execute(args_with_id, context=context)
+                if self.authorize is None or not await self.authorize(action):
+                    raise PermissionError(
+                        "Compensation requires explicit authorization and approval"
+                    )
+                if any(
+                    r.compensating_action_id == comp_action_id for r in self.executed_compensations
+                ):
+                    raise ValueError("Compensation already attempted; reconcile before retry")
+                result = await asyncio.wait_for(
+                    action.capability.execute(args_with_id, context=context), 30
+                )
+                if isinstance(result, dict) and result.get("error"):
+                    raise ValueError("Compensating capability returned failure")
                 receipt = ExecutionReceipt(
                     action_id=comp_action_id,
                     capability_name=action.capability.metadata.name,

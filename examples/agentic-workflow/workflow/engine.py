@@ -1,11 +1,13 @@
 """Deterministic workflow execution engine with checkpointing and CAS resumption."""
 
 from __future__ import annotations
+from ai_telemetry import traced
 
 import asyncio
 import inspect
 import time
-from typing import Any, Mapping, Optional, Tuple
+from dataclasses import replace
+from typing import Any, Mapping, Optional
 
 from contracts.workflow import (
     ApprovalStatus,
@@ -61,7 +63,17 @@ class WorkflowEngine:
                 pass
         return event
 
+    @traced("workflow.start", "local")
     async def start_workflow(
+        self,
+        workflow_id: str,
+        actor: WorkflowActorSnapshot,
+        domain_context: Optional[Mapping[str, Any]] = None,
+    ) -> WorkflowState:
+        with self.store.execution_lock(workflow_id):
+            return await self._start_workflow(workflow_id, actor, domain_context)
+
+    async def _start_workflow(
         self,
         workflow_id: str,
         actor: WorkflowActorSnapshot,
@@ -90,12 +102,78 @@ class WorkflowEngine:
             workflow_id=workflow_id,
             event_type="workflow_started",
             step_name=self.definition.start_step,
-            details={"definition": self.definition.definition_id, "version": self.definition.version},
+            details={
+                "definition": self.definition.definition_id,
+                "version": self.definition.version,
+            },
         )
 
         return await self._run_loop(initial_state)
 
+    @traced("workflow.resume", "local")
     async def resume_workflow(
+        self,
+        workflow_id: str,
+        decision: str,
+        approver_id: str,
+        approver_role: str = "manager",
+        reason: Optional[str] = None,
+    ) -> WorkflowState:
+        if decision.strip().lower() not in {
+            "approve",
+            "approved",
+            "yes",
+            "y",
+            "reject",
+            "rejected",
+            "no",
+            "n",
+        }:
+            raise ValueError("Decision must be approve or reject")
+        if not approver_id.strip() or approver_role not in {"manager", "admin"}:
+            raise ValueError("A manager or admin approver is required")
+        with self.store.execution_lock(workflow_id):
+            return await self._resume_workflow(
+                workflow_id, decision, approver_id, approver_role, reason
+            )
+
+    @traced("workflow.recover", "local")
+    async def recover_workflow(self, workflow_id: str) -> WorkflowState:
+        """Recover an interrupted local owner; never infer a missing human decision."""
+        with self.store.execution_lock(workflow_id):
+            state = self.store.load_state(workflow_id)
+            if not isinstance(state, WorkflowState):
+                raise ValueError("Workflow not found")
+            if state.definition != self.definition.definition_ref:
+                raise IncompatibleWorkflowDefinitionError("Workflow definition changed")
+            if state.status.is_terminal or state.status == WorkflowStatus.AWAITING_APPROVAL:
+                return state
+            if state.current_step in {"human_approval", "compensate_mutation"}:
+                approval_id = state.domain_context.get("pending_approval_id")
+                record = self.store.load_approval(approval_id) if approval_id else None
+                if record and record.status in {ApprovalStatus.APPROVED, ApprovalStatus.REJECTED}:
+                    approved = record.status == ApprovalStatus.APPROVED
+                    outcome = StepOutcome(
+                        StepExecutionStatus.SUCCEEDED,
+                        "approval_granted" if approved else "approval_rejected",
+                        context_updates={
+                            "approval_decision": "approved" if approved else "rejected"
+                        },
+                    )
+                    step, terminal = self.definition.resolve_next_step(state, outcome)
+                    state = self._apply_transition(state, step, terminal, outcome)
+                else:
+                    state = replace(
+                        state,
+                        status=WorkflowStatus.AWAITING_APPROVAL,
+                        checkpoint_version=state.checkpoint_version + 1,
+                        checksum="",
+                    )
+                self.store.save_state(state)
+            self._record_audit(workflow_id, "workflow_recovered")
+            return await self._run_loop(state)
+
+    async def _resume_workflow(
         self,
         workflow_id: str,
         decision: str,
@@ -126,6 +204,12 @@ class WorkflowEngine:
             )
 
         # 2. Optimistic Concurrency Control (Compare-and-Swap)
+        pending_id = state.domain_context.get("pending_approval_id")
+        pending = self.store.load_approval(pending_id) if pending_id else None
+        if pending is None or pending.status != ApprovalStatus.PENDING:
+            raise ValueError("Only a pending approval can receive a decision")
+        if pending.expires_at is not None and time.time() >= pending.expires_at:
+            raise ValueError("Approval has expired")
         next_version = state.checkpoint_version + 1
         lock_acquired = self.store.compare_and_swap_resume(
             workflow_id=workflow_id,
@@ -183,8 +267,12 @@ class WorkflowEngine:
                 outcome_type="approval_granted",
                 context_updates={"approval_decision": "approved", "approver_id": approver_id},
             )
-            next_step, terminal_status = self.definition.resolve_next_step(resumed_state, step_outcome)
-            resumed_state = self._apply_transition(resumed_state, next_step, terminal_status, step_outcome)
+            next_step, terminal_status = self.definition.resolve_next_step(
+                resumed_state, step_outcome
+            )
+            resumed_state = self._apply_transition(
+                resumed_state, next_step, terminal_status, step_outcome
+            )
             self.store.save_state(resumed_state)
 
             return await self._run_loop(resumed_state)
@@ -223,8 +311,12 @@ class WorkflowEngine:
                 outcome_type="approval_rejected",
                 context_updates={"approval_decision": "rejected", "approver_id": approver_id},
             )
-            next_step, terminal_status = self.definition.resolve_next_step(resumed_state, step_outcome)
-            resumed_state = self._apply_transition(resumed_state, next_step, terminal_status, step_outcome)
+            next_step, terminal_status = self.definition.resolve_next_step(
+                resumed_state, step_outcome
+            )
+            resumed_state = self._apply_transition(
+                resumed_state, next_step, terminal_status, step_outcome
+            )
             self.store.save_state(resumed_state)
 
             return await self._run_loop(resumed_state)
@@ -237,20 +329,25 @@ class WorkflowEngine:
             fn = handler
 
         if inspect.iscoroutinefunction(fn):
-            return await fn(state)
-        res = fn(state)
-        if inspect.iscoroutine(res):
-            return await res
+            res = await fn(state)
+        else:
+            res = fn(state)
+            if inspect.iscoroutine(res):
+                res = await res
+        if not isinstance(res, StepOutcome):
+            raise TypeError("Step handler must return StepOutcome")
         return res
 
     async def _run_loop(self, state: WorkflowState) -> WorkflowState:
         """Internal execution loop advancing steps according to declared transitions."""
-        transitions_count = 0
+        transitions_count = len(state.history)
 
         while not state.status.is_terminal and state.status != WorkflowStatus.AWAITING_APPROVAL:
             step_def = self.definition.steps.get(state.current_step)
             if not step_def:
-                raise InvalidTransitionError(f"Current step '{state.current_step}' not declared in definition.")
+                raise InvalidTransitionError(
+                    f"Current step '{state.current_step}' not declared in definition."
+                )
 
             # Terminal Step Handling
             if step_def.is_terminal:
@@ -326,7 +423,9 @@ class WorkflowEngine:
                     break
                 except Exception as exc:
                     completed_time = time.time()
-                    if self.retry_policy.is_retryable(exc, attempt, is_state_mutating=step_def.is_mutating):
+                    if self.retry_policy.is_retryable(
+                        exc, attempt, is_state_mutating=step_def.is_mutating
+                    ):
                         delay = self.retry_policy.compute_delay_seconds(attempt)
                         self._record_audit(
                             workflow_id=state.workflow_id,
@@ -399,7 +498,15 @@ class WorkflowEngine:
                 break
 
             # Apply transition
-            state = self._apply_transition(state, next_step, terminal_status, outcome)
+            state = self._apply_transition(
+                state,
+                next_step,
+                terminal_status,
+                outcome,
+                attempt=attempt,
+                started_at=start_time,
+                completed_at=completed_time,
+            )
             self.store.save_state(state)
 
         return state
@@ -410,16 +517,19 @@ class WorkflowEngine:
         next_step: str,
         terminal_status: Optional[WorkflowStatus],
         outcome: StepOutcome,
+        attempt: int = 1,
+        started_at: float | None = None,
+        completed_at: float | None = None,
     ) -> WorkflowState:
         now = time.time()
         receipt_ids = tuple(r.action_id for r in outcome.receipts)
 
         exec_record = StepExecutionRecord(
             step_name=state.current_step,
-            attempt=1,
+            attempt=attempt,
             status=outcome.status,
-            started_at=now,
-            completed_at=now,
+            started_at=started_at if started_at is not None else now,
+            completed_at=completed_at if completed_at is not None else now,
             outcome_type=outcome.outcome_type,
             execution_receipt_ids=receipt_ids,
             error_message=outcome.error_message,
@@ -437,7 +547,11 @@ class WorkflowEngine:
             workflow_id=state.workflow_id,
             event_type="transition_selected",
             step_name=state.current_step,
-            details={"to_step": next_step, "outcome_type": outcome.outcome_type, "status": new_status.value},
+            details={
+                "to_step": next_step,
+                "outcome_type": outcome.outcome_type,
+                "status": new_status.value,
+            },
         )
 
         return WorkflowState(

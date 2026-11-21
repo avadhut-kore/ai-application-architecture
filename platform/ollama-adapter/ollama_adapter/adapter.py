@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import socket
 import time
 import urllib.error
 import urllib.request
-from typing import Any, Dict, List, Mapping, Optional
+from urllib.parse import urlsplit
+from typing import Any, Dict, List, Optional
 
 from contracts.errors import (
     AiError,
@@ -27,6 +29,7 @@ from contracts.models import (
 )
 from contracts.ports import TextGenerationPort
 from contracts.telemetry import AiOperationContext
+from ai_telemetry import traced
 
 
 class OllamaAdapter(TextGenerationPort):
@@ -39,12 +42,31 @@ class OllamaAdapter(TextGenerationPort):
     def __init__(
         self,
         endpoint: str = "http://localhost:11434",
-        default_model: str = "llama3.2",
+        default_model: str = "qwen2.5:7b",
         timeout_seconds: float = 30.0,
         max_retries: int = 2,
         backoff_base_seconds: float = 0.5,
     ) -> None:
         """Initialize the Ollama adapter with endpoint and execution policies."""
+        parsed = urlsplit(endpoint)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "Ollama endpoint must be an HTTP(S) URL without credentials, query or fragment"
+            )
+        if (
+            not math.isfinite(timeout_seconds)
+            or not math.isfinite(backoff_base_seconds)
+            or timeout_seconds <= 0
+            or max_retries < 0
+            or backoff_base_seconds < 0
+        ):
+            raise ValueError("Invalid timeout or retry configuration")
         self.endpoint = endpoint.rstrip("/")
         self.default_model = default_model
         self.timeout_seconds = timeout_seconds
@@ -71,8 +93,7 @@ class OllamaAdapter(TextGenerationPort):
         # If conversational messages are provided, route to /api/chat payload structure
         if request.messages:
             payload["messages"] = [
-                {"role": msg.role.value, "content": msg.content}
-                for msg in request.messages
+                {"role": msg.role.value, "content": msg.content} for msg in request.messages
             ]
         else:
             payload["prompt"] = request.prompt
@@ -80,7 +101,9 @@ class OllamaAdapter(TextGenerationPort):
                 payload["system"] = request.system_prompt
 
         # Support JSON format output constraint if specified in metadata
-        if request.metadata and request.metadata.get("format") == "json":
+        if request.metadata and isinstance(request.metadata.get("response_schema"), dict):
+            payload["format"] = request.metadata["response_schema"]
+        elif request.metadata and request.metadata.get("format") == "json":
             payload["format"] = "json"
 
         return payload
@@ -93,10 +116,12 @@ class OllamaAdapter(TextGenerationPort):
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST" if data else "GET")
+        req = urllib.request.Request(
+            url, data=data, headers=headers, method="POST" if data else "GET"
+        )
 
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as response:
+            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as response:  # nosec B310 -- constructor restricts endpoint to HTTP(S)
                 body = response.read().decode("utf-8")
                 return json.loads(body) if body else {}
         except urllib.error.HTTPError as ex:
@@ -139,7 +164,11 @@ class OllamaAdapter(TextGenerationPort):
             ):
                 raise AiTimeoutError(
                     message=f"Operation timed out after {self.timeout_seconds}s waiting for Ollama: {ex.reason}",
-                    details={"endpoint": url, "timeout_seconds": self.timeout_seconds, "reason": str(ex.reason)},
+                    details={
+                        "endpoint": url,
+                        "timeout_seconds": self.timeout_seconds,
+                        "reason": str(ex.reason),
+                    },
                 ) from ex
             raise AiProviderUnavailableError(
                 message=f"Failed to reach Ollama endpoint at {url}: {ex.reason}",
@@ -161,11 +190,22 @@ class OllamaAdapter(TextGenerationPort):
 
         model = raw.get("model", requested_model)
         done_reason = raw.get("done_reason", "stop")
+        if (
+            not isinstance(text, str)
+            or not isinstance(model, str)
+            or not model
+            or not isinstance(done_reason, str)
+        ):
+            raise AiInvalidRequestError(
+                "Malformed provider response text, model or completion reason"
+            )
         finish_reason = FinishReason.LENGTH if done_reason == "length" else FinishReason.STOP
 
         # Extract usage metrics
         prompt_tokens = raw.get("prompt_eval_count", 0)
         output_tokens = raw.get("eval_count", 0)
+        if any(type(value) is not int or value < 0 for value in (prompt_tokens, output_tokens)):
+            raise AiInvalidRequestError("Provider token counts must be nonnegative integers")
         usage: Optional[UsageMetrics] = None
         if prompt_tokens > 0 or output_tokens > 0:
             usage = UsageMetrics(input_tokens=prompt_tokens, output_tokens=output_tokens)
@@ -189,6 +229,7 @@ class OllamaAdapter(TextGenerationPort):
             metadata=metadata,
         )
 
+    @traced("gen_ai.generate", "ollama")
     async def generate(
         self,
         request: CompletionRequest,

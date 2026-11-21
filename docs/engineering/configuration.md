@@ -12,7 +12,7 @@ This document establishes the configuration hierarchy, environment management, a
 
 In compliance with Twelve-Factor App principles, application code must remain strictly independent of the environment in which it executes. The repository enforces a layered configuration precedence hierarchy:
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ 1. Command-Line Flags (Highest Precedence - Runtime)   │
 └───────────────────────────┬────────────────────────────┘
@@ -62,6 +62,7 @@ All configuration values must be bound to strongly typed models and validated at
 ```python
 from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class AppConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

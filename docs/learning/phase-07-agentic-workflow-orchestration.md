@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  07 — Agentic Workflow Orchestration
-Status:                 Accepted & Frozen (Post-Remediation Baseline: 0ac0ada)
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Tier:                   Tier 2 Reference Pattern Example
 Primary Audience:       Enterprise Architects, Distributed Systems Engineers, Application Security Architects
 Implementation:         examples/agentic-workflow/, building-blocks/python/contracts/workflow.py, ADR-0009, ADR-0010, ADR-0011
@@ -22,7 +22,7 @@ The reference pattern consists of:
 2. **Deterministic State Machine & Directed Graph Engine** ([`examples/agentic-workflow/workflow/definition.py`](../../examples/agentic-workflow/workflow/definition.py), [`engine.py`](../../examples/agentic-workflow/workflow/engine.py)): Code-defined directed graphs enforcing transition guards, maximum transition ceilings (`max_transitions = 15`), and cycle loop protection.
 3. **Durable SQLite Checkpoint Store & Atomic Compare-and-Swap (CAS)** ([`examples/agentic-workflow/workflow/store.py`](../../examples/agentic-workflow/workflow/store.py)): Write-Ahead Logging (WAL) single-node persistence with single-statement optimistic concurrency control preventing split-brain resumptions.
 4. **Authority-Bearing Workflow State Model** ([`examples/agentic-workflow/workflow/state.py`](../../examples/agentic-workflow/workflow/state.py)): Strongly typed state capturing checkpoint versions, step retries, execution history, domain context, and a canonical SHA-256 integrity checksum detecting accidental storage tampering.
-5. **Durable Human-in-the-Loop (HITL) Suspension & 7-Point Binding Verification** ([`examples/agentic-workflow/workflow/steps/human.py`](../../examples/agentic-workflow/workflow/steps/human.py), [`approval.py`](../../examples/agentic-workflow/workflow/approval.py)): Asynchronous pause-to-disk lifecycle featuring durable approval records with strict 7-point structural and lifecycle binding validation, and single-use consumption.
+5. **Durable Human-in-the-Loop (HITL) Suspension & Approval Binding Verification** ([`examples/agentic-workflow/workflow/steps/human.py`](../../examples/agentic-workflow/workflow/steps/human.py), [`approval.py`](../../examples/agentic-workflow/workflow/approval.py)): Asynchronous pause-to-disk lifecycle featuring durable approval records with strict structural, definition and lifecycle binding validation, and single-use consumption.
 6. **Durable Mutation Ledger & Stable Action Identity** ([`examples/agentic-workflow/workflow/ledger.py`](../../examples/agentic-workflow/workflow/ledger.py)): Deterministic SHA-256 action identifier derivation (`act-{wf_id}-{step}-{digest}`) and lifecycle tracking (`PLANNED`, `EXECUTION_STARTED`, `EXECUTED`, `FAILED`, `AMBIGUOUS`).
 7. **Crash-Consistent In-Flight Domain Reconciliation** ([`examples/agentic-workflow/workflow/steps/mutation.py`](../../examples/agentic-workflow/workflow/steps/mutation.py), [`remediation_workflow.py`](../../examples/agentic-workflow/workflow/remediation_workflow.py)): A 3-outcome reconciliation protocol (`EXECUTED`, `NOT_EXECUTED`, `INCONCLUSIVE`) preventing double-mutation when processes crash mid-flight.
 8. **Local Saga Backward Compensation** ([`examples/agentic-workflow/workflow/saga.py`](../../examples/agentic-workflow/workflow/saga.py), [`remediation_workflow.py`](../../examples/agentic-workflow/workflow/remediation_workflow.py)): Forward recovery and backward compensating steps governed by authorization policies, ledger tracking, domain reconciliation, and fail-closed manual intervention signalling.
@@ -122,9 +122,9 @@ A critical architectural distinction established in this repository is the separ
 
 ---
 
-## 4. System Architecture: The Accepted Phase 7 Runtime
+## 4. System Architecture: The Phase 7 Runtime
 
-The architecture of [`examples/agentic-workflow/`](../../examples/agentic-workflow/) reconstructs directly from the accepted repository code:
+The architecture of [`examples/agentic-workflow/`](../../examples/agentic-workflow/) reconstructs directly from the implemented repository code:
 
 ```mermaid
 flowchart TD
@@ -159,7 +159,7 @@ flowchart TD
     subgraph SECURITY_BOUNDARY["5. Pre-Execution Security & HITL Verification"]
         MUTATION --> POLICY["CustomerSupportAuthorizationPolicy (RBAC / Limits)"]
         MUTATION --> VERIFIER["WorkflowApprovalVerifier (approval.py)"]
-        VERIFIER -->|7-Point Binding Check| BINDING{"All 7 Valid?"}
+        VERIFIER -->|Approval Binding Check| BINDING{"All Bindings Valid?"}
         BINDING -->|No / Replay| ABORT_SEC["Fail Closed: Approval Error"]
     end
 
@@ -240,12 +240,14 @@ stateDiagram-v2
         intake_validation --> terminal_failed: Invalid Input
         context_gathering --> agentic_investigation: Succeeded
         agentic_investigation --> finalization: INFORMATIONAL
-        agentic_investigation --> mutate_note: CUSTOMER_NOTE
+        agentic_investigation --> human_approval: CUSTOMER_NOTE (Mutating)
         agentic_investigation --> human_approval: FEE_CREDIT (Mutating)
         agentic_investigation --> terminal_escalated: SECURITY_ESCALATION
     }
 
     human_approval --> AWAITING_APPROVAL: Suspend to SQLite
+    human_approval --> mutation_execution: Credit approved
+    human_approval --> mutate_note: Note approved
     AWAITING_APPROVAL --> RUNNING: resume_workflow() [CAS Locked]
 
     state Resumed_Execution {
@@ -253,6 +255,7 @@ stateDiagram-v2
         mutation_execution --> compensate_mutation: Credit Failed & has_prior_note
         mutation_execution --> terminal_failed: Credit Failed & no prior note
         compensate_mutation --> terminal_failed: Compensation Complete (Closed)
+        note right of compensate_mutation: Separate human approval required before compensation
         mutate_note --> finalization: Note Appended
         finalization --> terminal_completed: Finalized
     }
@@ -277,8 +280,8 @@ class TransitionRule:
 
 ### Defense Against Cycles & Infinite Loops
 A common failure mode in agentic frameworks is the infinite reasoning loop. Phase 7 implements a deterministic ceiling:
-* Every workflow instance tracks transitions.
-* If `len(state.history) >= workflow_def.max_transitions` (default: 15), the engine forcibly aborts the workflow, marks status `FAILED`, and records an audit event.
+* Each workflow persists completed transitions in its history.
+* Before executing a step beyond `workflow_def.max_transitions` (default: 15), the engine forcibly aborts the workflow, marks status `FAILED`, and records an audit event.
 * This is verified in `test_max_transitions_ceiling_cycle_protection` in [`test_engine.py`](../../examples/agentic-workflow/tests/test_engine.py).
 
 ---
@@ -295,7 +298,7 @@ Checkpointing != Conversation Memory (Memory is prompt text; checkpoints are sta
 ```
 
 ### Multi-Process Execution Across OS Boundaries
-In naive demos, "pausing and resuming" is simulated by keeping Python objects in memory. The accepted Phase 7 implementation proves true OS multi-process durability via [`demo.py`](../../examples/agentic-workflow/demo.py):
+In naive demos, "pausing and resuming" is simulated by keeping Python objects in memory. The implemented Phase 7 baseline proves true OS multi-process durability via [`demo.py`](../../examples/agentic-workflow/demo.py):
 
 ```bash
 # PROCESS 1: Start workflow and pause at human approval
@@ -311,7 +314,7 @@ $ python3 examples/agentic-workflow/demo.py --db-path ./prod.db approve --workfl
 # Status: COMPLETED, Mutation Executed: True, Final Balance: $160.00
 ```
 
-This lifecycle is tested automatically across distinct operating system processes via `subprocess.run` in [`test_hitl_restart.py`](../../examples/agentic-workflow/tests/test_hitl_restart.py#L82).
+This lifecycle is tested automatically across distinct operating system processes via `subprocess.run` in [`test_hitl_restart.py`](../../examples/agentic-workflow/tests/test_hitl_restart.py).
 
 ---
 
@@ -320,7 +323,7 @@ This lifecycle is tested automatically across distinct operating system processe
 When an asynchronous workflow awaits human approval, multiple processes or operators might attempt to resume it simultaneously. Without concurrency control, both processes could load the checkpoint, evaluate the proposal, and disburse duplicate financial credits.
 
 ### The Single-Statement Compare-and-Swap
-Phase 7 implements optimistic locking directly in SQLite via [`SQLiteWorkflowStore.compare_and_swap_resume`](../../examples/agentic-workflow/workflow/store.py#L155):
+Phase 7 implements optimistic locking directly in SQLite via [`SQLiteWorkflowStore.compare_and_swap_resume`](../../examples/agentic-workflow/workflow/store.py):
 
 ```sql
 UPDATE workflow_checkpoints
@@ -351,7 +354,7 @@ Proceeds with execution                     Halts cleanly without side effects
 
 ---
 
-## 9. Human-in-the-Loop: 7-Point Binding Verification
+## 9. Human-in-the-Loop: Approval Binding Verification
 
 In Phase 7, Human-in-the-Loop is not a frontend UI widget; it is a **durable security primitive with seven structural and lifecycle binding checks** implemented in [`WorkflowApprovalVerifier`](../../examples/agentic-workflow/workflow/approval.py).
 
@@ -371,7 +374,7 @@ class WorkflowApprovalVerifier:
     ) -> None:
 ```
 
-### The 7-Point Binding Checklist
+### The Approval Binding Checklist
 
 | # | Verification Check | Security Threat Prevented |
 | :---: | :--- | :--- |
@@ -380,8 +383,9 @@ class WorkflowApprovalVerifier:
 | **3** | `record.action_id == expected_action_id` | **Action Substitution**: Prevents substituting an approved note for a credit. |
 | **4** | `record.capability_name == capability.name` | **Capability Swapping**: Prevents pointing an approval at an unapproved tool. |
 | **5** | `record.canonical_arguments_json == canonicalize(args)` | **Parameter Tampering**: Byte-for-byte check ensures amount is not altered. |
-| **6** | `record.actor_id == actor.actor_id and record.actor_role == actor.role` | **Actor Impersonation**: Ensures caller has not been demoted or substituted. |
+| **6** | `record.actor_id == actor.actor_id and record.actor_role == actor.role` | **Actor Impersonation**: Detects a substituted snapshot; it does not refresh enterprise identity or detect external demotion. |
 | **7** | `time.time() < record.expires_at` | **Approval Expiration Window**: Rejects expired approval decisions. |
+| **8** | Definition ID and version match | **Definition Drift**: Rejects approval reuse under a different executing definition. |
 
 ### Single-Use Replay Protection
 Once an approved capability executes, the approval record transitions to `ApprovalStatus.CONSUMED`. If an attacker attempts to replay the consumed approval, `WorkflowApprovalVerifier` raises `ApprovalReplayError`.
@@ -444,17 +448,10 @@ Because many enterprise legacy systems and third-party APIs lack native idempote
 ```python
 # Defined in examples/agentic-workflow/workflow/remediation_workflow.py
 def reconcile_credit_mutation(action_id: str, capability_name: str, args: Mapping[str, Any]) -> str:
-    """Reconcile apply_fee_credit against customer account balance and activity log."""
-    customer_id = args.get("customer_id")
-    amount_cents = int(args.get("amount_cents", 0))
-    reason = str(args.get("reason", ""))
-    account = customer_store.get_account(customer_id)
-    if not account:
-        return "inconclusive"
-    expected_log = f"Credit applied: +${amount_cents / 100:.2f} (Reason: {reason})"
-    if expected_log in account.activity_log:
-        return "executed"
-    return "not_executed"
+    """Reconcile the exact action ID against an atomic domain receipt."""
+    if hasattr(customer_store, "action_status"):
+        return str(customer_store.action_status(action_id))
+    return "inconclusive"
 ```
 
 ### The Three Reconciliation Outcomes
@@ -484,13 +481,15 @@ flowchart TD
 
 ## 12. Why We Do Not Casually Claim "Exactly-Once" Execution
 
-In enterprise marketing, vendors frequently claim "guaranteed exactly-once AI agent execution". In distributed systems and computer science, **true universal exactly-once execution across arbitrary external network endpoints is mathematically impossible** (The Two Generals' Problem).
+A local database transaction cannot make an arbitrary external API call atomic.
+The implementation therefore states its guarantees at each storage boundary:
 
-Phase 7 maintains strict intellectual and architectural honesty:
+1. **Domain transaction**: The local SQLite adapter commits the business effect and its action receipt together.
+2. **Workflow transaction**: The executed ledger record and consumed approval commit together, separately from the domain transaction.
+3. **Recovery**: Stable action IDs and receipt-based reconciliation suppress duplicates under the tested local failure modes. Missing or inconclusive receipts stop for intervention; they are not proof that an arbitrary remote effect did not occur.
 
-1. **Local State Is Exactly-Once**: Inside the SQLite boundary, atomic transactions ensure that mutating the ledger to `EXECUTED` and consuming the approval record occur atomically.
-2. **External Side Effects Are At-Least-Once or At-Most-Once**: The network call to an external API cannot be wrapped in a SQLite transaction.
-3. **The Architecture Achieves "Effectively-Once" Side Effects**: By combining deterministic `action_id` derivation, pre-execution ledger checks, and post-crash domain reconciliation, the reference pattern suppresses duplicate external mutations under tested failure modes.
+External adapters need their own durable idempotency/reconciliation contracts.
+The local reference evidence does not establish universal exactly-once delivery.
 
 We describe this pattern as:
 > **A crash-consistent, reconciliation-first Tier 2 reference pattern for duplicate mutation suppression.**
@@ -520,10 +519,10 @@ In Phase 7, compensation is treated with identical rigor to primary mutations:
 1. **Authorization Verification**: The compensating step revalidates that the actor is authorized to perform the reversal.
 2. **Deterministic Action ID**: Derives a stable action identity (`act-{wf_id}-compensate_mutation-{digest}`).
 3. **Ledger Lifecycle**: Records `EXECUTION_STARTED`, `EXECUTED`, or `FAILED` in the durable mutation ledger.
-4. **Crash-Recovery Reconciliation**: If a crash occurs while compensation is in `EXECUTION_STARTED`, the reconciler inspects `customer.notes`. If the voiding note exists, duplicate compensation is suppressed.
+4. **Crash-Recovery Reconciliation**: If a crash occurs while compensation is in `EXECUTION_STARTED`, the reconciler reads the action-keyed domain receipt. Matching note text alone cannot prove that this operation executed.
 5. **Fail-Closed on Failure**: If the compensating capability itself fails, the ledger records `FAILED`, the workflow immediately halts, and `manual_intervention_required = True` is flagged.
 
-This was verified during the Phase 7 audit in [`test_saga.py`](../../examples/agentic-workflow/tests/test_saga.py#L234).
+This was verified during the Phase 7 audit in [`test_saga.py`](../../examples/agentic-workflow/tests/test_saga.py).
 
 ---
 
@@ -602,7 +601,7 @@ The Phase 7 reference pattern handles twelve distinct classes of enterprise fail
 
 ## 17. Persistent Audit Logging: Best-Effort Append-Only
 
-Phase 7 records all high-consequence lifecycle events in the SQLite table `workflow_audit_log` via [`WorkflowEngine._record_audit`](../../examples/agentic-workflow/workflow/engine.py#L38) and [`SQLiteWorkflowStore.append_audit_event`](../../examples/agentic-workflow/workflow/store.py#L225):
+Phase 7 records all high-consequence lifecycle events in the SQLite table `workflow_audit_log` via [`WorkflowEngine._record_audit`](../../examples/agentic-workflow/workflow/engine.py) and [`SQLiteWorkflowStore.append_audit_event`](../../examples/agentic-workflow/workflow/store.py):
 
 ```sql
 CREATE TABLE IF NOT EXISTS workflow_audit_log (
@@ -623,7 +622,7 @@ CREATE TABLE IF NOT EXISTS workflow_audit_log (
 * `in_flight_reconciliation`: Reconciler probe results and duplicate suppression.
 
 ### Terminology Precision: Why It Is Not "Immutable"
-The accepted architecture documents this table as **best-effort append-only**. Standard SQLite table writes without Write-Once-Read-Many (WORM) storage, append-only file flags, or cryptographic Merkle tree chains are append-by-convention. Calling standard database tables "immutable" is an enterprise anti-pattern.
+The documented architecture documents this table as **best-effort append-only**. Standard SQLite table writes without Write-Once-Read-Many (WORM) storage, append-only file flags, or cryptographic Merkle tree chains are append-by-convention. Calling standard database tables "immutable" is an enterprise anti-pattern.
 
 ---
 
@@ -634,11 +633,11 @@ Evaluation quality in Phase 7 is validated through a versioned 30-scenario datas
 
 The dataset spans 10 distinct operational categories:
 1. `informational`: Read-only inquiries (zero mutations).
-2. `customer_note`: Operational customer note updates (authorized, no human approval needed).
+2. `customer_note`: Operational customer note updates (authorization and human approval required).
 3. `approved_credit`: Financial fee credits within policy limits, approved by human operator.
 4. `rejected_credit`: Financial fee credits declined by human operator (zero physical mutations).
 5. `security_escalation`: High-risk frozen accounts routed to terminal escalation.
-6. `toctou_revocation`: Operator demoted during approval wait; execution blocked upon resume.
+6. `role_limit_on_resume`: Re-evaluates the actor snapshot and current domain policy. External identity-provider demotion is outside this example.
 7. `systemic_ceiling`: Financial concessions exceeding hard $50.00 ceiling rejected.
 8. `prompt_injection`: Adversarial user prompts attempting state machine hijacks safely ignored.
 9. `saga_compensation`: Multi-step failure triggering backward compensating note.
@@ -764,7 +763,7 @@ Phase 7 is **Agentic Workflow Orchestration**. It is **not** a "multi-agent swar
 | **Persistence Engine** | Standard library `sqlite3` (WAL Mode) | PostgreSQL / Redis / Cloud Databases | **Zero-Dependency Local-First**: Enables 100% offline Mode A execution without running background database daemons, while proving CAS mechanics. |
 | **Orchestration Model**| Explicit Code-Defined State Graph | Autonomous Multi-Agent Swarm / LangGraph | **Separation of Authority**: Business processes require auditable, deterministic state machines, not probabilistic model-directed routing. |
 | **Mutation Safety** | Durable Mutation Ledger & Domain Reconciliation | Blind Retry / Global 2-Phase Commit (2PC) | **Real-World Legacy Resilience**: External APIs rarely participate in distributed XA transactions; reconciliation provides crash safety without 2PC. |
-| **HITL Model** | Asynchronous SQLite Suspension + 7-Point Approval Record | Synchronous In-Memory Blocking Prompts | **Operational Reality**: Enterprise approvals take hours or days; holding active memory or HTTP connections open is an anti-pattern. |
+| **HITL Model** | Asynchronous SQLite Suspension + Bound Approval Record | Synchronous In-Memory Blocking Prompts | **Operational Reality**: Enterprise approvals take hours or days; holding active memory or HTTP connections open is an anti-pattern. |
 | **Compensation** | Local Linear Saga Compensation | Distributed Orchestrated Sagas (Temporal) | **Complexity Discipline**: Local backward compensation solves single-process recovery without heavyweight distributed infrastructure. |
 
 ---
@@ -791,7 +790,7 @@ The Phase 7 reference pattern defends against thirteen specific attack vectors (
 3. Unauthorized Action       ──► Host RBAC policy enforced before approval issuance and before execution.
 4. Approval Bypass           ──► MutationExecutionStep requires valid DurableApprovalRecord.
 5. Approval Replay           ──► Single-use transition to CONSUMED status; replay raises ApprovalReplayError.
-6. Approval Tampering        ──► 7-point structural and lifecycle binding verification.
+6. Approval Tampering        ──► structural, definition and lifecycle binding verification.
 7. TOCTOU Privilege Drift    ──► Authorization policy re-verified immediately prior to physical tool execution.
 8. State Tampering           ──► Canonical SHA-256 checksum over state payload detects disk modifications.
 9. Concurrent Resume Split   ──► Atomic Compare-and-Swap on version & status prevents race conditions.
@@ -827,7 +826,7 @@ When studying the Phase 7 codebase, read the files in this deliberate sequence:
    └── Read sixth: Core execution loop (_execute_loop), step dispatch, and transition evaluation.
 
 7. examples/agentic-workflow/workflow/approval.py
-   └── Read seventh: Approval record generation, canonical argument hashing, and 7-point binding verification.
+   └── Read seventh: Approval record generation, canonical argument hashing, and approval binding verification.
 
 8. examples/agentic-workflow/workflow/ledger.py
    └── Read eighth: Stable action ID derivation and DurableMutationRecord models.
@@ -908,7 +907,7 @@ Trace a complete run of the canonical **Customer Account Remediation Workflow**:
 
 ## 27. Execution Trace: Crash Recovery with In-Flight Reconciliation
 
-Trace the adversarial failure mode tested in [`test_ledger.py`](../../examples/agentic-workflow/tests/test_ledger.py#L122):
+Trace the adversarial failure mode tested in [`test_ledger.py`](../../examples/agentic-workflow/tests/test_ledger.py):
 
 ```text
 1. Workflow is in mutation_execution.
@@ -923,8 +922,8 @@ Trace the adversarial failure mode tested in [`test_ledger.py`](../../examples/a
    │  - Dispatches domain reconciler: reconcile_credit_mutation(...).
    │
 7. Reconciler inspects customer account:
-   │  - Checks account.activity_log for: "Credit applied: +$20.00 (Reason: Outage credit)".
-   │  - MATCH FOUND! The credit was physically applied before the crash.
+   │  - Reads the persisted domain_actions receipt for the exact action ID.
+   │  - RECEIPT FOUND! The credit and receipt committed together before the crash.
    │  - Returns reconciliation outcome: "executed".
    │
 8. Recovery Action:
@@ -964,7 +963,7 @@ Trace the inconclusive failure mode:
 
 ## 29. Execution Trace: Saga Backward Compensation
 
-Trace the multi-step failure path tested in [`test_saga.py`](../../examples/agentic-workflow/tests/test_saga.py#L107):
+Trace the multi-step failure path tested in [`test_saga.py`](../../examples/agentic-workflow/tests/test_saga.py):
 
 ```text
 1. Context: Workflow is configured with has_prior_note = True (Operational note pre-logged).
@@ -1009,7 +1008,7 @@ python3 scripts/validate.py
 ```bash
 python3 examples/agentic-workflow/verify.py
 ```
-*Expected Output*: AST compilation of 33 files, 59 hermetic unit tests passed, and 30/30 deterministic evaluation scenarios passed.
+*Expected Output*: AST compilation of 33 files, unit tests (current counts in the remediation evidence report) passed, and 30/30 deterministic evaluation scenarios passed.
 
 ### 3. Run the 30-Scenario Evaluation Harness
 ```bash
@@ -1071,7 +1070,7 @@ state = json.loads(raw)
 state["domain_context"]["account"]["balance_cents"] = 999999
 cur.execute(
     "UPDATE workflow_checkpoints SET state_json = ? WHERE workflow_id = 'wf-demo-cust-001'",
-    (json.dumps(state),)
+    (json.dumps(state),),
 )
 conn.commit()
 conn.close()
@@ -1084,12 +1083,12 @@ python3 examples/agentic-workflow/demo.py --db-path /tmp/lab_workflow.db status 
 *Observed Result*: The command aborts with `CorruptedCheckpointError: Checksum mismatch on checkpoint`. The tampering is caught immediately.
 
 ### Lab 2: Verify Approval Replay Defense
-Inspect `test_approval_replay_defense` in [`test_security.py`](../../examples/agentic-workflow/tests/test_security.py#L30):
+Inspect `test_approval_replay_defense` in [`test_security.py`](../../examples/agentic-workflow/tests/test_security.py):
 * Attempt to present an approval record with `status = CONSUMED` to `WorkflowApprovalVerifier`.
 * *Observed Result*: Verifier raises `ApprovalReplayError: Approval record has already been consumed`.
 
 ### Lab 3: Verify Concurrent Resume Conflict
-Inspect `test_competing_resumes_result_in_exactly_one_winner_and_one_conflict` in [`test_concurrency.py`](../../examples/agentic-workflow/tests/test_concurrency.py#L12):
+Inspect `test_competing_resumes_result_in_exactly_one_winner_and_one_conflict` in [`test_concurrency.py`](../../examples/agentic-workflow/tests/test_concurrency.py):
 * Two asynchronous tasks execute `resume_workflow` against the same paused checkpoint simultaneously.
 * *Observed Result*: Exactly one worker succeeds; the competing worker catches `ConcurrentResumeConflictError` and halts safely.
 
@@ -1134,7 +1133,7 @@ FOUNDATION (PHASES 0–3)               AI CAPABILITIES (PHASES 4–7)          
 │ Phase 2: Core Contracts │           │ Phase 6: Agentic Tasks  │            │ Phase 10: AI Gateways   │
 │ Phase 3: Templates      │           │ Phase 7: Workflows      │            │ Phase 11–14: Production │
 └─────────────────────────┘           └─────────────────────────┘            └─────────────────────────┘
-      [FROZEN & VERIFIED]                 [FROZEN & VERIFIED]                         [PLANNED]
+      [IMPLEMENTED — ACCEPTANCE PENDING]                 [IMPLEMENTED — ACCEPTANCE PENDING]                         [PLANNED]
 ```
 
 ### Twelve Core Teaching Principles

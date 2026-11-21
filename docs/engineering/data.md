@@ -12,7 +12,7 @@ This document establishes the persistence boundaries, schema evolution rules, mu
 
 To maintain high decoupling and prevent database concerns from contaminating business rules, applications must separate domain entities from database models:
 
-```
+```text
 ┌──────────────────────────────────────┐
 │            Domain Layer              │
 │  • Pure business invariants          │

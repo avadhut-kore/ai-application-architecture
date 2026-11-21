@@ -2,7 +2,7 @@
 
 > **Tier Classification**: **Tier 3 — Platform Component**  
 > **Component Role**: Outbound Dense Embedding Adapter  
-> **Target Ecosystem**: Python 3.9+  
+> **Target Ecosystem**: Python 3.11+
 > **Status**: Implemented  
 
 ---
@@ -35,6 +35,7 @@
 from contracts.models import EmbeddingRequest, EmbeddingResponse
 from contracts.ports import EmbeddingPort
 
+
 class OllamaEmbeddingAdapter(EmbeddingPort):
     def __init__(
         self,
@@ -43,15 +44,13 @@ class OllamaEmbeddingAdapter(EmbeddingPort):
         timeout_seconds: float = 30.0,
         max_retries: int = 2,
         backoff_base_seconds: float = 0.5,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def embed(
         self,
         request: EmbeddingRequest,
         context: Optional[AiOperationContext] = None,
-    ) -> EmbeddingResponse:
-        ...
+    ) -> EmbeddingResponse: ...
 ```
 
 ---
@@ -87,3 +86,16 @@ python3 platform/ollama-embedding-adapter/verify.py
 ```
 
 If an embedding model is not yet installed, the verification CLI will report `NOT VERIFIED` and instruct the developer to pull a model (e.g. `ollama pull nomic-embed-text`).
+
+## Runtime telemetry and current evidence
+
+Retrieval callers set provider-neutral `EmbeddingRequest.metadata["input_type"]`
+to `query` or `document`. For `nomic-embed-text`, the adapter translates that
+purpose into the model's required task prefix, as specified by the
+[Nomic model card](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5).
+The retriever and contracts contain no provider-specific prompt strings.
+
+Runtime operations emit metadata-only OpenTelemetry spans through `ai_telemetry`.
+Use the locked root environment. Exporter assertions, strict typing, statement and
+branch coverage, security scans and limitations are recorded in the
+[remediation record](../../docs/engineering/phase1-7-remediation.md).

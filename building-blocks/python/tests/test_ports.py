@@ -51,7 +51,6 @@ class FakeEmbeddingClient:
         )
 
 
-
 class FakeLlmClient:
     """Deterministic in-memory test double conforming to TextGenerationPort.
 
@@ -76,11 +75,7 @@ class FakeLlmClient:
         self.recorded_requests.append(request)
         self.recorded_contexts.append(context)
 
-        text = (
-            self._canned_responses.pop(0)
-            if self._canned_responses
-            else self._default_response
-        )
+        text = self._canned_responses.pop(0) if self._canned_responses else self._default_response
 
         return CompletionResponse(
             text=text,

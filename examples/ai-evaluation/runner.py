@@ -15,7 +15,7 @@ import asyncio
 import json
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -32,12 +32,7 @@ for p in (BUILDING_BLOCKS_PYTHON, PLATFORM_OLLAMA, STRUCTURED_GEN, THIS_DIR):
 
 from contracts.models import CompletionRequest, CompletionResponse, UsageMetrics
 from contracts.ports import TextGenerationPort
-from structured_generation.models import (
-    CustomerFeedbackExtraction,
-    FeedbackCategory,
-    FeedbackSentiment,
-    FeedbackUrgency,
-)
+from contracts.telemetry import AiOperationContext
 from structured_generation.service import FeedbackExtractionService
 
 
@@ -85,7 +80,9 @@ class DeterministicEvalStub(TextGenerationPort):
     def __init__(self, scenarios: List[EvalScenario]) -> None:
         self._scenario_map: Dict[str, EvalScenario] = {s.input: s for s in scenarios}
 
-    async def generate(self, request: CompletionRequest) -> CompletionResponse:
+    async def generate(
+        self, request: CompletionRequest, context: Optional[AiOperationContext] = None
+    ) -> CompletionResponse:
         # Check if this prompt matches any scenario input
         matched: Optional[EvalScenario] = None
         for text, sc in self._scenario_map.items():
@@ -200,7 +197,7 @@ async def evaluate_service(
                         urgency_match=False,
                         extracted=None,
                         latency_ms=latency_ms,
-                        errors=val_res.errors,
+                        errors=list(val_res.errors),
                     )
                 )
         except Exception as ex:
@@ -243,8 +240,10 @@ async def evaluate_service(
         t_total = len(type_res)
         type_breakdown[st] = {
             "total": float(t_total),
-            "schema_adherence_pct": (sum(1 for r in type_res if r.is_valid_schema) / t_total) * 100.0,
-            "category_accuracy_pct": (sum(1 for r in type_res if r.category_match) / t_total) * 100.0,
+            "schema_adherence_pct": (sum(1 for r in type_res if r.is_valid_schema) / t_total)
+            * 100.0,
+            "category_accuracy_pct": (sum(1 for r in type_res if r.category_match) / t_total)
+            * 100.0,
         }
 
     # Authoritative Gate D Acceptance Criteria (QUALITY-GATES.md):
@@ -271,12 +270,15 @@ async def evaluate_service(
 
 def print_report(summary: EvaluationSummary) -> None:
     """Format and print an executive evaluation report to stdout."""
+    print("Tier 2 voluntary structured-output benchmark; this does not certify full Gate D.")
     print("=" * 75)
     mode_label = "OFFLINE TEST DOUBLE" if summary.mode == "fake" else "LIVE RUNTIME"
     print(f"AI EVALUATION REPORT (EXECUTION: {mode_label})")
     print("=" * 75)
     print(f"Total Scenarios Evaluated: {summary.total}")
-    print(f"Schema Adherence Rate:     {summary.schema_adherence_rate}% ({summary.schema_valid_count}/{summary.total}) [Gate D Mandatory: >=98.0%]")
+    print(
+        f"Schema Adherence Rate:     {summary.schema_adherence_rate}% ({summary.schema_valid_count}/{summary.total}) [Schema benchmark target: >=98.0%]"
+    )
     print(f"Category Accuracy:         {summary.category_accuracy}% [Artifact Target: >=70.0%]")
     print(f"Sentiment Accuracy:        {summary.sentiment_accuracy}%")
     print(f"Urgency Accuracy:          {summary.urgency_accuracy}%")
@@ -284,18 +286,26 @@ def print_report(summary: EvaluationSummary) -> None:
     print("-" * 75)
     print("Breakdown by Scenario Type:")
     for st, metrics in summary.type_breakdown.items():
-        print(f"  * {st.upper():<12} (n={int(metrics['total'])}) -> "
-              f"Schema Adherence: {metrics['schema_adherence_pct']:.1f}% | "
-              f"Category Accuracy: {metrics['category_accuracy_pct']:.1f}%")
+        print(
+            f"  * {st.upper():<12} (n={int(metrics['total'])}) -> "
+            f"Schema Adherence: {metrics['schema_adherence_pct']:.1f}% | "
+            f"Category Accuracy: {metrics['category_accuracy_pct']:.1f}%"
+        )
     print("-" * 75)
     if summary.mode == "fake":
         print("EVALUATION HARNESS VALIDATION: [PASS]")
-        print("  -> Deterministic scenario loading, scoring mechanics, and threshold evaluation verified.")
+        print(
+            "  -> Deterministic scenario loading, scoring mechanics, and threshold evaluation verified."
+        )
         print("Gate D Real-Model Evaluation:  [NOT VERIFIED]")
-        print("  -> Offline test doubles cannot provide evidence of real probabilistic model compliance.")
+        print(
+            "  -> Offline test doubles cannot provide evidence of real probabilistic model compliance."
+        )
     else:
         status_str = "PASSED" if summary.gate_d_passed else "FAILED"
-        print(f"Gate D Real-Model Evaluation:  [{status_str}] (Criteria: >=30 cases, >=98.0% schema adherence)")
+        print(
+            f"Gate D Real-Model Evaluation:  [{status_str}] (Criteria: >=30 cases, >=98.0% schema adherence)"
+        )
     print("=" * 75)
 
 
@@ -322,7 +332,9 @@ async def run_evaluation(
         print(f"Error importing OllamaAdapter: {ex}")
         return 1
 
-    adapter = OllamaAdapter(endpoint=base_url, default_model=model)
+    adapter = OllamaAdapter(
+        endpoint=base_url, default_model=model, timeout_seconds=240.0, max_retries=0
+    )
     is_healthy = await adapter.check_health()
     if not is_healthy:
         print("=" * 75)
@@ -354,7 +366,9 @@ async def run_evaluation(
         print("=" * 75)
         return 1
 
-    service = FeedbackExtractionService(client=adapter, model=matching_model, max_corrective_retries=1)
+    service = FeedbackExtractionService(
+        client=adapter, model=matching_model, max_corrective_retries=1
+    )
     summary, _ = await evaluate_service(service, scenarios, mode="live")
     print_report(summary)
     return 0 if summary.gate_d_passed else 1
@@ -374,7 +388,7 @@ def main() -> int:
         help="Path to evaluation dataset JSONL file",
     )
     parser.add_argument("--base-url", default="http://localhost:11434", help="Ollama base URL")
-    parser.add_argument("--model", default="llama3.2", help="Model name to evaluate")
+    parser.add_argument("--model", default="qwen2.5:7b", help="Model name to evaluate")
     args = parser.parse_args()
 
     return asyncio.run(
@@ -388,4 +402,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

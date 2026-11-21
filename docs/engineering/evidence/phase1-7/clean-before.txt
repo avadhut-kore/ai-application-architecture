@@ -1,0 +1,28 @@
+
+======================================================================
+WORKFLOW INSTANCE: wf-clean-live-final
+======================================================================
+  Definition:         customer_account_remediation (v1.1.0)
+  Status:             AWAITING_APPROVAL
+  Current Step:       human_approval
+  Checkpoint Version: 5
+  Initiator Actor:    operator_bob (senior_agent)
+  Integrity Checksum: bad4c70ceba0dc2c...
+  Step History Count: 3
+----------------------------------------------------------------------
+HUMAN APPROVAL RECORD:
+  Approval ID:       app-c5eced50b3b9
+  Status:            PENDING
+  Action ID:         act-wf-clean-live-final-mutation_execution-3d12578b8e5e6277
+  Capability:        apply_fee_credit
+  Canonical Args:    {"amount_cents":1000,"customer_id":"cust-001","reason":"Accidental overdraft fee during platform outage; verified by recent activity log."}
+  Reason:            Remediation requires human approval: Proposing a $10.00 fee credit for the accidental overdraft fee during the platform outage, subject to approval.
+  Decided At:        None
+  Consumed At:       None
+----------------------------------------------------------------------
+Persisted Account Balance: 15000 cents
+STEP EXECUTION HISTORY:
+  - Step: intake_validation         Status: succeeded  Outcome: valid_input
+  - Step: context_gathering         Status: succeeded  Outcome: context_loaded
+  - Step: agentic_investigation     Status: succeeded  Outcome: fee_credit
+======================================================================

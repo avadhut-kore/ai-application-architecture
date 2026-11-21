@@ -55,7 +55,10 @@ class MockAuthorizationPolicy:
         capability: CapabilityMetadata,
         arguments: Mapping[str, Any],
     ) -> AuthorizationDecision:
-        if "admin" in actor.permissions or capability.side_effect_level == SideEffectLevel.READ_ONLY:
+        if (
+            "admin" in actor.permissions
+            or capability.side_effect_level == SideEffectLevel.READ_ONLY
+        ):
             return AuthorizationDecision(allowed=True, reason="Authorized")
         return AuthorizationDecision(allowed=False, reason="Actor lacks permission")
 
@@ -73,7 +76,9 @@ class MockApprovalHandler:
         arguments: Mapping[str, Any],
     ) -> ApprovalDecision:
         if self.should_approve:
-            return ApprovalDecision(approved=True, approver="test_supervisor", reason="Test approved")
+            return ApprovalDecision(
+                approved=True, approver="test_supervisor", reason="Test approved"
+            )
         return ApprovalDecision(approved=False, approver="test_supervisor", reason="Test rejected")
 
 
@@ -173,7 +178,9 @@ class TestAgentContracts(unittest.TestCase):
         approver = MockApprovalHandler(should_approve=True)
         self.assertIsInstance(approver, ApprovalPort)
 
-        meta = CapabilityMetadata("credit", "apply credit", {}, SideEffectLevel.STATE_MUTATING, True)
+        meta = CapabilityMetadata(
+            "credit", "apply credit", {}, SideEffectLevel.STATE_MUTATING, True
+        )
         actor = AgentActor("agent1", "support", ["credit"])
 
         res = asyncio.run(approver.request_approval(actor, meta, {"amount": 2500}))

@@ -1,0 +1,39 @@
+
+======================================================================
+WORKFLOW INSTANCE: wf-clean-live-final
+======================================================================
+  Definition:         customer_account_remediation (v1.1.0)
+  Status:             COMPLETED
+  Current Step:       terminal_completed
+  Checkpoint Version: 9
+  Initiator Actor:    operator_bob (senior_agent)
+  Integrity Checksum: 7e01d075a5f7ed8c...
+  Step History Count: 6
+----------------------------------------------------------------------
+HUMAN APPROVAL RECORD:
+  Approval ID:       app-c5eced50b3b9
+  Status:            CONSUMED
+  Action ID:         act-wf-clean-live-final-mutation_execution-3d12578b8e5e6277
+  Capability:        apply_fee_credit
+  Canonical Args:    {"amount_cents":1000,"customer_id":"cust-001","reason":"Accidental overdraft fee during platform outage; verified by recent activity log."}
+  Reason:            CLI APPROVED action
+  Decided At:        1795228930.7644548
+  Consumed At:       1795228930.8312995
+----------------------------------------------------------------------
+DURABLE MUTATION LEDGER:
+  Action ID:         act-wf-clean-live-final-mutation_execution-3d12578b8e5e6277
+  Mutation Status:   EXECUTED
+  Capability:        apply_fee_credit
+  Canonical Args:    {"amount_cents":1000,"customer_id":"cust-001","reason":"Accidental overdraft fee during platform outage; verified by recent activity log."}
+  Receipt Status:    succeeded
+  Receipt Summary:   Executed apply_fee_credit (succeeded)
+----------------------------------------------------------------------
+Persisted Account Balance: 16000 cents
+STEP EXECUTION HISTORY:
+  - Step: intake_validation         Status: succeeded  Outcome: valid_input
+  - Step: context_gathering         Status: succeeded  Outcome: context_loaded
+  - Step: agentic_investigation     Status: succeeded  Outcome: fee_credit
+  - Step: human_approval            Status: succeeded  Outcome: approval_granted
+  - Step: mutation_execution        Status: succeeded  Outcome: mutation_succeeded
+  - Step: finalization              Status: succeeded  Outcome: finalized
+======================================================================

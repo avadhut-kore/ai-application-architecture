@@ -16,7 +16,7 @@ Modern AI engineering frequently suffers from structural anti-patterns: simple p
 
 This repository exists to replace ad-hoc AI scripting with **disciplined software architecture**.
 
-```
+```text
                            AI Application System Topology
 
  ┌────────────────────────────────────────────────────────────────────────┐
@@ -108,11 +108,21 @@ Consult the authoritative standards in `docs/architecture/`:
 
 ## 6. Current Phase Status
 
-> [!IMPORTANT]
-> **Phase Status: Phase 6 — Agentic Task Execution (IMPLEMENTED — PENDING INDEPENDENT CODEX AUDIT)**
-> Phase 6 implements the repository's first bounded, tool-using agentic capabilities with explicit authorization controls:
-> * **Model Context Protocol Adapter (Tier 3)**: [`platform/mcp-adapter/`](platform/mcp-adapter/) implementing provider-neutral JSON-RPC 2.0 tool discovery and execution over stdio with capability allowlisting.
-> * **Bounded Agent Execution Reference Pattern (Tier 2)**: [`examples/agent-execution/`](examples/agent-execution/) demonstrating bounded ReAct reasoning loops, typed action proposals, capability registry with JSON schema validation, application-controlled authorization policies (RBAC, limits, security holds), mandatory Human-in-the-Loop (HITL) approval gates for state mutations, centralized tool execution with idempotency caching, and untrusted observation framing.
-> * **Phase 6 Agent Evaluation**: Automated 32-scenario versioned evaluation dataset (`examples/agent-execution/eval_dataset.jsonl`) measuring zero-tolerance safety invariants (0 unauthorized mutations, 0 unapproved required mutations, 0 unknown capability executions, 0 post-rejection executions, 0 max-step violations). Running with `--mode fake` validates deterministic evaluation harness mechanics, cycle detection, and invariant scoring; it does not verify live LLM probabilistic quality. As a Tier 2 Pattern Example, authoritative Gate D applicability follows [`QUALITY-GATES.md`](QUALITY-GATES.md#gate-d--ai-evaluation).
-> * **Verification**: Run `python3 examples/agent-execution/verify.py` or `python3 examples/agent-execution/eval_runner.py --mode fake` to execute the reference evaluation harness, or `python3 examples/agent-execution/demo.py --scenario mutation-approve` for demonstration.
-> * Consult [ROADMAP.md](ROADMAP.md) for complete roadmap details.
+Implementation extends through the **Phase 7 Tier 2 single-agent workflow baseline**.
+Current verification and independent acceptance are tracked in the
+[remediation evidence record](docs/engineering/phase1-7-remediation.md), with scope
+owned by [ROADMAP.md](ROADMAP.md) and explained in [ADR-0012](adr/0012-phase1-7-verification-and-local-recovery.md).
+
+### Reproduce the locked environment
+
+```powershell
+python -m pip install uv==0.13.9
+uv sync --frozen
+uv run --frozen python scripts/validate.py
+uv run --frozen python scripts/quality.py
+```
+
+Deterministic tests require no models or paid API keys. Runtime demos use real
+local inference; explicitly selected `--mode fake` runs only verify harnesses.
+Follow [local setup](docs/setup/local-ai-environment.md) for model installation.
+Generated verification logs are written to `.quality/`; CI retains them as artifacts.

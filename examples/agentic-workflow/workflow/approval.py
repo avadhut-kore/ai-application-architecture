@@ -101,7 +101,7 @@ class DurableApprovalRecord:
 
 
 class WorkflowApprovalVerifier:
-    """Pre-execution approval verification ensuring all 7 security bindings match."""
+    """Check execution, definition and lifecycle bindings before an approved mutation."""
 
     @staticmethod
     def verify(
@@ -111,8 +111,20 @@ class WorkflowApprovalVerifier:
         capability: CapabilityMetadata,
         arguments: Mapping[str, Any],
         actor: AgentActor,
+        expected_definition_id: str | None = None,
+        expected_definition_version: str | None = None,
     ) -> None:
         """Verify that a durable approval record authorizes the intended capability execution."""
+        if (
+            expected_definition_id is not None
+            and record.workflow_definition_id != expected_definition_id
+        ):
+            raise ApprovalMismatchError("Approval definition ID mismatch")
+        if (
+            expected_definition_version is not None
+            and record.workflow_definition_version != expected_definition_version
+        ):
+            raise ApprovalMismatchError("Approval definition version mismatch")
         # 1. Check approval lifecycle status
         if record.status == ApprovalStatus.CONSUMED:
             raise ApprovalReplayError(

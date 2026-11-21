@@ -55,7 +55,7 @@ How should the repository structure and implement its first concrete AI model ex
 ### Option 3: Pure Standard Library Direct HTTP Adapter behind `TextGenerationPort` (Chosen)
 * **Description**: Implement `OllamaAdapter` using Python standard library `urllib.request` and `json` executed asynchronously via `asyncio.to_thread`.
 * **Pros**:
-  * Zero external runtime dependencies; 100% portable across Python 3.9+.
+  * Zero external runtime dependencies; 100% portable across Python 3.11+.
   * Precise control over HTTP request serialization, streaming boundaries, headers, and timeouts.
   * Native translation of HTTP status codes and connection errors into the bounded `AiError` taxonomy.
   * Direct support for `asyncio.CancelledError` and bounded exponential backoff retries on transient errors.
@@ -123,15 +123,13 @@ How should the repository structure and implement its first concrete AI model ex
 
 ---
 
-## 7. Compliance with Quality Gates
+## 7. Verification status
 
-* **Gate A — Architecture & Structural Boundaries**: Inward dependency direction strictly enforced. Applications depend only on contracts; zero Ollama imports in application or domain layers.
-* **Gate B — Code Quality & Type Safety**: Pure Python typing with standard library dataclasses, enums, and protocols; external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
-* **Gate C — Software Testing**: 63 hermetic unit tests cover request formatting, response parsing, error mapping, bounded retry, and schema validation using in-memory test doubles; statement coverage measurement: *Not Verified*.
-* **Gate D — AI Evaluation**: Versioned 30-scenario dataset (`eval_dataset.jsonl`) and automated evaluation runner measuring authoritative schema adherence ($\ge 0.98$) and adversarial handling.
-* **Gate E — Security & Safety**: Zero committed credentials; model outputs treated strictly as untrusted data; no model generation directly executed as code or query.
-* **Gate F — Observability & Telemetry**: Basic latency measurements and token usage metrics recorded at the adapter boundary; distributed OpenTelemetry trace exporter: *Deferred*.
-* **Gate G — Performance & Sizing**: Latency measurements recorded at the adapter boundary; formal memory leak tests and TTFT benchmarks: *Not Verified*.
-* **Gate H — Documentation & Architectural Integrity**: Comprehensive READMEs conforming to Tier 2 and Tier 3 templates; Mermaid architecture diagrams; all links validated via `validate-docs.py`.
-* **Gate I — Demo & Operational Verification**: Single-command demonstration script runs locally in $< 1$ minute under Mode A; live mode verified against local Ollama.
-* **Gate J — Production Readiness & Resilience**: Bounded timeouts on all calls; selective retry with backoff on transient errors; production circuit breaker orchestration: *Not Verified* (Tier 1 concern).
+The original Phase 4 verification snapshot is superseded by
+[ADR-0012](0012-phase1-7-verification-and-local-recovery.md) and the
+[current evidence report](../docs/engineering/phase1-7-remediation.md).
+The current baseline enforces strict typing, lint and module coverage and emits
+local OpenTelemetry SDK spans. Metadata alone is not Gate F evidence. Tier 2
+examples and Tier 3 runtime adapters retain their different gate applicability.
+Formal Tier 1 performance/resilience certification and independent acceptance
+remain outside this ADR's implementation approval.

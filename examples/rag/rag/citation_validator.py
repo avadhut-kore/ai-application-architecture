@@ -31,9 +31,10 @@ class CitationValidationResult:
 
 
 class CitationValidator:
-    """Validates citations to ensure that claims originate strictly from retrieved evidence.
+    """Checks citation identifiers against the supplied evidence chunks.
 
-    Protects against citation spoofing (where an LLM invents or hallucinates source identifiers).
+    Rejects invented or unavailable identifiers. Identifier membership does not
+    establish semantic support for an answer's claims.
     """
 
     def __init__(self, document_catalog: Optional[Mapping[str, Document]] = None) -> None:

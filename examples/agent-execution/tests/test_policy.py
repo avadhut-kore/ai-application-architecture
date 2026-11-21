@@ -36,14 +36,20 @@ class TestAuthorizationPolicy(unittest.TestCase):
         self.add_note = UpdateCustomerNoteCapability(self.store)
 
         self.junior = AgentActor(actor_id="j1", role="junior_agent", permissions=["support"])
-        self.senior = AgentActor(actor_id="s1", role="senior_agent", permissions=["support", "credit_approval"])
+        self.senior = AgentActor(
+            actor_id="s1", role="senior_agent", permissions=["support", "credit_approval"]
+        )
         self.guest = AgentActor(actor_id="g1", role="guest", permissions=[])
 
     def test_read_only_allowed_for_internal_staff(self) -> None:
-        dec = self.policy.authorize(self.junior, self.get_cust.metadata, {"customer_id": "cust-001"})
+        dec = self.policy.authorize(
+            self.junior, self.get_cust.metadata, {"customer_id": "cust-001"}
+        )
         self.assertTrue(dec.allowed)
 
-        dec_guest = self.policy.authorize(self.guest, self.get_cust.metadata, {"customer_id": "cust-001"})
+        dec_guest = self.policy.authorize(
+            self.guest, self.get_cust.metadata, {"customer_id": "cust-001"}
+        )
         self.assertFalse(dec_guest.allowed)
         self.assertIn("cannot access operational data", dec_guest.reason)
 

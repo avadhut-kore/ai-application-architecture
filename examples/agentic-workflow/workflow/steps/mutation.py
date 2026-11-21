@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import time
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import Any, Callable, Mapping, Optional
 
 from contracts.agent import (
     AgentActor,
@@ -46,15 +46,20 @@ class MutationExecutionStep:
         self.requires_approval = requires_approval
         self.reconciler = reconciler
 
-    def _find_approval_record(self, state: WorkflowState, action_id: str) -> Optional[DurableApprovalRecord]:
+    def _find_approval_record(
+        self, state: WorkflowState, action_id: str
+    ) -> Optional[DurableApprovalRecord]:
         approval_record = self.store.load_approval_by_action_id(action_id)
         if not approval_record:
             approval_id = state.domain_context.get("pending_approval_id")
             if approval_id:
                 approval_record = self.store.load_approval(approval_id)
+        if approval_record is not None and not isinstance(approval_record, DurableApprovalRecord):
+            raise TypeError("Invalid approval record")
         return approval_record
 
     async def execute(self, state: WorkflowState) -> StepOutcome:
+        approval_record: Optional[DurableApprovalRecord] = None
         target_args = dict(state.domain_context.get("target_arguments", {}))
         if not target_args and "remediation_proposal" in state.domain_context:
             prop_dict = state.domain_context.get("remediation_proposal", {})
@@ -81,6 +86,16 @@ class MutationExecutionStep:
         # 1. Idempotency & In-Flight Recovery Check: Inspect Durable Mutation Ledger
         existing_mutation = self.store.load_mutation(action_id)
         if existing_mutation:
+            if (
+                existing_mutation.workflow_id != state.workflow_id
+                or existing_mutation.capability_name != self.capability.metadata.name
+                or existing_mutation.canonical_args != canonical_args
+            ):
+                return StepOutcome(
+                    StepExecutionStatus.FAILED,
+                    "action_identity_mismatch",
+                    error_message="Durable action identity does not match requested operation",
+                )
             if existing_mutation.status == MutationStatus.EXECUTED:
                 receipt = existing_mutation.execution_receipt or ExecutionReceipt(
                     action_id=action_id,
@@ -131,7 +146,10 @@ class MutationExecutionStep:
                     )
 
                     approval_record = self._find_approval_record(state, action_id)
-                    if approval_record and approval_record.status in (ApprovalStatus.APPROVED, ApprovalStatus.PENDING):
+                    if approval_record and approval_record.status in (
+                        ApprovalStatus.APPROVED,
+                        ApprovalStatus.PENDING,
+                    ):
                         consumed_approval = DurableApprovalRecord(
                             approval_id=approval_record.approval_id,
                             workflow_id=approval_record.workflow_id,
@@ -152,7 +170,9 @@ class MutationExecutionStep:
                             execution_receipt_id=receipt.action_id,
                             expires_at=approval_record.expires_at,
                         )
-                        self.store.atomic_commit_mutation_and_approval(reconciled_mutation, consumed_approval)
+                        self.store.atomic_commit_mutation_and_approval(
+                            reconciled_mutation, consumed_approval
+                        )
                     else:
                         self.store.save_mutation(reconciled_mutation)
 
@@ -208,8 +228,12 @@ class MutationExecutionStep:
                 return StepOutcome(
                     status=StepExecutionStatus.FAILED,
                     outcome_type="mutation_failed",
-                    error_message=existing_mutation.execution_receipt.error_message if existing_mutation.execution_receipt else "Previous mutation failed.",
-                    receipts=(existing_mutation.execution_receipt,) if existing_mutation.execution_receipt else (),
+                    error_message=existing_mutation.execution_receipt.error_message
+                    if existing_mutation.execution_receipt
+                    else "Previous mutation failed.",
+                    receipts=(existing_mutation.execution_receipt,)
+                    if existing_mutation.execution_receipt
+                    else (),
                 )
 
         # 2. TOCTOU Authorization Revalidation
@@ -222,9 +246,11 @@ class MutationExecutionStep:
             )
 
         # 3. Pre-Execution Approval Verification (7-point binding check)
-        is_mutating = (self.capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING)
-        requires_approval = self.requires_approval and (self.capability.metadata.requires_approval or is_mutating)
-        approval_record: Optional[DurableApprovalRecord] = None
+        is_mutating = self.capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING
+        requires_approval = (
+            self.requires_approval or self.capability.metadata.requires_approval or is_mutating
+        )
+        approval_record = None
 
         if requires_approval:
             approval_record = self._find_approval_record(state, action_id)
@@ -243,6 +269,8 @@ class MutationExecutionStep:
                     capability=self.capability.metadata,
                     arguments=target_args,
                     actor=actor,
+                    expected_definition_id=state.definition.definition_id,
+                    expected_definition_version=state.definition.version,
                 )
             except Exception as exc:
                 return StepOutcome(
@@ -330,7 +358,9 @@ class MutationExecutionStep:
                 step_name="mutation_execution",
                 capability_name=self.capability.metadata.name,
                 canonical_args=canonical_args,
-                status=MutationStatus.FAILED,
+                status=MutationStatus.AMBIGUOUS
+                if receipt.status == "ambiguous"
+                else MutationStatus.FAILED,
                 execution_receipt=receipt,
                 created_at=in_flight_mutation.created_at,
                 updated_at=now,

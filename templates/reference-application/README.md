@@ -44,7 +44,7 @@ Key architectural tenets:
 
 ### Prerequisites
 * Operating System: macOS, Linux, or Windows (WSL2).
-* Local Runtime: Language baseline (e.g. Python 3.11+, .NET 8, Node 20+, or Java 21).
+* Local Runtime: Language baseline (e.g. Python 3.11+, .NET 10, Node 24+, or Java 21).
 * Model Runtime / Provider: (e.g. local engine such as Ollama running target open-weight model, or configured provider adapter).
 
 ### Setup & Execution

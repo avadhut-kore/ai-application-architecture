@@ -4,7 +4,11 @@
 
 TypeScript is the repository's **primary language for web demonstration interfaces, streaming client applications, and lightweight Node.js gateway services**.
 
-* **Runtime Baseline**: **Node.js 20 LTS** (or modern browser runtimes for frontends).
+* **Runtime Baseline**: **Node.js 24 LTS** (or modern browser runtimes for frontends).
+  * Use a supported LTS line, including newer LTS releases where compatible;
+    check the [official release schedule](https://github.com/nodejs/Release).
+    Node 20 is end-of-life. This standards update does not install or certify a
+    TypeScript application in the current Python reference baseline.
 * **Language Baseline**: Modern ECMAScript / TypeScript with strict mode enabled (`"strict": true`).
 * **Linter & Formatter**: **ESLint** (with `@typescript-eslint`) and **Prettier**.
 * **Test Runner**: **Vitest** for fast, native TypeScript unit testing; **Playwright** for end-to-end browser testing where justified.

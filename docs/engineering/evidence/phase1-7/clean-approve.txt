@@ -1,0 +1,19 @@
+
+[DEMO RESUME] Resuming workflow 'wf-clean-live-final' from 'D:\company\products\ai-application-architecture\.quality\clean-live-final.db'...
+Decision: APPROVED
+Approver: manager_jane
+Reason:   CLI APPROVED action
+
+======================================================================
+WORKFLOW INSTANCE: wf-clean-live-final
+======================================================================
+  Definition:         customer_account_remediation (v1.1.0)
+  Status:             COMPLETED
+  Current Step:       terminal_completed
+  Checkpoint Version: 9
+  Initiator Actor:    operator_bob (senior_agent)
+  Integrity Checksum: 7e01d075a5f7ed8c...
+  Step History Count: 6
+----------------------------------------------------------------------
+>>> WORKFLOW EXECUTION COMPLETE: COMPLETED <<<
+Physical Execution Receipt: Executed apply_fee_credit (succeeded)

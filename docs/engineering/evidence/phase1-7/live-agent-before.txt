@@ -1,0 +1,42 @@
+
+======================================================================
+AI Application Architecture — Phase 6 Agentic Execution Demo
+======================================================================
+Scenario:    READ — Inspect customer profile for Alice Smith (cust-001)
+Mode:        LIVE
+Approval mode: Human CLI
+Actor:       agent-alice (Role: junior_agent)
+Goal:        Inspect account and risk profile for customer cust-001
+======================================================================
+
+
+----------------------------------------------------------------------
+EXECUTION TRAJECTORY AUDIT LOG
+----------------------------------------------------------------------
+Step 1:
+  Decision Type: ACTION
+  Action Name:   get_customer
+  Arguments:     {'customer_id': 'cust-001'}
+  Authorization: [ALLOWED] Role 'junior_agent' is authorized for read-only access.
+  Receipt ID:    act-1795195742669157900 (Status: SUCCEEDED)
+  Step Latency:  87262.7ms
+
+Step 2:
+  Decision Type: ACTION
+  Action Name:   get_account_status
+  Arguments:     {'customer_id': 'cust-001'}
+  Authorization: [ALLOWED] Role 'junior_agent' is authorized for read-only access.
+  Receipt ID:    act-1795195769418203000 (Status: SUCCEEDED)
+  Step Latency:  26747.5ms
+
+Step 3:
+  Decision Type: CLARIFICATION
+  Step Latency:  33357.8ms
+
+----------------------------------------------------------------------
+FINAL OUTCOME:   [NEEDS_CLARIFICATION]
+FINAL ANSWER:    Based on the current observations, should we proceed with any actions or further inspections?
+TOTAL STEPS:     3
+TOTAL RECEIPTS:  2
+TOTAL LATENCY:   147370.7ms
+======================================================================

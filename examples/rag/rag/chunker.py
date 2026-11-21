@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from .document import Chunk, Document, make_chunk_id
 
@@ -23,13 +23,15 @@ class HeadingAwareChunker:
         min_chunk_chars: int = 50,
         overlap_chars: int = 0,
     ) -> None:
-        if max_chunk_chars <= min_chunk_chars:
+        if min_chunk_chars < 0 or max_chunk_chars <= 0 or max_chunk_chars <= min_chunk_chars:
             raise ValueError(
                 f"max_chunk_chars ({max_chunk_chars}) must be greater than min_chunk_chars ({min_chunk_chars})"
             )
         self.max_chunk_chars = max_chunk_chars
         self.min_chunk_chars = min_chunk_chars
         self.overlap_chars = overlap_chars
+        if overlap_chars < 0 or overlap_chars >= max_chunk_chars:
+            raise ValueError("overlap_chars must be nonnegative and smaller than chunk size")
 
     def chunk_document(self, document: Document) -> List[Chunk]:
         """Split a document into deterministic chunks preserving section context."""
@@ -79,7 +81,11 @@ class HeadingAwareChunker:
                 # Top level header with no immediate text before subheadings
                 continue
 
-            full_section_text = f"## {heading_title}\n\n{section_body}".strip() if section_body else f"## {heading_title}"
+            full_section_text = (
+                f"## {heading_title}\n\n{section_body}".strip()
+                if section_body
+                else f"## {heading_title}"
+            )
 
             if len(full_section_text) <= self.max_chunk_chars:
                 chunk = Chunk(
@@ -116,6 +122,18 @@ class HeadingAwareChunker:
     ) -> List[Chunk]:
         """Split a long text block into bounded chunks preserving paragraph boundaries."""
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+        capacity = self.max_chunk_chars - len(section_prefix)
+        if capacity <= self.overlap_chars:
+            raise ValueError("Heading and overlap exceed chunk budget")
+        bounded: List[str] = []
+        for paragraph in paragraphs:
+            offset = 0
+            while len(paragraph) - offset > capacity:
+                bounded.append(paragraph[offset : offset + capacity])
+                offset += capacity - self.overlap_chars
+            if paragraph[offset:]:
+                bounded.append(paragraph[offset:])
+        paragraphs = bounded
         if not paragraphs:
             return []
 

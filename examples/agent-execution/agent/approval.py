@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, TextIO
 
 from contracts.agent import (
     AgentActor,
@@ -16,7 +16,9 @@ from contracts.agent import (
 class DeterministicApprovalHandler(ApprovalPort):
     """Deterministic, non-interactive approval handler for automated testing and CI evaluation."""
 
-    def __init__(self, default_approved: bool = True, canned_decisions: Optional[Mapping[str, bool]] = None) -> None:
+    def __init__(
+        self, default_approved: bool = True, canned_decisions: Optional[Mapping[str, bool]] = None
+    ) -> None:
         self.default_approved = default_approved
         self.canned_decisions: Dict[str, bool] = dict(canned_decisions or {})
         self.recorded_requests: List[Dict[str, Any]] = []
@@ -28,12 +30,14 @@ class DeterministicApprovalHandler(ApprovalPort):
         arguments: Mapping[str, Any],
     ) -> ApprovalDecision:
         action_id = str(arguments.get("action_id", ""))
-        self.recorded_requests.append({
-            "actor_id": actor.actor_id,
-            "capability_name": capability.name,
-            "arguments": dict(arguments),
-            "action_id": action_id,
-        })
+        self.recorded_requests.append(
+            {
+                "actor_id": actor.actor_id,
+                "capability_name": capability.name,
+                "arguments": dict(arguments),
+                "action_id": action_id,
+            }
+        )
 
         if action_id in self.canned_decisions:
             is_approved = self.canned_decisions[action_id]
@@ -58,7 +62,9 @@ class DeterministicApprovalHandler(ApprovalPort):
 class CliApprovalHandler(ApprovalPort):
     """Interactive CLI approval handler prompting a human operator before state mutations."""
 
-    def __init__(self, stdin_stream=sys.stdin, stdout_stream=sys.stdout) -> None:
+    def __init__(
+        self, stdin_stream: TextIO = sys.stdin, stdout_stream: TextIO = sys.stdout
+    ) -> None:
         self.stdin = stdin_stream
         self.stdout = stdout_stream
 

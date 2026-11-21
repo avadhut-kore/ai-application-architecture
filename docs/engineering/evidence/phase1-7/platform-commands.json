@@ -1,0 +1,135 @@
+{
+  "linux": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "--env",
+      "VALIDATION_SOURCE=/validation/source-release-5b49fe8db6",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linux-release-native.sh"
+    ],
+    "exit_code": 0
+  },
+  "diagrams": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "scripts/validate-diagrams.py"
+    ],
+    "exit_code": 0
+  },
+  "linux_constrained_attempt": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "1g",
+      "--cpus",
+      "2",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linuxverify.sh"
+    ],
+    "exit_code": 1
+  },
+  "linux_copy_interrupted_attempt": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linuxverify-native.sh"
+    ],
+    "exit_code": 1
+  },
+  "linux_shell_line_ending_attempt": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linuxverify-native.sh"
+    ],
+    "exit_code": 2
+  },
+  "linux_previous_direct_quality": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "--env",
+      "UV_PROJECT_ENVIRONMENT=/validation/venv",
+      "--env",
+      "UV_CACHE_DIR=/validation/cache",
+      "--env",
+      "QUALITY_OUTPUT=/repo/.quality-linux",
+      "-w",
+      "/validation/source-final",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      "-c",
+      "python -m pip install --quiet uv==0.13.9 && uv run --frozen python scripts/quality.py"
+    ],
+    "exit_code": 0,
+    "validation": "scripts/validate.py passed in the retained preceding native-volume run; corrected direct quality command follows in the same log."
+  },
+  "linux_reused_snapshot_cache_attempt": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linuxverify-native.sh"
+    ],
+    "exit_code": 1
+  }
+}

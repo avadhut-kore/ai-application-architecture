@@ -23,14 +23,20 @@ class TestContextBuilder(unittest.TestCase):
     """Test suite verifying context formatting, delimiters, and budget limits."""
 
     def setUp(self) -> None:
-        self.chunk1 = Chunk(chunk_id="doc1#c0", document_id="doc1", chunk_index=0, text="First evidence passage.")
-        self.chunk2 = Chunk(chunk_id="doc2#c0", document_id="doc2", chunk_index=0, text="Second evidence passage.")
-        self.chunk3 = Chunk(chunk_id="doc3#c0", document_id="doc3", chunk_index=0, text="Third evidence passage.")
+        self.chunk1 = Chunk(
+            chunk_id="doc1#c0", document_id="doc1", chunk_index=0, text="First evidence passage."
+        )
+        self.chunk2 = Chunk(
+            chunk_id="doc2#c0", document_id="doc2", chunk_index=0, text="Second evidence passage."
+        )
+        self.chunk3 = Chunk(
+            chunk_id="doc3#c0", document_id="doc3", chunk_index=0, text="Third evidence passage."
+        )
 
     def test_empty_results_handling(self) -> None:
         builder = ContextBuilder()
         res = builder.build_context([])
-        self.assertIn("[NO RELEVANT EVIDENCE FOUND]", res.formatted_context)
+        self.assertEqual(res.formatted_context, "")
         self.assertEqual(res.chunks_count, 0)
         self.assertEqual(res.included_chunk_ids, [])
 

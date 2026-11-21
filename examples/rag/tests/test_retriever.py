@@ -22,9 +22,25 @@ from rag.test_doubles import DeterministicEmbeddingStub
 from rag.vector_index import InMemoryVectorIndex
 
 
-
 class TestRetriever(unittest.TestCase):
     """Test suite verifying semantic retrieval decoupled from LLM generation."""
+
+    def test_primary_document_tail_policy_preserves_ceiling_and_cross_document_head(self):
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock
+
+        port = SimpleNamespace(
+            embed=AsyncMock(return_value=SimpleNamespace(embeddings=[[1.0, 0.0]]))
+        )
+        for last_document, expected in (("third", 2), ("primary", 3)):
+            index = InMemoryVectorIndex(dimensions=2)
+            for number, document in enumerate(("primary", "secondary", last_document)):
+                index.add(Chunk(str(number), document, number, "Evidence"), [1.0, number * 0.1])
+            retriever = Retriever(port, index, prefer_primary_document=True)
+            result = asyncio.run(retriever.retrieve("query", top_k=3))
+            self.assertEqual(len(result), expected)
+            self.assertEqual([row.document_id for row in result[:2]], ["primary", "secondary"])
+            self.assertEqual(len(asyncio.run(retriever.retrieve("query", top_k=2))), 2)
 
     def setUp(self) -> None:
         self.embedding_stub = DeterministicEmbeddingStub(dimensions=16)
@@ -42,9 +58,24 @@ class TestRetriever(unittest.TestCase):
 
     def test_retrieval_flow_and_ranking(self) -> None:
         # Create test chunks
-        chunk1 = Chunk(chunk_id="chunk-retention", document_id="doc1", chunk_index=0, text="audit log retention for 7 years")
-        chunk2 = Chunk(chunk_id="chunk-password", document_id="doc2", chunk_index=0, text="password requirements 16 chars")
-        chunk3 = Chunk(chunk_id="chunk-vacation", document_id="doc3", chunk_index=0, text="annual leave policy 25 days")
+        chunk1 = Chunk(
+            chunk_id="chunk-retention",
+            document_id="doc1",
+            chunk_index=0,
+            text="audit log retention for 7 years",
+        )
+        chunk2 = Chunk(
+            chunk_id="chunk-password",
+            document_id="doc2",
+            chunk_index=0,
+            text="password requirements 16 chars",
+        )
+        chunk3 = Chunk(
+            chunk_id="chunk-vacation",
+            document_id="doc3",
+            chunk_index=0,
+            text="annual leave policy 25 days",
+        )
 
         # Index chunks with deterministic embeddings
         req = asyncio.run(
@@ -58,7 +89,9 @@ class TestRetriever(unittest.TestCase):
         self.index.add_batch([chunk1, chunk2, chunk3], req.embeddings)
 
         # Retrieve with query closely matching chunk1
-        results = asyncio.run(self.retriever.retrieve("what is audit log retention period?", top_k=2))
+        results = asyncio.run(
+            self.retriever.retrieve("what is audit log retention period?", top_k=2)
+        )
 
         self.assertEqual(len(results), 2)
         # Top rank must be chunk1

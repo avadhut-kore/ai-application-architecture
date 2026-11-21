@@ -10,7 +10,7 @@ Python is the repository's **primary language for AI-native services, RAG pipeli
 * **Linter & Formatter**: **`ruff`**.
   * *Rationale for `ruff`*: Consolidates Flake8, Black, isort, and Bandit rules into a single high-performance tool.
 * **Static Type Checker**: **`mypy`** configured in strict mode (`--strict`).
-* **Test Runner**: **`pytest`** with `pytest-asyncio` and `pytest-cov`.
+* **Test Runner**: **`pytest`** with `pytest-asyncio` and `pytest-cov` for new applications. Existing Tier 2/3 patterns retain `unittest` and `IsolatedAsyncioTestCase` under [ADR-0012](../../adr/0012-phase1-7-verification-and-local-recovery.md); the same assertion, isolation and coverage gates apply.
 
 ---
 
@@ -46,7 +46,7 @@ apps/<app-name>/
 ## 3. Strict Type Hinting & Validation
 
 ### 3.1 Strict Typing with Mypy
-* All functions, methods, and module interfaces must specify type annotations for all parameters and return types.
+* All production functions, methods, and module interfaces must specify type annotations for all parameters and return types. Strict checks cover runtime packages, composition roots and verification scripts. Existing hermetic test fixtures are linted and executed; they are not represented as passing strict typing.
 * `mypy` strict mode must be enabled in `pyproject.toml`:
   ```toml
   [tool.mypy]
@@ -58,10 +58,11 @@ apps/<app-name>/
   ```
 
 ### 3.2 Runtime Schema Enforcement with Pydantic v2
-* All structured external inputs (HTTP requests, environment settings, and **AI model structured responses**) must be validated using **Pydantic v2** models.
+* All structured external inputs (HTTP requests, environment settings, and **AI model structured responses**) require strict runtime validation. **Pydantic v2** is the default for new applications. Existing standard-library reference patterns may use typed dataclasses with explicit strict validation under [ADR-0012](../../adr/0012-phase1-7-verification-and-local-recovery.md); wrong types, unknown fields and domain-invalid values must fail closed.
 * Use `model_config = ConfigDict(frozen=True, extra="forbid")` on DTOs and value objects to enforce immutability and prevent unexpected payload pollution:
   ```python
   from pydantic import BaseModel, ConfigDict, Field
+
 
   class ExtractInvoiceResponse(BaseModel):
       model_config = ConfigDict(frozen=True, extra="forbid")
@@ -102,8 +103,10 @@ apps/<app-name>/
   class AppBaseException(Exception):
       """Base exception for all application domain errors."""
 
+
   class SchemaValidationError(AppBaseException):
       """Raised when model output fails structural validation."""
+
 
   class ProviderUnavailableError(AppBaseException):
       """Raised when upstream AI provider is unreachable or times out."""

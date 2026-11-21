@@ -1,0 +1,104 @@
+{
+  "format": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.164
+  },
+  "lint": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "."
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.191
+  },
+  "docs": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "scripts/validate-docs.py"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.65
+  },
+  "bandit": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "bandit",
+      "-r",
+      "building-blocks/python/contracts",
+      "building-blocks/python/ai_telemetry",
+      "platform",
+      "examples",
+      "-x",
+      "tests,test_doubles.py",
+      "-ll"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.736
+  },
+  "export": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\uv.exe",
+      "export",
+      "--frozen",
+      "--no-dev",
+      "--format",
+      "requirements-txt",
+      "--output-file",
+      ".venv/runtime-requirements.txt"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.156
+  },
+  "audit": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pip_audit",
+      "-r",
+      ".venv/runtime-requirements.txt"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 42.652
+  },
+  "compose": {
+    "command": [
+      "docker",
+      "compose",
+      "--env-file",
+      ".env.example",
+      "config",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.384
+  },
+  "diff": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.083
+  },
+  "external": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      ".venv/check_external_links.py"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.421
+  }
+}

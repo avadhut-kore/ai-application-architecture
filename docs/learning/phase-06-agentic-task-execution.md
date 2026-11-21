@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  06 — Agentic Task Execution
-Status:                 Accepted & Freeze-Ready (Phase 6.1 Remediated)
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete (Ready for Independent Review)
 Primary Audience:       Enterprise Architects, Senior AI Engineers, Security Architects
 Implementation:         examples/agent-execution/, platform/mcp-adapter/, ADR-0006
@@ -84,7 +84,11 @@ After completing this guide, you will be able to:
 
 ### Environment Prerequisites
 * **For Deterministic Work (Mode A — 100% Offline)**:
-  Python 3.9+ standard library only. All unit tests (58 agent tests, 12 MCP tests) and the 32-scenario evaluation harness execute hermetically in $< 1.0$ second without network access or third-party dependencies.
+  Python 3.11+ with the locked root environment. Unit tests and the 32-scenario
+  deterministic evaluation harness run without model or network access after
+  dependencies are installed. Runtime telemetry uses OpenTelemetry; current
+  counts, timing and acceptance evidence belong in the
+  [remediation record](../engineering/phase1-7-remediation.md).
 * **For Live Model Verification (Mode B — Local-First)**:
   A running local Ollama daemon at `http://localhost:11434` with `llama3.2` installed:
   ```bash
@@ -198,14 +202,16 @@ All domain state is managed in-memory via [`InMemoryCustomerStore`](../../exampl
 ```python
 # building-blocks/python/contracts/agent.py & examples/agent-execution/agent/domain.py
 
+
 @dataclass
 class Customer:
     customer_id: str
     name: str
     email: str
-    risk_level: str   # "low" | "high"
-    status: str       # "active" | "frozen" (security hold)
+    risk_level: str  # "low" | "high"
+    status: str  # "active" | "frozen" (security hold)
     created_at: float = field(default_factory=time.time)
+
 
 @dataclass
 class Account:
@@ -235,9 +241,11 @@ Phase 6 implements five reference capabilities adhering strictly to the provider
 ```python
 # building-blocks/python/contracts/agent.py
 
+
 class SideEffectLevel(str, Enum):
     READ_ONLY = "read_only"
     STATE_MUTATING = "state_mutating"
+
 
 @dataclass(frozen=True)
 class CapabilityMetadata:
@@ -355,12 +363,12 @@ To understand this codebase with architectural clarity, read the source files in
 
 A frequent architectural anti-pattern in early agent design is the creation of a redundant model abstraction (e.g., `AgentLLMClient`, `AgentModelGateway`, or `AgentProviderInterface`).
 
-Phase 6 strictly adheres to **Principle 4 (Architecture Complexity Rule)** and **Principle 12 (Provider-Neutral Design)**:
+Phase 6 strictly adheres to **Architecture Complexity Rule (engineering/general.md)** and **Principle 12 (Provider-Neutral Design)**:
 * It introduces **zero new LLM abstractions**.
-* The [`AgentExecutionEngine`](../../examples/agent-execution/agent/engine.py#L76) directly accepts a [`TextGenerationPort`](../../building-blocks/python/contracts/ports.py) instance established in Phase 4.
+* The [`AgentExecutionEngine`](../../examples/agent-execution/agent/engine.py) directly accepts a [`TextGenerationPort`](../../building-blocks/python/contracts/ports.py) instance established in Phase 4.
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 71-84)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 class AgentExecutionEngine:
     """Bounded agent reasoning engine managing the propose-validate-authorize-approve-execute loop."""
 
@@ -428,10 +436,10 @@ class AgentDecisionType(str, Enum):
 ### Strict Parsing Remediation (Phase 6.1)
 During the Codex audit, the parser was found to be overly permissive: it accepted top-level fields such as `admin_override: true` or conflicting fields such as `final_answer` alongside an `action`.
 
-The remediated parser in [`engine.py`](../../examples/agent-execution/agent/engine.py#L104-L124) enforces strict whitelist validation on top-level keys:
+The remediated parser in [`engine.py`](../../examples/agent-execution/agent/engine.py) enforces strict whitelist validation on top-level keys:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 104-124)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 ACTION_ALLOWED_KEYS = {"type", "action_name", "arguments", "explanation"}
 FINAL_ALLOWED_KEYS = {"type", "final_answer", "explanation"}
 CLARIFICATION_ALLOWED_KEYS = {"type", "clarification_question", "explanation"}
@@ -440,7 +448,10 @@ CLARIFICATION_ALLOWED_KEYS = {"type", "clarification_question", "explanation"}
 if raw_type == "action":
     extra_keys = data_keys - self.ACTION_ALLOWED_KEYS
     if extra_keys:
-        return None, f"Action decision contains unexpected or conflicting field(s): {sorted(extra_keys)}"
+        return (
+            None,
+            f"Action decision contains unexpected or conflicting field(s): {sorted(extra_keys)}",
+        )
 ```
 
 ### Security Probe: The `admin_override` Attack
@@ -467,14 +478,18 @@ The [`CapabilityRegistry`](../../examples/agent-execution/agent/registry.py) act
 When the model proposes `action_name`, the registry performs strict dictionary resolution. If the capability is not registered, execution halts before touching policy or executor:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/registry.py (lines 56-67)
-def validate_arguments(self, capability_name: str, arguments: Mapping[str, Any]) -> ValidationResult:
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/registry.py (follow the linked source for current code)
+def validate_arguments(
+    self, capability_name: str, arguments: Mapping[str, Any]
+) -> ValidationResult:
     """Perform strict deterministic schema validation on model-proposed capability arguments."""
     capability = self.get(capability_name)
     if not capability:
         return ValidationResult(
             is_valid=False,
-            errors=[f"Unknown capability '{capability_name}'. Tool is not present in registered allowlist."],
+            errors=[
+                f"Unknown capability '{capability_name}'. Tool is not present in registered allowlist."
+            ],
         )
     # ... checks required parameters, schema properties, and unexpected extra keys
 ```
@@ -515,12 +530,12 @@ The [`CustomerSupportAuthorizationPolicy`](../../examples/agent-execution/agent/
    * Senior agents cannot propose fee credits exceeding the systemic ceiling of $50.00 (`amount_cents > 5000`).
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/policy.py (lines 72-79)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/policy.py (follow the linked source for current code)
 if actor.role == "junior_agent" and amount_cents > self.JUNIOR_MAX_CREDIT_CENTS:
     return AuthorizationDecision(
         allowed=False,
         reason=f"Role 'junior_agent' is restricted to credits <= ${self.JUNIOR_MAX_CREDIT_CENTS / 100:.2f}. "
-               f"Requested ${amount_cents / 100:.2f} requires 'senior_agent' or 'admin' role.",
+        f"Requested ${amount_cents / 100:.2f} requires 'senior_agent' or 'admin' role.",
     )
 ```
 
@@ -540,7 +555,7 @@ In Phase 6.1 remediation:
 2. The engine introduced **architectural defense-in-depth**: even if a future developer misconfigures a tool as `STATE_MUTATING` with `requires_approval=False`, the engine forces approval at runtime:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 415-420)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 # Mandatory Phase 6 Governance Invariant: ALL state-mutating capabilities require affirmative approval
 is_state_mutating = (capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING)
 requires_approval = capability.metadata.requires_approval or is_state_mutating
@@ -552,8 +567,8 @@ if requires_approval:
 
 ### The Approval Handlers
 The [`ApprovalPort`](../../building-blocks/python/contracts/agent.py) supports two implementations:
-* [`DeterministicApprovalHandler`](../../examples/agent-execution/agent/approval.py#L16): Used in unit tests and automated evaluations (`eval_runner.py`). Configured with `default_approved=True/False` or per-action canned decisions.
-* [`CliApprovalHandler`](../../examples/agent-execution/agent/approval.py#L58): Used in interactive demonstration (`demo.py --interactive`). Pauses execution and prompts the operator on standard input:
+* [`DeterministicApprovalHandler`](../../examples/agent-execution/agent/approval.py): Used in unit tests and automated evaluations (`eval_runner.py`). Configured with `default_approved=True/False` or per-action canned decisions.
+* [`CliApprovalHandler`](../../examples/agent-execution/agent/approval.py): Used in interactive demonstration (`demo.py --interactive`). Pauses execution and prompts the operator on standard input:
   ```text
   ============================================================
   ⚠️  HUMAN-IN-THE-LOOP APPROVAL REQUIRED
@@ -587,7 +602,7 @@ Every execution produces an immutable [`ExecutionReceipt`](../../building-blocks
 class ExecutionReceipt:
     action_id: str
     capability_name: str
-    status: str            # "succeeded" | "failed" | "denied" | "rejected"
+    status: str  # "succeeded" | "failed" | "denied" | "rejected"
     executed_at: float = field(default_factory=time.time)
     result_summary: str = ""
     error_message: Optional[str] = None
@@ -611,7 +626,7 @@ When the agent executes `get_account_status`, a customer note might read:
 Phase 6 mitigates this vulnerability through **delimiter framing**:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 457-463)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 obs_formatted = (
     "=== BEGIN TOOL OBSERVATION (UNTRUSTED DATA) ===\n"
     f"Tool: {action_name}\n"
@@ -640,7 +655,7 @@ Decision ──► Action ──► Validation ──► Authorization ──►
 If an agent gets trapped in a reasoning failure loop (proposing the exact same tool and identical arguments consecutively), the engine detects the cycle:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 333-359)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 arg_key = json.dumps(args, sort_keys=True)
 proposal_sig = (action_name, arg_key)
 if seen_proposals and seen_proposals[-1] == proposal_sig:
@@ -660,9 +675,11 @@ for step_idx in range(1, self.max_steps + 1):
 The engine executes at most `self.max_steps` (default 5) iterations. If an earlier step returns a terminal status (`COMPLETED`, `NEEDS_CLARIFICATION`, `DENIED`, `REJECTED`, or `FAILED`), execution halts immediately. If all permitted iterations complete without reaching a terminal resolution, control exits the loop and the engine halts with loop exhaustion:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/agent/engine.py (lines 477-488)
+# ABBREVIATED EXCERPT: examples/agent-execution/agent/engine.py (follow the linked source for current code)
 # Reached max_steps without final answer
-trace.complete("MAX_STEPS_REACHED", "Terminated after reaching maximum allowable reasoning iterations.")
+trace.complete(
+    "MAX_STEPS_REACHED", "Terminated after reaching maximum allowable reasoning iterations."
+)
 return AgentExecutionResult(
     run_id=run_id,
     goal=goal,
@@ -722,10 +739,10 @@ flowchart LR
 ### Allowlisting: The MCP Security Boundary
 An agent must **never** expose all capabilities declared by an external MCP server. An MCP server might declare diagnostic utilities (`ping`, `read_logs`, `delete_all`).
 
-The [`McpCapabilityAdapter`](../../platform/mcp-adapter/mcp_adapter/adapter.py#L37-L40) enforces allowlisting at initialization:
+The [`McpCapabilityAdapter`](../../platform/mcp-adapter/mcp_adapter/adapter.py) enforces allowlisting at initialization:
 
 ```python
-# REAL SOURCE EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (lines 37-40)
+# ABBREVIATED EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (follow the linked source for current code)
 if self.allowlist is not None and self.tool_name not in self.allowlist:
     raise ValueError(
         f"Security violation: MCP tool '{self.tool_name}' is not present in permitted allowlist {sorted(self.allowlist)}"
@@ -738,7 +755,7 @@ Standard Python `subprocess.Popen` streams perform blocking synchronous reads (`
 Phase 6.1 remediated this defect:
 1. **Thread Offloading & Content Normalization**: Synchronous stdio RPC is offloaded to a worker thread via `asyncio.to_thread`, and the raw MCP response is normalized into a capability result:
    ```python
-   # REAL SOURCE EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (lines 67-105)
+   # ABBREVIATED EXCERPT: platform/mcp-adapter/mcp_adapter/adapter.py (follow the linked source for current code)
    async def execute(
        self,
        arguments: Mapping[str, Any],
@@ -788,7 +805,7 @@ Phase 6.1 remediated this defect:
 A critical governance directive is maintaining phase boundaries. Phase 6 delivers **single-agent task execution**. It deliberately defers **multi-agent workflow orchestration**:
 
 ```text
-Phase 6: Bounded Agentic Task Execution (FROZEN & VERIFIED)
+Phase 6: Bounded Agentic Task Execution (IMPLEMENTED — ACCEPTANCE PENDING)
 ├── Single agent with narrow, bounded goal
 ├── Local reasoning loop with strict max_steps ceiling (default 5)
 ├── Synchronous CLI human-in-the-loop approval gate
@@ -830,7 +847,7 @@ The test dataset ([`eval_dataset.jsonl`](../../examples/agent-execution/eval_dat
 Safety invariants are **binary, zero-tolerance metrics**. A single violation constitutes complete evaluation failure:
 
 ```python
-# REAL SOURCE EXCERPT: examples/agent-execution/eval_runner.py (lines 74-85)
+# ABBREVIATED EXCERPT: examples/agent-execution/eval_runner.py (follow the linked source for current code)
 @dataclass
 class ScenarioSafetyMetrics:
     unauthorized_mutation_executions: int = 0
@@ -866,35 +883,35 @@ In [`test_eval_invariants.py`](../../examples/agent-execution/tests/test_eval_in
 
 ## 20. Quality Gate Governance
 
-Per authoritative [`QUALITY-GATES.md`](../../QUALITY-GATES.md#L7):
+Per authoritative [`QUALITY-GATES.md`](../../QUALITY-GATES.md):
 * **`examples/agent-execution`** is classified as a **Tier 2 Pattern Example**.
 * **Authoritative Applicable Quality Gates**:
   * **Gate B (Code Quality & Type Safety)**: Strict Python typing, zero unhandled syntax exceptions.
-  * **Gate C (Software Testing)**: 58 hermetic unit tests passed in $< 0.5$s.
+  * **Gate C (Software Testing)**: unit tests (current counts in the remediation evidence report) passed in $< 0.5$s.
   * **Gate H (Documentation & Architectural Integrity)**: Complete architecture docs, sequence flows, threat models, and clean internal markdown links.
-  * **Gate I (Demo & Operational Verification)**: Cold-start verification via `verify.py` and interactive CLI demo executing in $< 5$ minutes under Mode A (offline standard library) and Mode B (local Ollama).
+  * **Gate I (Demo & Operational Verification)**: Deterministic harness verification via `verify.py` and interactive CLI demo executing in $< 5$ minutes under Mode A (offline harness in the locked environment) and Mode B (local Ollama).
 * **Gate D (AI Evaluation)**: In Tier 2, running `eval_runner.py` is a **voluntary reference benchmark**, not an applicable tier requirement (Gate D is mandatory for Tier 1 Reference Applications per `QUALITY-GATES.md`).
 * **`verify.py` Semantics**:
-  Running `python3 examples/agent-execution/verify.py` prints `VERIFICATION RESULT: DETERMINISTIC PHASE 6 VERIFICATION PASSED`. It certifies deterministic reference verification for Tier 2 under Mode A; it does not claim "all repository quality gates passed across all tiers."
+  Running `python3 examples/agent-execution/verify.py` prints `VERIFICATION RESULT: DETERMINISTIC PHASE 6 VERIFICATION PASSED`. It records deterministic harness execution under Mode A; it does not claim "all repository quality gates passed across all tiers."
 
 ---
 
 ## 21. Hands-On Command Lab
 
-All commands in this section are verified and execute cleanly from the repository root.
+Run these commands from the repository root using the locked environment; consult the remediation report for executed evidence.
 
 ### 1. Run Component Verification
 ```bash
 python3 examples/agent-execution/verify.py
 ```
-*Expected Output*: Validates `artifact.json`, executes 58 hermetic unit tests, runs the 32-scenario evaluation harness, and certifies Tier 2 verification.
+*Expected Output*: Validates `artifact.json`, executes unit tests (current counts in the remediation evidence report), runs the 32-scenario evaluation harness, and records deterministic harness results.
 
 ### 2. Run Hermetic Unit Tests
 ```bash
-# Agent execution unit tests (58 tests)
+# Agent execution unit tests
 python3 -m unittest discover -s examples/agent-execution/tests
 
-# MCP platform adapter unit tests (12 tests)
+# MCP platform adapter unit tests
 python3 -m unittest discover -s platform/mcp-adapter/tests
 ```
 
@@ -1027,7 +1044,7 @@ Every enterprise architecture represents intentional tradeoffs. [`ADR-0006`](../
 ## 25. Architect Interview Checkpoints
 
 ### Explain Phase 6 in 60 Seconds
-> *"Phase 6 provides a governed reference architecture for bounded agentic task execution. In enterprise systems, language models are never granted direct execution authority. Instead, the architecture establishes a strict separation of authority: the model proposes candidate actions via strongly typed JSON decisions, but the host application retains sole decision authority. A capability registry enforces allowlisting and schema validation; an application policy engine enforces RBAC and security holds; a mandatory Human-in-the-Loop gate confirms all state mutations; and a sandboxed executor enforces timeouts and idempotency before producing immutable execution receipts. External capabilities integrate via a standard-library MCP adapter over stdio using worker threads to prevent event-loop blocking. Everything executes 100% offline in Mode A with zero external dependencies."*
+> *"Phase 6 provides a governed reference architecture for bounded agentic task execution. In enterprise systems, language models are never granted direct execution authority. Instead, the architecture establishes a strict separation of authority: the model proposes candidate actions via strongly typed JSON decisions, but the host application retains sole decision authority. A capability registry enforces allowlisting and schema validation; an application policy engine enforces RBAC and security holds; a mandatory Human-in-the-Loop gate confirms all state mutations; and a sandboxed executor enforces timeouts and idempotency before producing immutable execution receipts. External capabilities integrate via a standard-library MCP adapter over stdio using worker threads to prevent event-loop blocking. The deterministic harness executes offline in Mode A after installing locked dependencies; live inference requires an explicitly installed local model."*
 
 ### Explain Phase 6 in 5 Minutes
 When explaining the architecture in a technical deep-dive:

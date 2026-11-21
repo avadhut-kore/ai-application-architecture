@@ -1,0 +1,1396 @@
+{
+  "base_commit": "02f782f79d511f63ad5c4a3d0f7675f9df6b04d5",
+  "source_files": [
+    {
+      "path": ".env.example",
+      "sha256": "8d97ec0e0892aa64d2e431f915ee71809d0a6305af8dcc64c783b7c163ff717b",
+      "bytes": 364
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "1d928c847a4a4eb66ee9d8d35f4e8adbc61d4b13a8dd31954bb1211483a97678",
+      "bytes": 4302
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "3326e43d1815747c219b08cb04ec439794398ea53ffe1f7bbc157ad4a8ebdcf4",
+      "bytes": 1026
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "64bfebbf5378603c90d3cf2f3cbcd809d13054d5f44d1a329c98124a2e37421d",
+      "bytes": 10660
+    },
+    {
+      "path": "QUALITY-GATES.md",
+      "sha256": "f6213cac97765a1a488606f8a9a8e3449bf6fb3e2edf9baa5ce3163bfcf88b67",
+      "bytes": 10502
+    },
+    {
+      "path": "README.md",
+      "sha256": "7ef99c5bdd3bad7bbec7489992559d99dd69b33ffa992a0141149adee9022aad",
+      "bytes": 10640
+    },
+    {
+      "path": "ROADMAP.md",
+      "sha256": "fe8c6f5c5743bebb79ebad10c394a307c5ab5a7c36970bd424cb1c9db5c2af3e",
+      "bytes": 17615
+    },
+    {
+      "path": "SCOPE.md",
+      "sha256": "63e71c7cbd2b0a6e2f15fd0331ac6559e22aea7b36369b9f41cc5781a1c96138",
+      "bytes": 4343
+    },
+    {
+      "path": "VISION.md",
+      "sha256": "be9b8b379faf9665e2bd71f63cd2c339612d0472a26fdaba33c03ea4e2de3687",
+      "bytes": 4896
+    },
+    {
+      "path": "adr/0001-minimum-core-contracts-and-repository-foundation.md",
+      "sha256": "d7961bd1bb9a47c031191fc4155cee2c7b9830d370264c43d0d438902a83f0b3",
+      "bytes": 9027
+    },
+    {
+      "path": "adr/0002-tiered-reference-implementation-templates.md",
+      "sha256": "c8f4e5948778718c14de085cbf913a97b96c700814ac72e2ffb9e87a68bf2233",
+      "bytes": 9434
+    },
+    {
+      "path": "adr/0003-provider-neutral-model-adapter-and-ai-foundations.md",
+      "sha256": "58f2522e3d8f57355700e2a33fff1e6fe0309485c639668b26bfbf2d04b3701c",
+      "bytes": 9186
+    },
+    {
+      "path": "adr/0004-knowledge-intelligence-and-rag-architecture.md",
+      "sha256": "9b93197201657d0e9b11c3833d50456934ec999a71faa63da72a63a490dbcf34",
+      "bytes": 9087
+    },
+    {
+      "path": "adr/0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md",
+      "sha256": "33f4254c99acf79e368dc5a242d944444146bc46474bb4accdba686c574566bd",
+      "bytes": 7777
+    },
+    {
+      "path": "adr/0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md",
+      "sha256": "4d594071b5422ac58030744334b7f80167f50d571c66c5cfb1a3bd1578931456",
+      "bytes": 5868
+    },
+    {
+      "path": "adr/0007-capability-safety-boundaries-and-human-in-the-loop-approval.md",
+      "sha256": "5d3e38e87b23e5b8e767cd30a6c0cae7335362a850615f8135e5c0e415aaa43c",
+      "bytes": 5100
+    },
+    {
+      "path": "adr/0008-model-context-protocol-as-external-capability-adapter.md",
+      "sha256": "8f153969ec842c20443aa4e2fb119482634bdff3fabcd8e6a086a4147de400c5",
+      "bytes": 4586
+    },
+    {
+      "path": "adr/0009-agentic-workflow-orchestration-and-roadmap-reconciliation.md",
+      "sha256": "e4cdfef32305d79e966322ac822224a4508f39d3374f017130ea777d23e23671",
+      "bytes": 6949
+    },
+    {
+      "path": "adr/0010-durable-state-machine-persistence-and-asynchronous-resumability.md",
+      "sha256": "9bd351463d6a1f8f2d09ac78f9fb49186b0d508288d0c6acdd41d3fe83eb9a68",
+      "bytes": 6150
+    },
+    {
+      "path": "adr/0011-workflow-versus-agent-control-and-hitl-harmonization.md",
+      "sha256": "077087c167d23a6f42c4ebff3d7b0e961e5674018cc2ec2631d6f0a220ca77c4",
+      "bytes": 5685
+    },
+    {
+      "path": "adr/0012-phase1-7-verification-and-local-recovery.md",
+      "sha256": "2b79593f302bdf63f28b3f185dad68015f521ccb2d2c2342fdd0fce91842b53e",
+      "bytes": 6287
+    },
+    {
+      "path": "adr/README.md",
+      "sha256": "f73ad3f344c502c2faf16b6a57026f0f386a5dedb290cdc07d495ebc775f1ba6",
+      "bytes": 6494
+    },
+    {
+      "path": "adr/template.md",
+      "sha256": "339a0ade801c7a289b94da9062a2c76f07778e5e559d5a2e540813a362a28ec4",
+      "bytes": 3703
+    },
+    {
+      "path": "apps/README.md",
+      "sha256": "177b2b41cb0dac117f808a85feb6816f66d9717c472563d22529220a9ffd3c60",
+      "bytes": 933
+    },
+    {
+      "path": "building-blocks/README.md",
+      "sha256": "34afe0fa96e0c39232c216b678dc3eda94a4ff14b0c41b092c629215fcfeb51e",
+      "bytes": 914
+    },
+    {
+      "path": "building-blocks/python/README.md",
+      "sha256": "1615275257ec03f6b5e716db2d7218f750b31dfc9dcbebc35e441411220f7870",
+      "bytes": 1065
+    },
+    {
+      "path": "building-blocks/python/ai_telemetry/__init__.py",
+      "sha256": "0cadef1db4ba2a3e8a31f3a886b2770ee623a71e57df4269cdd78ba4ab288f7a",
+      "bytes": 4677
+    },
+    {
+      "path": "building-blocks/python/contracts/__init__.py",
+      "sha256": "7bab3b1eb4c70415120ed5eb5dc4c9658b28165e94ce69f512a8fa405a8ba08b",
+      "bytes": 3253
+    },
+    {
+      "path": "building-blocks/python/contracts/agent.py",
+      "sha256": "95c8870cb91d19dfb54096c8a18ed82f793f132605a0ed831990d6fb16bd8170",
+      "bytes": 4875
+    },
+    {
+      "path": "building-blocks/python/contracts/errors.py",
+      "sha256": "cdce8267a4bf49aa019245cba25c7bd03bb79c6a97455b5f2d48c5231e86a60f",
+      "bytes": 6724
+    },
+    {
+      "path": "building-blocks/python/contracts/evaluation.py",
+      "sha256": "60bdd22720f5440f6948d395816ef0ddec41c976563ead0979ed4849c4d28cbc",
+      "bytes": 2479
+    },
+    {
+      "path": "building-blocks/python/contracts/models.py",
+      "sha256": "604f69ae59a8752ff361f3f86af9ae4127f16fea5e435f27f3a86fb8e084ce85",
+      "bytes": 4593
+    },
+    {
+      "path": "building-blocks/python/contracts/ports.py",
+      "sha256": "0456d0796218ec9298efb7852bb545c8e1665c628e0f1917510042e9fa979512",
+      "bytes": 1590
+    },
+    {
+      "path": "building-blocks/python/contracts/telemetry.py",
+      "sha256": "014c1802051ad52d496e5d6d1587ff7732b8305046c406d5aea3068641799691",
+      "bytes": 1506
+    },
+    {
+      "path": "building-blocks/python/contracts/validation.py",
+      "sha256": "01a358984496439edd4fa197f831e1b9b6be4d67cc6189202442a16ebbd7fd7b",
+      "bytes": 1594
+    },
+    {
+      "path": "building-blocks/python/contracts/workflow.py",
+      "sha256": "7db12bda43f7e1b269f421e4a7139cfaf746c511edba60c4cecd34002e0e8ffd",
+      "bytes": 3253
+    },
+    {
+      "path": "building-blocks/python/pyproject.toml",
+      "sha256": "85ece3287308ab76a4409ffcc9be386e8c640a0426b52881a3de3b2bebebf7b4",
+      "bytes": 1198
+    },
+    {
+      "path": "building-blocks/python/tests/__init__.py",
+      "sha256": "57afa725a5e14c7b41e3cb9c775d7565bbe1354dab89405fad9d8ff86c1c3f01",
+      "bytes": 292
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_missing_docs/README.md",
+      "sha256": "b706aa76451d91d7e249266a75c7f7acee9e2ce189e14ccaa490bdaead9d2f79",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_missing_docs/artifact.json",
+      "sha256": "5df09fc51ed52fccfefb18337ef0d1f751b8e48c95814f0d031509612adc089b",
+      "bytes": 228
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_mode/README.md",
+      "sha256": "fe6441709480f24d67a3a5243302d5a8d504582499722eb99120b18025e2b5a7",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_mode/artifact.json",
+      "sha256": "8506050253cb2625bf81f7c980d00693f067dcf35035e0666202d5a7cf3e564b",
+      "bytes": 251
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_status/README.md",
+      "sha256": "0c091eaf857e2ad1d478362c194e86945db70c33eea3b336c93a04f00aa07d03",
+      "bytes": 26
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_status/artifact.json",
+      "sha256": "99b61104f6f499ed6af6645312421e21089b1778dc54ce10b9e68cf8aa26ef3a",
+      "bytes": 239
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_taxonomy/README.md",
+      "sha256": "b730595c741cd8c98ac8fd92d320e5c7a2f29fbc2fdbb53e56c38744bdd9bbf0",
+      "bytes": 28
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_taxonomy/artifact.json",
+      "sha256": "82af8f3ea9e4bb5ba484e5dfdbf481779f4866baa7d15ec69574cf830fda2bc7",
+      "bytes": 274
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_tier_number/README.md",
+      "sha256": "ec9601d1118871712062bc2209c08a7305bc28faffeee699edeab64226bdf27b",
+      "bytes": 31
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/invalid_tier_number/artifact.json",
+      "sha256": "31216474484559b2e7f3011fc85315802bc0dc27f419043e09e7834ffec44401",
+      "bytes": 228
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/nested_discovery/patterns/nested_invalid/artifact.json",
+      "sha256": "79f91c9d1f34b77c19775540f8e8b425c330f1593cfb9e22fb28b12f3a7a358e",
+      "bytes": 244
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/nested_discovery/patterns/nested_valid/README.md",
+      "sha256": "58be0ad90eb4eb54d1a609e06834a48fdf518d9fcebd254cf4d0a86b453d5db7",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/nested_discovery/patterns/nested_valid/artifact.json",
+      "sha256": "f65f669b6d0d49f1cd94a050bff09d57d7e7ecf44c8054a34f7a4aebafa7fb00",
+      "bytes": 292
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier1/README.md",
+      "sha256": "77d015b859d92e1161c40e1032f8a2bf27e6f99087d61ab7072fb74d8593f9b2",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier1/artifact.json",
+      "sha256": "427574a3e9744c430d8827c77c347bd5ea3dba4d73a2814289f58a0b4d6d93c2",
+      "bytes": 284
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier1/docs/architecture.md",
+      "sha256": "5d472ba6d9421aebb8bff0f0926029c18d01261dd928ded83377e1097c85a446",
+      "bytes": 16
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier1/docs/quality.md",
+      "sha256": "289500a43543b2ae38bc4a8726b5470ac932f2a900b854ad4f4ec8d82c798cba",
+      "bytes": 11
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier1/docs/requirements.md",
+      "sha256": "8ae8d763102f34531703e52cdde1bae37ddb1ade3d7994da49e1f895c83eb058",
+      "bytes": 16
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier2/README.md",
+      "sha256": "95538e70c858fd2aabf61c8245dd0e742aeec8f06b541116c3156114a004f72e",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier2/artifact.json",
+      "sha256": "39b87da3e60541c79343f747067abed849cf6fc49282b9d5609ec5a667128e65",
+      "bytes": 254
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier3/README.md",
+      "sha256": "5660c954544b9379b9071c79129acd267bd91a928e867fb2ea566ded6937d7a9",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier3/artifact.json",
+      "sha256": "69fc4d9e870c3fe91a73a8092cb1f679a40f32a7db8d529b87a30d794dd5890f",
+      "bytes": 230
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier4/README.md",
+      "sha256": "18fcc3510d221b26ca6d4f26d18c32a305d3e1f49e4bca5877bbb941f84136cb",
+      "bytes": 24
+    },
+    {
+      "path": "building-blocks/python/tests/fixtures/valid_tier4/artifact.json",
+      "sha256": "65863648e41bdb149d6bce5d361020b60d1e7228e558362a221adc3b66adad49",
+      "bytes": 228
+    },
+    {
+      "path": "building-blocks/python/tests/test_agent_contracts.py",
+      "sha256": "459db2545d74efb3ba9ecad861b23b3ce71f8cc0e7a8715b643a66eef8b9d78a",
+      "bytes": 7617
+    },
+    {
+      "path": "building-blocks/python/tests/test_documentation_validation.py",
+      "sha256": "97b734b1ddc0ed3113f3217b0bdf460d683f0e386ea5fa5d845d58505a50c10a",
+      "bytes": 1602
+    },
+    {
+      "path": "building-blocks/python/tests/test_errors.py",
+      "sha256": "5c1e0a7c53aae29c4955085f6497ea0760f90debacd275e21bb515e330942dde",
+      "bytes": 3362
+    },
+    {
+      "path": "building-blocks/python/tests/test_evaluation.py",
+      "sha256": "303c3ed233ada9ea68666c0536069a6821ab72ee4305af171906f0205cd1329f",
+      "bytes": 2692
+    },
+    {
+      "path": "building-blocks/python/tests/test_models.py",
+      "sha256": "b168f46120c01de821cde0c9c58c3807262083d88ad38065cf264471d890d85a",
+      "bytes": 5990
+    },
+    {
+      "path": "building-blocks/python/tests/test_ports.py",
+      "sha256": "9b3725807b96d8e6d78f4d85a05debeacee2d417bc2b2cc86dda9cea17237d66",
+      "bytes": 5826
+    },
+    {
+      "path": "building-blocks/python/tests/test_telemetry.py",
+      "sha256": "6c4e06e85efa6f5c735a0529c0ba0b799b67cf242b5092b85a14a9e3ac25a21f",
+      "bytes": 7254
+    },
+    {
+      "path": "building-blocks/python/tests/test_templates.py",
+      "sha256": "c9ddb1baa7209ace3db0b6475caf33cbaa752f97a490adf081688fd4b541466f",
+      "bytes": 5743
+    },
+    {
+      "path": "building-blocks/python/tests/test_validate_script.py",
+      "sha256": "d4b4a180038b309cab54a716f3f47540366750c47403ef17488139bd8771a7d5",
+      "bytes": 3915
+    },
+    {
+      "path": "building-blocks/python/tests/test_validation.py",
+      "sha256": "9f6fd8824aa1a331a6a9fbe85a9cf42163af02466088a2f5a96d23edda658448",
+      "bytes": 1723
+    },
+    {
+      "path": "building-blocks/python/tests/test_workflow_contracts.py",
+      "sha256": "03b02578c2dff96584aafcb10cbfda555a8cd7ccfa5c027bc2cf4468aa8ed443",
+      "bytes": 5061
+    },
+    {
+      "path": "compose.yaml",
+      "sha256": "e25fa7349bac03ea898f61a65943cb43835e07e3af306492f6f04269d48ab68a",
+      "bytes": 426
+    },
+    {
+      "path": "docs/architecture/anti-patterns.md",
+      "sha256": "c9752a684d056903a035dc439cd41c28a912440168617116b6ba37a04092829f",
+      "bytes": 6877
+    },
+    {
+      "path": "docs/architecture/language-strategy.md",
+      "sha256": "6d17fc8c5fb93b00fc2274336506d58e55a610e14e98e1ab613d166094b0b885",
+      "bytes": 7137
+    },
+    {
+      "path": "docs/architecture/local-first.md",
+      "sha256": "6134540618ae417831c2c2c1bfb274cb62e2e64436ac729b59d434b47aa2a48d",
+      "bytes": 6777
+    },
+    {
+      "path": "docs/architecture/principles.md",
+      "sha256": "fced1ecacc8819f5a630a491608f829e93cdb3c26c614c9001cc19863ea6a58f",
+      "bytes": 9579
+    },
+    {
+      "path": "docs/architecture/reference-standard.md",
+      "sha256": "28bd67c3c0155017f0114d9d93035d5fdbc3c5e5c5f831f258dee0c7ccd3e48e",
+      "bytes": 7488
+    },
+    {
+      "path": "docs/architecture/repository-structure.md",
+      "sha256": "f8c7eb7e4ba5992caa1a4c95a5d67c43b05812bff6903ca893e0cee9bae46dd6",
+      "bytes": 7393
+    },
+    {
+      "path": "docs/architecture/taxonomy.md",
+      "sha256": "89a375d228ddf3c008f93f48f3cee59b51d1ca9ab7d3c72a11780f0f037d4933",
+      "bytes": 16204
+    },
+    {
+      "path": "docs/architecture/technology-governance.md",
+      "sha256": "45359b226c7d8305466749cd82c265589652582ab7bf8b7d1d27a75f87336a47",
+      "bytes": 4536
+    },
+    {
+      "path": "docs/engineering/README.md",
+      "sha256": "220be3009c9c1f93d892ab1d845f92b0f778b2b96ba9c82d374da0cc9ac09076",
+      "bytes": 10250
+    },
+    {
+      "path": "docs/engineering/ai-evaluation.md",
+      "sha256": "576e04bba5fe7d91b56eea90fcb97054a8ffe46ca7f88d09444ba21ea887be8a",
+      "bytes": 9518
+    },
+    {
+      "path": "docs/engineering/api-design.md",
+      "sha256": "b20578a99cc4b83708f9c22c48da9d4bc195ebf16dd795db0df85e99a6f74243",
+      "bytes": 5215
+    },
+    {
+      "path": "docs/engineering/configuration.md",
+      "sha256": "4a8e4ffe7f13ccd5522d397a5450d9856687ace90512cf6d72d6573791a80916",
+      "bytes": 8278
+    },
+    {
+      "path": "docs/engineering/data.md",
+      "sha256": "9314621914ec3526e88ff4a2aa18e165d593ccd11360b026c29e377e3105d2e2",
+      "bytes": 5118
+    },
+    {
+      "path": "docs/engineering/definition-of-done.md",
+      "sha256": "88b897f25939bac3c27034d7686a0d8e708efaa2f35f2f908a4b2f542af3d1f0",
+      "bytes": 8204
+    },
+    {
+      "path": "docs/engineering/dependencies.md",
+      "sha256": "f56ad5e6ed935accdf07baa065f8e37e8d816b73c758c20ff99e761f48758bdd",
+      "bytes": 5699
+    },
+    {
+      "path": "docs/engineering/documentation.md",
+      "sha256": "5b8f9c6f3975d3fb6a8120ad0ede2622d30271b5659a12cebc6156482106b229",
+      "bytes": 4203
+    },
+    {
+      "path": "docs/engineering/dotnet.md",
+      "sha256": "7cf8a5f377bfa029cf00ead897c0bba53e124b121a6e253416f94aa8f3ee8e5f",
+      "bytes": 6402
+    },
+    {
+      "path": "docs/engineering/general.md",
+      "sha256": "0a43e7139e114aa7732fcb86260b5d913dfb606931c3aa355c804f6f7fc0b84c",
+      "bytes": 5321
+    },
+    {
+      "path": "docs/engineering/git-workflow.md",
+      "sha256": "8cb96be5477e5157d5a425b14848f35668aafbcda7dd5bcafa2603ea1819b0db",
+      "bytes": 4896
+    },
+    {
+      "path": "docs/engineering/java.md",
+      "sha256": "4512244f2c87214e12477337f555bc742c5f0da6cb3ad9ae9dd0a3dcc1ff6f3b",
+      "bytes": 8653
+    },
+    {
+      "path": "docs/engineering/observability.md",
+      "sha256": "2c8dfd21eccec4c121927343bdbb6d50761cd85417e220ef77d5f3ab27bce93c",
+      "bytes": 6315
+    },
+    {
+      "path": "docs/engineering/phase1-7-remediation.md",
+      "sha256": "845853b042cbcd0dfbd13fbe0e0f94e7fd3c7b0485cb571218c3cc836ca40ac8",
+      "bytes": 20040
+    },
+    {
+      "path": "docs/engineering/python.md",
+      "sha256": "20de6f856a6b116948b90a5b43aae9e7522c81b7d7c9bdae5f16788aa4d6c8dc",
+      "bytes": 6068
+    },
+    {
+      "path": "docs/engineering/reliability.md",
+      "sha256": "dc71bc61ea1a60b31483c6f7b549b9781bd509b0d42ce6c695a064000fba114b",
+      "bytes": 7915
+    },
+    {
+      "path": "docs/engineering/security.md",
+      "sha256": "b4946985429e298f161cff0515367b3e91d51b78ae2a1c160f483a8d788b49cb",
+      "bytes": 7560
+    },
+    {
+      "path": "docs/engineering/testing.md",
+      "sha256": "bd771b54aca520876019502e039ec7354c6ce5578703ef669d4f84cb35246915",
+      "bytes": 6807
+    },
+    {
+      "path": "docs/engineering/typescript.md",
+      "sha256": "3778c62ea3deb1275571a175ec0e1489ccb7f8cb55ae3bbe20331e5d97771030",
+      "bytes": 4239
+    },
+    {
+      "path": "docs/learning/README.md",
+      "sha256": "560d7e4c022f2a4769e47306f8e6c056919ebb76df83f8a043083c74c13987b7",
+      "bytes": 8337
+    },
+    {
+      "path": "docs/learning/phase-00-governance.md",
+      "sha256": "07200abf7239a77e19a802585afcf13b0d4d48d248a40bc7ea2815cd0a71a204",
+      "bytes": 19153
+    },
+    {
+      "path": "docs/learning/phase-01-engineering-standards.md",
+      "sha256": "92d71c8ae2fb7e5e1e0c064f0c901c4fc93441064bfe32a21adf3a3750ece7eb",
+      "bytes": 19526
+    },
+    {
+      "path": "docs/learning/phase-02-repository-foundation.md",
+      "sha256": "e9dce6f7d67244d638510411eb3ccfd83167803b1b13a6626affdce02ffb6ef3",
+      "bytes": 21053
+    },
+    {
+      "path": "docs/learning/phase-03-reference-templates.md",
+      "sha256": "11df2a8134c425625a1fd501b6a75478d1b762d6c626fbae13274ba1184340d5",
+      "bytes": 20018
+    },
+    {
+      "path": "docs/learning/phase-04-ai-foundations.md",
+      "sha256": "1735b3aa0b65003377cf96bb7962bd4fd5e0ab51ca3d3f4e30751373c57a0737",
+      "bytes": 38730
+    },
+    {
+      "path": "docs/learning/phase-05-knowledge-intelligence-rag.md",
+      "sha256": "0e3664372fcdd27f96c9a3c6da702e1154298ee7f2a6a18c8fb12bb8b393d9cb",
+      "bytes": 60325
+    },
+    {
+      "path": "docs/learning/phase-06-agentic-task-execution.md",
+      "sha256": "47a369f8a1e980fbb1f48b0732c959e42eeb4b3dd9fc3c5be979113066162aef",
+      "bytes": 81495
+    },
+    {
+      "path": "docs/learning/phase-07-agentic-workflow-orchestration.md",
+      "sha256": "f4396bfb82a340f4c6dfc6108e58e238bc297bb7a15b398a9267296fb7f7c5ca",
+      "bytes": 70353
+    },
+    {
+      "path": "docs/setup/local-ai-environment.md",
+      "sha256": "0d713ff37a4e291b12fad5b725cb4346557b44fd872e7abc6ceb84d71ed5b0e3",
+      "bytes": 10799
+    },
+    {
+      "path": "examples/agent-execution/README.md",
+      "sha256": "5b9ba1ce583b6cf8528a953003315b36922b922963a2e55a366670b35a01a5e5",
+      "bytes": 11474
+    },
+    {
+      "path": "examples/agent-execution/agent/__init__.py",
+      "sha256": "9925362681091fad130ced5e778e30aec4501a19e415132733d8017394428083",
+      "bytes": 1222
+    },
+    {
+      "path": "examples/agent-execution/agent/approval.py",
+      "sha256": "c6f4becafba67303b7ea548e385367e14636dfec89166dd6d93a0537f8aa3c78",
+      "bytes": 3889
+    },
+    {
+      "path": "examples/agent-execution/agent/capabilities.py",
+      "sha256": "dfdd1b39f57507f72911a95be42f6a247833c630e0439d9e8d988de1556c76b7",
+      "bytes": 12085
+    },
+    {
+      "path": "examples/agent-execution/agent/domain.py",
+      "sha256": "e97de7685decb94affff5de0b5f4d3747e77ba7a5cd320d5ab352fac1e2d5cd4",
+      "bytes": 5049
+    },
+    {
+      "path": "examples/agent-execution/agent/engine.py",
+      "sha256": "6c97b2dd71fd9b87831517f7aed5e850746480115ecc0a07013b45e31b3bc393",
+      "bytes": 28166
+    },
+    {
+      "path": "examples/agent-execution/agent/executor.py",
+      "sha256": "d69d1b46d2ae059d2f4ea65e9658f3ceb3d717053458d58b4897b1bf18ba9295",
+      "bytes": 4609
+    },
+    {
+      "path": "examples/agent-execution/agent/persistence.py",
+      "sha256": "e982c84a4985c8b0355ade81b52fe0b84087b7cb77d787d353507f3f2f486401",
+      "bytes": 5369
+    },
+    {
+      "path": "examples/agent-execution/agent/policy.py",
+      "sha256": "2e305aaaa08f564770c0c356b11a72950c12f716efd2489955d7fdba300cb519",
+      "bytes": 4349
+    },
+    {
+      "path": "examples/agent-execution/agent/registry.py",
+      "sha256": "f74b1f05b940be0772532921b81c5e0635d3e6239caa2aa7be0804b25bee1753",
+      "bytes": 5620
+    },
+    {
+      "path": "examples/agent-execution/agent/test_doubles.py",
+      "sha256": "49b515fb748976d5d42f3168eb2394ef44f78d2bad6add640a5ac0ff065ff31d",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/agent-execution/agent/trace.py",
+      "sha256": "c24460ff0568ddfd429579e1e580be96208d1b2d0dae3dc3f11f65cfc10ad2e1",
+      "bytes": 3180
+    },
+    {
+      "path": "examples/agent-execution/artifact.json",
+      "sha256": "014d54dd109700dedb6b4a1c0cb8bee5685cbfc3dd1f920ea2bd12c5474dc752",
+      "bytes": 376
+    },
+    {
+      "path": "examples/agent-execution/demo.py",
+      "sha256": "e5eec37a438cbd3fe894ad271ce5d2c81d9548b16dc81a37c45ab776135a4765",
+      "bytes": 13037
+    },
+    {
+      "path": "examples/agent-execution/eval_dataset.jsonl",
+      "sha256": "84feb34dd01a48eff29fea72628bf27389fbfa8227c17f51d29b79a6777e420b",
+      "bytes": 19948
+    },
+    {
+      "path": "examples/agent-execution/eval_runner.py",
+      "sha256": "bc844d97851728b36e81a26bdeb8653e5b75db19afef71216010562ef8caa933",
+      "bytes": 27272
+    },
+    {
+      "path": "examples/agent-execution/tests/__init__.py",
+      "sha256": "65bd99a8aa32703cfb60c8945c6ff3b9db14dd54864d310d816e2dceac8399ae",
+      "bytes": 48
+    },
+    {
+      "path": "examples/agent-execution/tests/test_approval.py",
+      "sha256": "922ee69d89609447006e2b480022b83f1b1afeb31f7d11d6d7eac9572c47a825",
+      "bytes": 5676
+    },
+    {
+      "path": "examples/agent-execution/tests/test_capability_boundaries.py",
+      "sha256": "b9fdd735f88f6916df3d9d6e7a1add27d7d2f832683fcd16ba96c68feafbf0f2",
+      "bytes": 2873
+    },
+    {
+      "path": "examples/agent-execution/tests/test_decision_parser.py",
+      "sha256": "19523446606793da15d53fe4b06217a2e3acb88854519148bbd8f5553480bc8d",
+      "bytes": 6536
+    },
+    {
+      "path": "examples/agent-execution/tests/test_engine.py",
+      "sha256": "00f36d937d1c1ec4a2f8422f9914b263992f2dc5393db8a36f5333c2dc988079",
+      "bytes": 24370
+    },
+    {
+      "path": "examples/agent-execution/tests/test_eval_invariants.py",
+      "sha256": "33fa190292163c8f57895212dc5e4d352f77de6652fa45144b2ecf197bc336f0",
+      "bytes": 12441
+    },
+    {
+      "path": "examples/agent-execution/tests/test_executor.py",
+      "sha256": "cac26ededb4cad89d3c2e965c0a565cc080506af4b69b6c62c5fc7cf1c7664c5",
+      "bytes": 8024
+    },
+    {
+      "path": "examples/agent-execution/tests/test_policy.py",
+      "sha256": "8efeacc7c47b3991781d68d0ba0cc36b7935dfbdd56f6c216f38cdf35a9bdd62",
+      "bytes": 4249
+    },
+    {
+      "path": "examples/agent-execution/tests/test_registry.py",
+      "sha256": "1bf7e3aaf0ae42f24cad17945fe28cb9859c698053e525ff15051c90ed405434",
+      "bytes": 3827
+    },
+    {
+      "path": "examples/agent-execution/threat-model.md",
+      "sha256": "1b5ff7d4961a980a6bbf3541494ba49834398eeeea167d75559b1ac2f9a120e0",
+      "bytes": 9111
+    },
+    {
+      "path": "examples/agent-execution/verify.py",
+      "sha256": "26cce63eecf6eb6b8ed0876d0fd2cc33f20c0d8c78adf4fc5990161740ac4518",
+      "bytes": 2737
+    },
+    {
+      "path": "examples/agentic-workflow/README.md",
+      "sha256": "879e0cbc8329880bd065941e08d7f5f9c5c52e44e50aa20a17850a902526d476",
+      "bytes": 15968
+    },
+    {
+      "path": "examples/agentic-workflow/artifact.json",
+      "sha256": "8fc4ce1e04e6fc1f2f7ea996f0ff4c5a8dc4df8e3bcfceeaf88eb485639edb9e",
+      "bytes": 414
+    },
+    {
+      "path": "examples/agentic-workflow/demo.py",
+      "sha256": "2c19242ec518d955efb7a536fd7ef2534e54b6c4523a06256c8d38f3864a6549",
+      "bytes": 14284
+    },
+    {
+      "path": "examples/agentic-workflow/eval_dataset.jsonl",
+      "sha256": "b7cb6f1e74506ea221e5888e86ec1d657c8f935ec70813b8798c61c6fddf9f0d",
+      "bytes": 16771
+    },
+    {
+      "path": "examples/agentic-workflow/eval_runner.py",
+      "sha256": "a9d7c4bf6be6b045b1190bb247a1f0d4908369a7f8543e1495892ec93d973c2e",
+      "bytes": 26800
+    },
+    {
+      "path": "examples/agentic-workflow/live_smoke.py",
+      "sha256": "7c0bffdd65d9640390649425157fe62f18664cb75259c39a599c4f9b42c7aafb",
+      "bytes": 12200
+    },
+    {
+      "path": "examples/agentic-workflow/tests/__init__.py",
+      "sha256": "d2b97471c7b1650a859cbf6893388b8c631a78d87e2e6b3b31c3c2df4a3a4f53",
+      "bytes": 70
+    },
+    {
+      "path": "examples/agentic-workflow/tests/cli_fixture.py",
+      "sha256": "d5362a339eef70e9a1bb717c29449150de5d872d63061aac35e57f1815daa273",
+      "bytes": 1419
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_agentic_step.py",
+      "sha256": "93a40c6de137d9817ffc8942d8c2e45c8a92be95e9748a3615198a972892bdae",
+      "bytes": 6653
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_approval.py",
+      "sha256": "1a3a2e77e860c5ce40a63bdc99e6eb08a3eaf0bb042acaf0399738790395d4ce",
+      "bytes": 11538
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_concurrency.py",
+      "sha256": "af0d47996de0ac53a63740ec5e76ee7ac2cd754a66ef2663307f6c2179b0ca35",
+      "bytes": 6266
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_engine.py",
+      "sha256": "7a1648e061798d9c2d33cb89ac8d03a87fe5564955d3356c24b6d9c7beaa1807",
+      "bytes": 10055
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_engine_boundaries.py",
+      "sha256": "202442fb6ad977bc65e8fc4cc84a4c052c82d68e71e7837058bd9c343a2dde29",
+      "bytes": 5012
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_evaluator_regressions.py",
+      "sha256": "3e79115dd4ec275f12e596db94c19c2a0ed2bfb76a8f70c78e1ad7e5e1c925a9",
+      "bytes": 3260
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_hitl_restart.py",
+      "sha256": "b56ac4c9f54e12483b38ff496fe79cece9cb6f83ab9899abc3c025acc756a444",
+      "bytes": 12330
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_ledger.py",
+      "sha256": "636b27dfebfa4e00cd6c8a3ca5da206a33c865bcc5348e021b70ea419aefba4d",
+      "bytes": 17297
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_mutation_boundaries.py",
+      "sha256": "ce8caf8c09522c03ac9061b92d299273e4e22225833da28e6417f00335e84b25",
+      "bytes": 6017
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_recovery.py",
+      "sha256": "3ec5ae499e03c0e858a6e9d15bae90712a2441651c5b52a2efa10ff8005fd440",
+      "bytes": 7588
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_retry.py",
+      "sha256": "7215c18de9b43b0beb880116a0d1b8654adcd69333de00b8e055917fd91d0e52",
+      "bytes": 2775
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_saga.py",
+      "sha256": "18d45ea137161e8c44dfbb3d97131ec59ddba366a87529644f661528aff6649b",
+      "bytes": 23743
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_security.py",
+      "sha256": "d7f140f81c5223de0a078af05e1d1ed9d543f7843764a3177b1032919c88ea2d",
+      "bytes": 14152
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_state.py",
+      "sha256": "a89e0de15a95e05505d625c26895c2add37a5f6716b82bb445c1177f0e4d9ea3",
+      "bytes": 5097
+    },
+    {
+      "path": "examples/agentic-workflow/tests/test_store.py",
+      "sha256": "47f60985c0c90abcb031972ffe610a983b8f3c05a229da18987e572f137412af",
+      "bytes": 16101
+    },
+    {
+      "path": "examples/agentic-workflow/threat-model.md",
+      "sha256": "56bd5798fcc47d6f9612f63824dd1e3bc7d57758598843163d670e120213799d",
+      "bytes": 11497
+    },
+    {
+      "path": "examples/agentic-workflow/verify.py",
+      "sha256": "389454e06cdc3b4e30da1bc41fd4f85f26211c026e3188f2e67b91278600b62d",
+      "bytes": 4829
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/__init__.py",
+      "sha256": "ca6fbff806d9aed662715ba979fc9851a9d22d0a3117c2776839f813c476163a",
+      "bytes": 2568
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/approval.py",
+      "sha256": "930d98daaec3d705fa4b3b275f99de23cba9a400f0182cc33ac9db27e6c74c84",
+      "bytes": 9100
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/audit.py",
+      "sha256": "0253f52253fd0596d2b42e50df60da69c60ecf41ccb01badcead109177a46224",
+      "bytes": 2493
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/definition.py",
+      "sha256": "6ea9f5050abbe8dd99554f9b7c933c7b1936def09dd49540e41964432ef20e94",
+      "bytes": 6098
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/engine.py",
+      "sha256": "66419a62096b4c22959d84ba00c7f7532ba3f731891e74010a53c67c6e6fdae6",
+      "bytes": 24349
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/errors.py",
+      "sha256": "58710fbaf61258ede7ba807c232e3c878c9eb49740ab0321d39bbb70877611a1",
+      "bytes": 1835
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/ledger.py",
+      "sha256": "952e65c1d154ba180bf56fe0c13108c1bedb92730b9561b1edadc4f0cc443fd0",
+      "bytes": 3597
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/ownership.py",
+      "sha256": "df74fac3a0b26e7e6e36043b952fa3e0f41564e0dcb149757fe17edd7d586590",
+      "bytes": 1860
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/remediation_workflow.py",
+      "sha256": "e4ad2e9ea6a3dd7dc7d4dd623322c3ce6486fa6b879dfdbe365a7079224af607",
+      "bytes": 24977
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/retry.py",
+      "sha256": "0bfd074fbc28d2977bf94c2371719579d2c0cff8d54df2ff31cefffbb30f8682",
+      "bytes": 1309
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/saga.py",
+      "sha256": "89a3aa3410a4ed9a699b9a18983092b0bc6a0235b3b1c84e30458e7630f139db",
+      "bytes": 6022
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/state.py",
+      "sha256": "592115099247133b43b8f800a1b9165d7acb487a975b63212e79e279358a1635",
+      "bytes": 13502
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/steps/__init__.py",
+      "sha256": "42e7c12960daf9b03fcc20afcbd39e347e64aa22caf9cc795327308d6f6e0ef1",
+      "bytes": 525
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/steps/agentic.py",
+      "sha256": "37c2aa34c87849b9c0b6daaee3a503ffa104ba1b777ac4e9989ae9faa779b21e",
+      "bytes": 6825
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/steps/deterministic.py",
+      "sha256": "cba4951f6129945694bb2cf5f219cc9ab6367156421eaf25c248562d57c995aa",
+      "bytes": 3340
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/steps/human.py",
+      "sha256": "145f0ff24935a3a138222f591663c485a360f07e758c5ca57fd57a62caf741e0",
+      "bytes": 2918
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/steps/mutation.py",
+      "sha256": "28444be1bc2a90e3ed2ea67f7d5530e94fdc767a4704255f27975beee28df53b",
+      "bytes": 18045
+    },
+    {
+      "path": "examples/agentic-workflow/workflow/store.py",
+      "sha256": "4d84c7be478dd2c741cdccf57d6e334627274dc8c9bf1df747ff13e1b9e4af07",
+      "bytes": 22315
+    },
+    {
+      "path": "examples/ai-evaluation/README.md",
+      "sha256": "0bfb2a8d72c98f72ef27fe4705f6045a4251641a7043f69e68ce8bd790f3f43a",
+      "bytes": 5707
+    },
+    {
+      "path": "examples/ai-evaluation/__init__.py",
+      "sha256": "271565c2586fcc5e7359f43a3fdbe247af3e218bf7e338c2a66887f4bc40ff92",
+      "bytes": 30
+    },
+    {
+      "path": "examples/ai-evaluation/artifact.json",
+      "sha256": "99ee818021a05fc37d1ad3f6f85fd87689a8c1c81687a2dc4077c4f1c68c8af0",
+      "bytes": 344
+    },
+    {
+      "path": "examples/ai-evaluation/eval_dataset.jsonl",
+      "sha256": "2e5f907011e14f46d102278026f45601e26b0bcd4ef00a5f86b65102744bda88",
+      "bytes": 9815
+    },
+    {
+      "path": "examples/ai-evaluation/results/live_eval_llama3.2.json",
+      "sha256": "159c7bf1a171915c2eeb537d7e9eae90dc345bd31808fbbfc50344676f679c9d",
+      "bytes": 1231
+    },
+    {
+      "path": "examples/ai-evaluation/runner.py",
+      "sha256": "691c1469bdf003dfa91afe90310de70cba0f06b33757d0b954860238da01a5fa",
+      "bytes": 15877
+    },
+    {
+      "path": "examples/ai-evaluation/tests/__init__.py",
+      "sha256": "be900c3d1a40af441dc6bafb0fe171939dfa12b8865341508c124b384a8469ca",
+      "bytes": 33
+    },
+    {
+      "path": "examples/ai-evaluation/tests/test_runner.py",
+      "sha256": "c0931ccbb0b5bd5fae69201979c4f2e7510deabaeec3ba59cf29a57bb6e3310b",
+      "bytes": 10030
+    },
+    {
+      "path": "examples/rag/README.md",
+      "sha256": "2258b9a4344fa6479459d5f74d8b2a529f311a7a6f57335e1ca442eae96f8a31",
+      "bytes": 11535
+    },
+    {
+      "path": "examples/rag/artifact.json",
+      "sha256": "6f977b58bf7575163650d76dfa1b3f065bebf710d540709417c17523be3204ab",
+      "bytes": 352
+    },
+    {
+      "path": "examples/rag/corpus/adversarial-01-prompt-injection.md",
+      "sha256": "53acc00958f498fb354b54f6e14da5a1f03d212d4ac33208b9ed8ca604c8b0ee",
+      "bytes": 787
+    },
+    {
+      "path": "examples/rag/corpus/distractor-01-token-economics.md",
+      "sha256": "4b4b5590f52dd5cb990d04455d62540ff23fe1b098c50c1bec328f632ca6d9ce",
+      "bytes": 892
+    },
+    {
+      "path": "examples/rag/corpus/eng-01-code-review-guidelines.md",
+      "sha256": "350266b5603fc169d9ea6cd763365ecb52c8e7f53a2eb23f687599b17190d23f",
+      "bytes": 1124
+    },
+    {
+      "path": "examples/rag/corpus/eng-02-incident-response-playbook.md",
+      "sha256": "117e853fa39d14e3d133d7258c0a2e1324f44709c1d1a5c8aff0f15a2c7b909e",
+      "bytes": 1272
+    },
+    {
+      "path": "examples/rag/corpus/hr-01-remote-work-policy.md",
+      "sha256": "f2b756a04ec0c517e740c2de2a05589ba56ab49bd42ec299b50be25d17a800fc",
+      "bytes": 968
+    },
+    {
+      "path": "examples/rag/corpus/sec-01-data-retention-policy.md",
+      "sha256": "9b195a513191bfb273f66d6856468f1606a82965cdd8d589eb922a631b51033d",
+      "bytes": 1532
+    },
+    {
+      "path": "examples/rag/corpus/sec-02-access-control-standard.md",
+      "sha256": "78182b445dbaf49436aa4d228a85138206064d35c1d9ae6408aecb5c5000b49f",
+      "bytes": 1254
+    },
+    {
+      "path": "examples/rag/demo.py",
+      "sha256": "5f3ee39f686aa9d9bd6d095428fcb6e06c7f814be366938f72874022680e49e4",
+      "bytes": 9904
+    },
+    {
+      "path": "examples/rag/eval_dataset.jsonl",
+      "sha256": "910e591af51c77860d14536798129dad9dc5f98b85535061794ceb6d0143fd92",
+      "bytes": 12232
+    },
+    {
+      "path": "examples/rag/eval_runner.py",
+      "sha256": "9fa698741d0c6ebfb6e6180e3a3d2a3392a00203228b4653bde4e6e709486283",
+      "bytes": 27086
+    },
+    {
+      "path": "examples/rag/rag/__init__.py",
+      "sha256": "3067bfca1d483d170adf6a07cf78f14be474d064977e4d3796534450d3f39506",
+      "bytes": 1029
+    },
+    {
+      "path": "examples/rag/rag/chunker.py",
+      "sha256": "6544809413a0d050c3f513ef6b0548faba89c0fb30fc2181876cdb0ce62f3bcf",
+      "bytes": 7061
+    },
+    {
+      "path": "examples/rag/rag/citation_validator.py",
+      "sha256": "9d59754d07617a2e123cd102281132981d3e18272b92477e421f6f709681915f",
+      "bytes": 4284
+    },
+    {
+      "path": "examples/rag/rag/context_builder.py",
+      "sha256": "b3b48bb0da7669d407885446da3634167b9924fd25e4097d8c81fac93af833f9",
+      "bytes": 3058
+    },
+    {
+      "path": "examples/rag/rag/document.py",
+      "sha256": "e5483ea450885c69dda1756d609bf23fcaedaf034025602481ba8cb6cdf2adea",
+      "bytes": 1873
+    },
+    {
+      "path": "examples/rag/rag/ingestion.py",
+      "sha256": "80daefad3db8a9b3a8f78fd12b983ce2868da4b523f63b21330b8f2c7439498d",
+      "bytes": 3542
+    },
+    {
+      "path": "examples/rag/rag/retriever.py",
+      "sha256": "028ba30d049e23b8b53d90d8d24c437660d0726553fdb80e7b054d6fa489e75e",
+      "bytes": 3838
+    },
+    {
+      "path": "examples/rag/rag/service.py",
+      "sha256": "7dbb09228f8eb9559fd0204c8b4a1697415730188d58c1fac3b69df2e3a7b509",
+      "bytes": 13790
+    },
+    {
+      "path": "examples/rag/rag/test_doubles.py",
+      "sha256": "76c8a31bb0a2013111f810527939cb22253cee2e3bc707cef54735a5e5c8d3bf",
+      "bytes": 6162
+    },
+    {
+      "path": "examples/rag/rag/vector_index.py",
+      "sha256": "b8e8f5c9f9eeb44b7654ed7f3acecc47f09f7ee4aec4ff09e95204d7e6b524c1",
+      "bytes": 5573
+    },
+    {
+      "path": "examples/rag/results/canonical_eval_report.json",
+      "sha256": "9f10dc0ef84750f0acd3f9b9f98bfc876171db243201784e4bfb619873a762a2",
+      "bytes": 34935
+    },
+    {
+      "path": "examples/rag/tests/__init__.py",
+      "sha256": "ad1de038819fc87e2963a50addbb703cebeb8cd335830a1d9be2317cc206f9f4",
+      "bytes": 36
+    },
+    {
+      "path": "examples/rag/tests/test_boundary_regressions.py",
+      "sha256": "1d98d194f601d20e60885b4ba0f9aca0e6efade1c28726eab36a142549b73089",
+      "bytes": 3767
+    },
+    {
+      "path": "examples/rag/tests/test_chunker.py",
+      "sha256": "ed021506810b65f57278f67efa551453e9edd7da20ddb3c3ebe23ddd0408ae3a",
+      "bytes": 4540
+    },
+    {
+      "path": "examples/rag/tests/test_citation_validator.py",
+      "sha256": "ca158087349c95520f668dff8a4dd81077576b814d53a3c3d4c8b63a6b1351f3",
+      "bytes": 3538
+    },
+    {
+      "path": "examples/rag/tests/test_context_builder.py",
+      "sha256": "29894447f027f6e215accbd9e4fdc0bdc6c11e162e975e4997e578c0afb27dd5",
+      "bytes": 3453
+    },
+    {
+      "path": "examples/rag/tests/test_eval_runner.py",
+      "sha256": "060e0c6f3cc6ddb1b4d774e12f93daa3e8fce595135e0747ec6c372b63cbab6f",
+      "bytes": 14158
+    },
+    {
+      "path": "examples/rag/tests/test_ingestion_boundaries.py",
+      "sha256": "ee6b84788e37da27aefba4c144fd501eb24228de97d555ec8f4c64db3883bf87",
+      "bytes": 2011
+    },
+    {
+      "path": "examples/rag/tests/test_rag_service.py",
+      "sha256": "0b6a03bd2190d813f819fac062b5339d11e2f64f245d9580cd1e6ef19477251e",
+      "bytes": 11341
+    },
+    {
+      "path": "examples/rag/tests/test_retriever.py",
+      "sha256": "f55396cd6a834d9a3868c40c0b5f37cd7230ef1857546d3101e9f184269e7742",
+      "bytes": 4036
+    },
+    {
+      "path": "examples/rag/tests/test_vector_index.py",
+      "sha256": "51c3b18a7f49e9faec9744c527e062c1a0747c6150f5b1ccd29507ee54ed7d67",
+      "bytes": 5047
+    },
+    {
+      "path": "examples/rag/verify.py",
+      "sha256": "befafe7db1e135d5d0a17e77b040f2f45ecbcc484651d28ee465ce0664cb1538",
+      "bytes": 7038
+    },
+    {
+      "path": "examples/structured-generation/README.md",
+      "sha256": "8c9a395036996d3526ff59d9655980e57135c7351115ea2785b1f8892621ca50",
+      "bytes": 5739
+    },
+    {
+      "path": "examples/structured-generation/artifact.json",
+      "sha256": "cfaaf6cc499dbbd936bef873234fe2a199521e3c95243412355ced700c91156e",
+      "bytes": 360
+    },
+    {
+      "path": "examples/structured-generation/demo.py",
+      "sha256": "fd99039ba4d44063054ca7a3ce0299f66c9c9d96385e2eee17a67578c0e04bef",
+      "bytes": 8688
+    },
+    {
+      "path": "examples/structured-generation/structured_generation/__init__.py",
+      "sha256": "1823b613942b885341bfba71c85ade1ce437fcc801d23905b3d8d89ad09ea51c",
+      "bytes": 400
+    },
+    {
+      "path": "examples/structured-generation/structured_generation/models.py",
+      "sha256": "8419150db68a79bdb383299eda35df9cd64b9867d609b135699c5ea6a63aa39a",
+      "bytes": 1323
+    },
+    {
+      "path": "examples/structured-generation/structured_generation/service.py",
+      "sha256": "c134222a73096f89b5cb4239f734284ea7492db9f1d9880ce6f6a25dbe456acc",
+      "bytes": 9463
+    },
+    {
+      "path": "examples/structured-generation/tests/__init__.py",
+      "sha256": "ba9ee20084df02dc0ba552b4bcaedea5faffa0b68c2c1470120256268cf79539",
+      "bytes": 53
+    },
+    {
+      "path": "examples/structured-generation/tests/test_service.py",
+      "sha256": "6c77d62eb996dee8df7919ee7e688244b684199999ca134b8316a1b803b64586",
+      "bytes": 10911
+    },
+    {
+      "path": "platform/README.md",
+      "sha256": "4cd9b24c95d6c4b05a2e94ea4fc39e3a72a817191b5d56632e7484af93b45eb7",
+      "bytes": 756
+    },
+    {
+      "path": "platform/mcp-adapter/README.md",
+      "sha256": "7e32e7f98405e79e021bfbd2764a66eee6e79c991ba08db6eff64316c91935c1",
+      "bytes": 9990
+    },
+    {
+      "path": "platform/mcp-adapter/artifact.json",
+      "sha256": "3018c74105dbd7a341fbe733af4299640262c4592fea46da7a6231585ddf7e65",
+      "bytes": 334
+    },
+    {
+      "path": "platform/mcp-adapter/mcp_adapter/__init__.py",
+      "sha256": "ce9ffb6df4ab1d239a95d2b7a1243b9f0d4dca0954503e8c37c87bb119e0ced0",
+      "bytes": 553
+    },
+    {
+      "path": "platform/mcp-adapter/mcp_adapter/adapter.py",
+      "sha256": "c5247266b7a609f7f1f77217e7228e3e2ca222601886664899f9cfb6779e8309",
+      "bytes": 5699
+    },
+    {
+      "path": "platform/mcp-adapter/mcp_adapter/client.py",
+      "sha256": "f12fda7601cddbbe8c6bc564eafdcab7b246611f4a6e300d77335e8d47b4c42f",
+      "bytes": 7297
+    },
+    {
+      "path": "platform/mcp-adapter/mcp_adapter/protocol.py",
+      "sha256": "69d8b5a5b1891e3875b9aceb0f3c15c76a94e28e1a069e686ca9228d0a3170e3",
+      "bytes": 3467
+    },
+    {
+      "path": "platform/mcp-adapter/mcp_adapter/server.py",
+      "sha256": "7fe09929d51de5803908ad99b3594d9575fb5158a8026049284faffdd48d1154",
+      "bytes": 7553
+    },
+    {
+      "path": "platform/mcp-adapter/tests/__init__.py",
+      "sha256": "bbe473403efc8cf6962f2a6789dac7211801751407e543ebf322ae1f0adb54cf",
+      "bytes": 44
+    },
+    {
+      "path": "platform/mcp-adapter/tests/test_mcp_adapter.py",
+      "sha256": "978fb72547167a934788d4ef8eede6c5e3c805a47596414799871bd1e6230f81",
+      "bytes": 11094
+    },
+    {
+      "path": "platform/mcp-adapter/tests/test_protocol_boundaries.py",
+      "sha256": "bd78fc79d2b3c3cb44b61547883263dcc5346a04c6a9ee342cd68206cfbd91e3",
+      "bytes": 4917
+    },
+    {
+      "path": "platform/mcp-adapter/verify.py",
+      "sha256": "9c65be67627296c7ea51db85a0006351238a92054763dbd4300d41fe66994d28",
+      "bytes": 4152
+    },
+    {
+      "path": "platform/ollama-adapter/.dockerignore",
+      "sha256": "d114db9736af98d0231fb6654bce1a1b35b60e1d955da1ca07603e47241da326",
+      "bytes": 4
+    },
+    {
+      "path": "platform/ollama-adapter/Dockerfile.security",
+      "sha256": "fda16e0ae1022585c6d85772faea6b608c5c405ecbf0cb4b468d8d10f4a121c2",
+      "bytes": 1147
+    },
+    {
+      "path": "platform/ollama-adapter/README.md",
+      "sha256": "99efbc73fb09cbf666498e0fafe1cdf662c2cffd876f7dd31a9697e3c5a4aa96",
+      "bytes": 8354
+    },
+    {
+      "path": "platform/ollama-adapter/artifact.json",
+      "sha256": "9126a728771d40f9c6dd4689cee92778c71952b82a1912d685e1476e59cfa481",
+      "bytes": 342
+    },
+    {
+      "path": "platform/ollama-adapter/ollama_adapter/__init__.py",
+      "sha256": "fede60a6608f4f1053e9f0158c1485aeb7d40de5caa5dd551ae0475c5f6ea4c3",
+      "bytes": 109
+    },
+    {
+      "path": "platform/ollama-adapter/ollama_adapter/adapter.py",
+      "sha256": "0a2b9b4e0364c76eca5171efb0db8370ee08f192d8d1af7d99cc0db23578c2ba",
+      "bytes": 12898
+    },
+    {
+      "path": "platform/ollama-adapter/tests/__init__.py",
+      "sha256": "74e03d21e6e7f73ae82d813b57983f263bfab3f9d7b891583d883b44c3277da8",
+      "bytes": 47
+    },
+    {
+      "path": "platform/ollama-adapter/tests/test_adapter.py",
+      "sha256": "5f9cad07e82fb07bd4c48ca788440395389d618aa8508f02f4101d37114e1385",
+      "bytes": 15150
+    },
+    {
+      "path": "platform/ollama-adapter/verify.py",
+      "sha256": "48192e23ccdae6db1fa2d6607e2c8ec88b9e02e9f0d4ec35440a5a6940d11110",
+      "bytes": 4706
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/README.md",
+      "sha256": "b90e6cc5ba33a64ee1b3b51d463f9d32d9a8207f843705f1f4e2ff06a54351ab",
+      "bytes": 4776
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/artifact.json",
+      "sha256": "41fb95d23e45e7bd8830355a826c4097ade47b410d3edf27c3c74924688219f1",
+      "bytes": 365
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/ollama_embedding_adapter/__init__.py",
+      "sha256": "34cdf3889bb0c71196ac57a3b782b572e22ae472a083116059996f8200b7c980",
+      "bytes": 128
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/ollama_embedding_adapter/adapter.py",
+      "sha256": "d7937ad89dec8f73761c7f81b85ae4a79a02f8e5339d90d031c18df77b8f3dd1",
+      "bytes": 13494
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/tests/__init__.py",
+      "sha256": "6e1a8cdd4afa3066c9d4d0c554c7b010198cab72bdbf1d3b54d0543deabfe5ff",
+      "bytes": 43
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/tests/test_adapter.py",
+      "sha256": "ba49805c1e7a942104a9ea2de95605173565c11afba4a416aaf9f23bf3b80c19",
+      "bytes": 11317
+    },
+    {
+      "path": "platform/ollama-embedding-adapter/verify.py",
+      "sha256": "33a241383c558bd1442d02be4f067c211c12dcf8a844aca35fb92fb622630989",
+      "bytes": 5215
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "d5fbf2f0b8160c0d9c9c215ede9d06c2836a11243a6bc72d958337c1e191db12",
+      "bytes": 646
+    },
+    {
+      "path": "scripts/artifact_validator.py",
+      "sha256": "a06bc4459d55fb5bb020dafa29aba92d373358afd3d51453e06253c775a1f0e0",
+      "bytes": 10446
+    },
+    {
+      "path": "scripts/quality.py",
+      "sha256": "3c4c37bc781acbce534c8da5f6746e42e4b5c97da17c68567576b666525faddd",
+      "bytes": 7990
+    },
+    {
+      "path": "scripts/validate-diagrams.py",
+      "sha256": "ae63485b9fa7fce86c44f0e037699bb7c433a1104a619634c4a4ba2af2c8048e",
+      "bytes": 2421
+    },
+    {
+      "path": "scripts/validate-docs.py",
+      "sha256": "a2c80adb72b2ba58c151d244a96fa4b42a9bd6f69b7749f3bd3952d7c2461ef8",
+      "bytes": 7370
+    },
+    {
+      "path": "scripts/validate.py",
+      "sha256": "35b0f141781c070cd3f92a92da6f07c9d8cfe22d311012f60c997d065326c2c5",
+      "bytes": 12945
+    },
+    {
+      "path": "templates/README.md",
+      "sha256": "44c6e8d22fd6b000eb61e52978ff09a2cd2f79a883a29a25c25563dffcf25e13",
+      "bytes": 10417
+    },
+    {
+      "path": "templates/pattern-example/README.md",
+      "sha256": "025f4d9333fea49e9225ae359d7060ab08b05a04ba24d3195c0821759d855cf5",
+      "bytes": 2967
+    },
+    {
+      "path": "templates/pattern-example/artifact.json",
+      "sha256": "83b47bd8a737c51450b460ce42b157b39c057e6c66f5fff54327c47cb0a029f0",
+      "bytes": 317
+    },
+    {
+      "path": "templates/platform-component/README.md",
+      "sha256": "8c48c0ab00995af1365365718fb6e86dbfc4c762d6b1da64ae3778eb31bceac8",
+      "bytes": 3353
+    },
+    {
+      "path": "templates/platform-component/artifact.json",
+      "sha256": "29f7c7d357e90c781ff42f0a0c86feb41694fafe25a799a42353236330c63049",
+      "bytes": 298
+    },
+    {
+      "path": "templates/reference-application/README.md",
+      "sha256": "cedc7fcba70789144f07aec1384d671e0f7d6231467f8fd3373951f1f5a91d28",
+      "bytes": 3608
+    },
+    {
+      "path": "templates/reference-application/artifact.json",
+      "sha256": "dc2b74def7c9316d6ef8d109fc0e28150e83db15ad4f786d9f0de946bdf4d806",
+      "bytes": 357
+    },
+    {
+      "path": "templates/reference-application/docs/architecture.md",
+      "sha256": "9d81992e10aff93867cb19b410679f278f82e27ad255e8e3cf93239e2c1e834d",
+      "bytes": 5500
+    },
+    {
+      "path": "templates/reference-application/docs/quality.md",
+      "sha256": "17bff7bed3b34ba2979d53457aa56225fa7bf961f9bff4b2f2cc2fbdbb83e799",
+      "bytes": 4616
+    },
+    {
+      "path": "templates/reference-application/docs/requirements.md",
+      "sha256": "4bdc23de1684fa57ca065e18209ae7f3520e9cdaf8c649310e2f6da8d7fd50fa",
+      "bytes": 3456
+    },
+    {
+      "path": "templates/template-artifact/README.md",
+      "sha256": "004b9119fc9fc741c85f13a0ccbd9acd8c2c1d754bd9ee199d4c300aaee04980",
+      "bytes": 2280
+    },
+    {
+      "path": "templates/template-artifact/artifact.json",
+      "sha256": "e99496a709e8d0619b05b8a4876345b5d67100b384b4bf14f50f74cabb541ef7",
+      "bytes": 297
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "10c4e264c9b2a28d421711f2824184fab7339b99b3d751c3e562e8908bd399e3",
+      "bytes": 250072
+    }
+  ],
+  "excludes": "Generated evidence directory, ignored environments/models/build/cache files."
+}

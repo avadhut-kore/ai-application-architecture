@@ -2,12 +2,15 @@
 
 ## 1. Baseline Runtime & Language Strategy
 
-* **Runtime Baseline**: **.NET 8 LTS** (or subsequent supported Long-Term Support releases).
-* **Language Baseline**: Modern supported C# versions aligned with the host .NET runtime (e.g., C# 12 on .NET 8).
+* **Runtime Baseline**: **.NET 10 LTS** (or subsequent supported Long-Term Support releases).
+  * Reviewed on 20 November 2026: .NET 8 reached end of support on 10 November
+    2026. Follow Microsoft's [support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)
+    when selecting a runtime; this repository currently contains no .NET runtime implementation to certify.
+* **Language Baseline**: Modern supported C# versions aligned with the host .NET runtime (e.g., C# 14 on .NET 10).
 * **Language Conflation Rule**: Never conflate the .NET runtime version with the C# language version. State runtime and language targets explicitly in project files:
   ```xml
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

@@ -16,7 +16,7 @@ This document establishes the evaluation architecture, dataset design convention
 
 Unlike deterministic software assertions that compare actual against expected values with binary precision, AI evaluation measures the quality, accuracy, grounding, and safety of probabilistic model outputs across statistical distributions.
 
-```
+```text
 ┌────────────────────────┐     ┌────────────────────────┐
 │  Golden Evaluation Set │     │ Target AI System Under │
 │  (eval_dataset.jsonl)  │     │ Test (Pipeline / RAG)  │

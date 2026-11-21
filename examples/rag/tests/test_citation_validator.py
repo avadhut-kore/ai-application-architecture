@@ -22,12 +22,31 @@ class TestCitationValidator(unittest.TestCase):
     """Test suite verifying citation verification, rejection of spoofed IDs, and deduplication."""
 
     def setUp(self) -> None:
-        self.doc1 = Document(document_id="sec-01", title="Data Retention Policy", content="...", source_uri="sec-01.md")
-        self.doc2 = Document(document_id="sec-02", title="Access Control Standard", content="...", source_uri="sec-02.md")
-        self.validator = CitationValidator(document_catalog={"sec-01": self.doc1, "sec-02": self.doc2})
+        self.doc1 = Document(
+            document_id="sec-01",
+            title="Data Retention Policy",
+            content="...",
+            source_uri="sec-01.md",
+        )
+        self.doc2 = Document(
+            document_id="sec-02",
+            title="Access Control Standard",
+            content="...",
+            source_uri="sec-02.md",
+        )
+        self.validator = CitationValidator(
+            document_catalog={"sec-01": self.doc1, "sec-02": self.doc2}
+        )
 
-        self.retrieved_chunk1 = Chunk(chunk_id="sec-01#c0", document_id="sec-01", chunk_index=0, text="Audit logs kept 7 years")
-        self.retrieved_chunk2 = Chunk(chunk_id="sec-02#c0", document_id="sec-02", chunk_index=0, text="Passwords 16 chars")
+        self.retrieved_chunk1 = Chunk(
+            chunk_id="sec-01#c0",
+            document_id="sec-01",
+            chunk_index=0,
+            text="Audit logs kept 7 years",
+        )
+        self.retrieved_chunk2 = Chunk(
+            chunk_id="sec-02#c0", document_id="sec-02", chunk_index=0, text="Passwords 16 chars"
+        )
 
     def test_valid_citations_verification(self) -> None:
         res = self.validator.validate(

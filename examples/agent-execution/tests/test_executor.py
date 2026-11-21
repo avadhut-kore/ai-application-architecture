@@ -49,7 +49,9 @@ class DummyTool(CapabilityPort):
     def metadata(self) -> CapabilityMetadata:
         return self._metadata
 
-    async def execute(self, arguments: Mapping[str, Any], context: Optional[AiOperationContext] = None) -> Any:
+    async def execute(
+        self, arguments: Mapping[str, Any], context: Optional[AiOperationContext] = None
+    ) -> Any:
         self.call_count += 1
         if self.delay > 0:
             await asyncio.sleep(self.delay)
@@ -59,6 +61,23 @@ class DummyTool(CapabilityPort):
 
 
 class TestToolExecutor(unittest.IsolatedAsyncioTestCase):
+    async def test_timeout_after_side_effect_is_not_retried(self) -> None:
+        tool = DummyTool(side_effect_level=SideEffectLevel.STATE_MUTATING, delay=1)
+        executor = ToolExecutor(timeout_seconds=0.01)
+        first, _ = await executor.execute_tool(tool, {"amount": 1}, action_id="same")
+        second, _ = await executor.execute_tool(tool, {"amount": 1}, action_id="same")
+        self.assertEqual(first.status, "ambiguous")
+        self.assertEqual(second.status, "ambiguous")
+        self.assertEqual(tool.call_count, 1)
+        with self.assertRaises(ValueError):
+            await executor.execute_tool(tool, {"amount": 2}, action_id="same")
+
+    async def test_concurrent_same_action_executes_once(self) -> None:
+        tool = DummyTool(side_effect_level=SideEffectLevel.STATE_MUTATING, delay=0.01)
+        executor = ToolExecutor()
+        await asyncio.gather(*(executor.execute_tool(tool, {}, action_id="same") for _ in range(2)))
+        self.assertEqual(tool.call_count, 1)
+
     def setUp(self) -> None:
         self.executor = ToolExecutor(timeout_seconds=0.5)
 
@@ -147,13 +166,18 @@ class TestToolExecutor(unittest.IsolatedAsyncioTestCase):
 
     async def test_mcp_adapter_timeout_handling(self) -> None:
         import time
+
         MCP_DIR = REPO_ROOT / "platform" / "mcp-adapter"
         if str(MCP_DIR) not in sys.path:
             sys.path.insert(0, str(MCP_DIR))
         from mcp_adapter.client import McpClient
         from mcp_adapter.adapter import McpCapabilityAdapter
 
-        stalled_cmd = [sys.executable, "-c", "import sys, time; sys.stdin.readline(); time.sleep(10)"]
+        stalled_cmd = [
+            sys.executable,
+            "-c",
+            "import sys, time; sys.stdin.readline(); time.sleep(10)",
+        ]
         client = McpClient(command=stalled_cmd)
         adapter = McpCapabilityAdapter(
             client=client,

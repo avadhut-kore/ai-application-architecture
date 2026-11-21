@@ -1,0 +1,102 @@
+[
+  {
+    "name": "bootstrap",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\uv.exe",
+      "sync",
+      "--frozen"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 12.949
+  },
+  {
+    "name": "start",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "start",
+      "--workflow-id",
+      "wf-clean-live-final",
+      "--inquiry",
+      "Please review and propose a $10 fee credit for the accidental overdraft fee during the platform outage."
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 295.276
+  },
+  {
+    "name": "before",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "status",
+      "--workflow-id",
+      "wf-clean-live-final"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.679
+  },
+  {
+    "name": "approve",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "approve",
+      "--workflow-id",
+      "wf-clean-live-final",
+      "--approver",
+      "manager_jane"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.597
+  },
+  {
+    "name": "after",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "status",
+      "--workflow-id",
+      "wf-clean-live-final"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.589
+  },
+  {
+    "name": "replay",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "approve",
+      "--workflow-id",
+      "wf-clean-live-final",
+      "--approver",
+      "manager_jane"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 0.515
+  },
+  {
+    "name": "after-replay",
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\clean-final-trial\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/demo.py",
+      "--db",
+      "D:\\company\\products\\ai-application-architecture\\.quality\\clean-live-final.db",
+      "status",
+      "--workflow-id",
+      "wf-clean-live-final"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.481
+  }
+]

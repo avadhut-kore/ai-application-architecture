@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional
 
@@ -22,7 +23,7 @@ class AgentStepRecord:
 
     step_number: int
     decision: AgentDecision
-    validation_result: Optional[ValidationResult] = None
+    validation_result: Optional[ValidationResult[Any]] = None
     authorization_result: Optional[AuthorizationDecision] = None
     approval_result: Optional[ApprovalDecision] = None
     execution_receipt: Optional[ExecutionReceipt] = None
@@ -74,7 +75,7 @@ class AgentTrajectoryTrace:
 
         return {
             "run_id": self.run_id,
-            "goal": self.goal,
+            "goal_sha256": hashlib.sha256(self.goal.encode("utf-8")).hexdigest(),
             "actor_id": self.actor.actor_id,
             "actor_role": self.actor.role,
             "final_status": self.final_status,

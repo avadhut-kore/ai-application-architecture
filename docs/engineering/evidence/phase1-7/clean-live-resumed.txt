@@ -1,0 +1,11 @@
+Cloning into 'D:\company\products\ai-application-architecture\.venv\clean-final-trial'...
+done.
+326 source files exported to a clean directory
+bootstrap 0
+start 0
+before 0
+approve 0
+after 0
+replay 1
+after-replay 0
+Fresh-source/fresh-venv cross-process balance and replay checks passed

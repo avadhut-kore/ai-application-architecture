@@ -8,7 +8,7 @@ We do **not** enforce an absolute dogma that every single application must run c
 
 Instead, this repository establishes a pragmatic, tiered **Three-Mode Local-First Policy**:
 
-```
+```text
  ┌────────────────────────────────────────────────────────────────────────┐
  │ MODE A: OFFLINE LOCAL                                                  │
  │ 100% self-contained on developer machine; zero internet or external API│
@@ -66,7 +66,7 @@ However, the following boundaries govern its use:
 
 The architecture must support diverse providers beneath the abstraction port:
 
-```
+```text
                               Application Port Layer
                                (ILlmClient Interface)
                                           │

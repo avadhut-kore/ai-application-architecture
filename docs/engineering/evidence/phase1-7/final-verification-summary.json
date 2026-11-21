@@ -1,0 +1,41 @@
+{
+  "assessment": "Internal Self-Assessment \u2014 Not Independent Certification",
+  "collected_utc": "2026-11-21T03:21:48.235548+00:00",
+  "branch": "codex/phase1-7-completion",
+  "head": "02f782f79d511f63ad5c4a3d0f7675f9df6b04d5",
+  "platform_checks": {
+    ".quality": {
+      "tests": 323,
+      "suites": 9,
+      "modules": 51,
+      "minimum_statement_percent": 87.28813559322033,
+      "all_checks_passed": true
+    },
+    ".quality-linux": {
+      "tests": 323,
+      "suites": 9,
+      "modules": 51,
+      "minimum_statement_percent": 87.28813559322033,
+      "all_checks_passed": true
+    }
+  },
+  "final_commands_passed": true,
+  "working_tree_secret_scan_exit": 0,
+  "patched_image_high_critical_findings": 0,
+  "image_id_matches_audit": true,
+  "rag_reference_thresholds_met": true,
+  "rag_reference_fact_coverage": 0.875,
+  "trace_span_counts": {
+    "foundation-qwen7": 30,
+    "workflow-qwen7": 16,
+    "rag-final-qwen7": 126,
+    "clean-workflow": 12,
+    "agent-final-qwen7": 6,
+    "patched-generation": 1,
+    "patched-embedding": 1
+  },
+  "rag_provenance_hashes_match": true,
+  "current_python_sources_match_final_linux_snapshot": true,
+  "remote_ci": "NOT EXECUTED",
+  "independent_acceptance": "PENDING"
+}

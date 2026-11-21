@@ -1,0 +1,49 @@
+Using CPython 3.14.3 interpreter at: C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\python.exe
+Creating virtual environment at: .venv
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 43 packages in 9.95s
+ + ast-serialize==0.13.1
+ + bandit==1.9.4
+ + boolean-py==5.0
+ + cachecontrol==0.15.0
+ + certifi==2026.10.23
+ + charset-normalizer==3.5.2
+ + colorama==0.4.6
+ + coverage==7.17.3
+ + cyclonedx-python-lib==11.12.0
+ + defusedxml==0.7.1
+ + filelock==4.2.12
+ + idna==3.20
+ + librt==0.17.0
+ + license-expression==30.4.4
+ + markdown-it-py==4.3.0
+ + mdurl==0.1.2
+ + msgpack==1.2.4
+ + mypy==2.4.1
+ + mypy-extensions==1.2.0
+ + opentelemetry-api==1.45.2
+ + opentelemetry-sdk==1.45.2
+ + opentelemetry-semantic-conventions==0.66b2
+ + packageurl-python==0.17.6
+ + packaging==26.3
+ + pathspec==1.1.1
+ + pip==26.3
+ + pip-api==0.0.35
+ + pip-audit==2.10.1
+ + pip-requirements-parser==32.0.1
+ + platformdirs==4.14.7
+ + py-serializable==2.2.0
+ + pygments==2.21.0
+ + pyparsing==3.3.3
+ + pyyaml==6.0.3
+ + requests==2.34.2
+ + rich==15.0.0
+ + ruff==0.17.6
+ + sortedcontainers==2.4.0
+ + stevedore==5.10.0
+ + tomli==2.5.0
+ + tomli-w==1.2.0
+ + typing-extensions==4.16.0
+ + urllib3==2.8.0

@@ -31,6 +31,19 @@ from workflow.state import (
 class TestWorkflowState(unittest.TestCase):
     """Verify serialization, integrity, and immutability of WorkflowState and sub-models."""
 
+    def test_nonmutating_proposal_rejects_mutation_fields_and_conflicting_aliases(self):
+        with self.assertRaises(ValueError):
+            RemediationProposal(RemediationType.INFORMATIONAL, "Status", {"amount_cents": 2000})
+        with self.assertRaises(ValueError):
+            RemediationProposal.from_dict(
+                {
+                    "proposal_type": "informational",
+                    "summary": "Status",
+                    "requires_approval": False,
+                    "requires_human_approval": True,
+                }
+            )
+
     def setUp(self) -> None:
         self.actor = WorkflowActorSnapshot(
             actor_id="agent_alice",
@@ -59,7 +72,11 @@ class TestWorkflowState(unittest.TestCase):
         prop = RemediationProposal(
             proposal_type=RemediationType.FEE_CREDIT,
             summary="Approve $20 waiver",
-            suggested_arguments={"amount_cents": 2000, "customer_id": "cust-1"},
+            suggested_arguments={
+                "amount_cents": 2000,
+                "customer_id": "cust-1",
+                "reason": "Verified fee",
+            },
             requires_approval=True,
         )
         d = prop.to_dict()

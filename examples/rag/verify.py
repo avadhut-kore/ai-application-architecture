@@ -38,7 +38,7 @@ async def verify_rag_pipeline(
     mode: str = "fake",
     endpoint: str = "http://localhost:11434",
     embed_model: str = "nomic-embed-text",
-    gen_model: str = "llama3.2",
+    gen_model: str = "qwen2.5:7b",
     allow_unverified: bool = False,
 ) -> int:
     print("=" * 60)
@@ -64,7 +64,9 @@ async def verify_rag_pipeline(
     if mode == "live":
         print(f"Checking Ollama live runtime at: {endpoint}")
         embed_adapter = OllamaEmbeddingAdapter(endpoint=endpoint, default_model=embed_model)
-        gen_adapter = OllamaAdapter(endpoint=endpoint, default_model=gen_model)
+        gen_adapter = OllamaAdapter(
+            endpoint=endpoint, default_model=gen_model, timeout_seconds=240.0, max_retries=0
+        )
 
         is_healthy = await embed_adapter.check_health()
         if not is_healthy:
@@ -100,13 +102,20 @@ async def verify_rag_pipeline(
         )
 
     # Embed and index
-    req = EmbeddingRequest(inputs=[c.text for c in all_chunks], model=embed_model)
+    req = EmbeddingRequest(
+        inputs=[c.text for c in all_chunks], model=embed_model, metadata={"input_type": "document"}
+    )
     emb_resp = await embedding_port.embed(req)
     index = InMemoryVectorIndex(dimensions=emb_resp.dimensions)
     index.add_batch(all_chunks, emb_resp.embeddings)
     print(f"Vector Indexing: OK ({index.count()} chunks indexed into InMemoryVectorIndex)")
 
-    retriever = Retriever(embedding_port=embedding_port, vector_index=index, embedding_model=embed_model, default_top_k=2)
+    retriever = Retriever(
+        embedding_port=embedding_port,
+        vector_index=index,
+        embedding_model=embed_model,
+        default_top_k=2,
+    )
     validator = CitationValidator(document_catalog={d.document_id: d for d in docs})
     service = RAGService(
         retriever=retriever,
@@ -138,10 +147,18 @@ async def verify_rag_pipeline(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify RAG pipeline execution.")
     parser.add_argument("--mode", choices=["fake", "live"], default="fake", help="Execution mode")
-    parser.add_argument("--endpoint", default=os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434"))
-    parser.add_argument("--embed-model", default=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"))
-    parser.add_argument("--gen-model", default=os.getenv("OLLAMA_MODEL", "llama3.2"))
-    parser.add_argument("--allow-unverified", action="store_true", help="Exit 0 when live infrastructure is unavailable")
+    parser.add_argument(
+        "--endpoint", default=os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
+    )
+    parser.add_argument(
+        "--embed-model", default=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+    )
+    parser.add_argument("--gen-model", default=os.getenv("OLLAMA_MODEL", "qwen2.5:7b"))
+    parser.add_argument(
+        "--allow-unverified",
+        action="store_true",
+        help="Exit 0 when live infrastructure is unavailable",
+    )
     args = parser.parse_args()
 
     return asyncio.run(
@@ -156,4 +173,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

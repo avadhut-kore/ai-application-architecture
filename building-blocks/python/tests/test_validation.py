@@ -18,7 +18,9 @@ class TestValidation(unittest.TestCase):
 
     def test_validation_success(self) -> None:
         payload = SamplePayload(query="search term", confidence=0.95)
-        res = ValidationResult.success(payload, raw_text='{"query": "search term", "confidence": 0.95}')
+        res = ValidationResult.success(
+            payload, raw_text='{"query": "search term", "confidence": 0.95}'
+        )
 
         self.assertTrue(res.is_valid)
         self.assertEqual(res.raw_text, '{"query": "search term", "confidence": 0.95}')
@@ -27,9 +29,7 @@ class TestValidation(unittest.TestCase):
 
     def test_validation_failure(self) -> None:
         errors = ["Missing required field: confidence", "Invalid field: query"]
-        res = ValidationResult[SamplePayload].failure(
-            errors=errors, raw_text='{"unknown": "data"}'
-        )
+        res = ValidationResult[SamplePayload].failure(errors=errors, raw_text='{"unknown": "data"}')
 
         self.assertFalse(res.is_valid)
         self.assertIsNone(res.data)

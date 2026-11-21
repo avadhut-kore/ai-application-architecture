@@ -92,7 +92,7 @@ ai-application-architecture/
 
 To prevent architectural erosion, the following dependency flow rules are enforced:
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ apps/<app-name>                                        │
 │ May depend on: building-blocks/<language>              │
@@ -104,9 +104,10 @@ To prevent architectural erosion, the following dependency flow rules are enforc
 │ May NOT depend on: apps/* or platform/*                │
 └────────────────────────────────────────────────────────┘
 
-Platform services run as independent network containers;
-Applications communicate with platform services via HTTP/gRPC,
-never through shared memory or compile-time coupling.
+Platform services run as independent network containers and expose HTTP/gRPC.
+In-process provider adapter packages are a distinct platform artifact: composition
+roots may import them to satisfy provider-neutral ports. Domain and application
+logic must retain port-only dependencies. See ADR-0003 and ADR-0012.
 ```
 
 ---

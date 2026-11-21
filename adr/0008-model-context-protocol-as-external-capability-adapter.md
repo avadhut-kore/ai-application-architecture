@@ -71,6 +71,6 @@ The `McpCapabilityAdapter` in `platform/mcp-adapter/mcp_adapter/adapter.py`:
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 3 (Modularity & Loose Coupling)**: MCP is implemented as an external adapter at the infrastructure boundary (Tier 3), never coupled into core contracts.
-* **Principle 6 (Local-First)**: Fully runnable without cloud services or external servers under Mode A.
-* **Principle 13 (Capability Safety)**: Strict allowlist prevents untrusted external tools from entering the capability registry.
+* **Principle 3 (Provider Decoupling)**: MCP is implemented as an external adapter at the infrastructure boundary (Tier 3), never coupled into core contracts.
+* **Local-First Policy**: Fully runnable without cloud services or external servers under Mode A.
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Strict allowlist prevents untrusted external tools from entering the capability registry.

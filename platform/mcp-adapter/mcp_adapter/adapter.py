@@ -12,6 +12,7 @@ from contracts.agent import (
     SideEffectLevel,
 )
 from contracts.telemetry import AiOperationContext
+from ai_telemetry import traced
 
 from .client import McpClient, McpClientError
 
@@ -47,7 +48,9 @@ class McpCapabilityAdapter(CapabilityPort):
             available_tools = self.client.list_tools()
             matching = [t for t in available_tools if t.get("name") == self.tool_name]
             if not matching:
-                raise ValueError(f"Tool '{self.tool_name}' was not found on the connected MCP server")
+                raise ValueError(
+                    f"Tool '{self.tool_name}' was not found on the connected MCP server"
+                )
             tool_spec = matching[0]
             desc = desc or tool_spec.get("description", f"MCP capability: {self.tool_name}")
             schema = schema or tool_spec.get("inputSchema", {"type": "object"})
@@ -64,6 +67,7 @@ class McpCapabilityAdapter(CapabilityPort):
     def metadata(self) -> CapabilityMetadata:
         return self._metadata
 
+    @traced("tool.execute", "mcp")
     async def execute(
         self,
         arguments: Mapping[str, Any],
@@ -106,7 +110,10 @@ class McpCapabilityAdapter(CapabilityPort):
         except McpClientError as err:
             return {"error": True, "message": f"MCP communication failure: {str(err)}"}
         except Exception as exc:
-            return {"error": True, "message": f"Unexpected error executing MCP tool '{self.tool_name}': {str(exc)}"}
+            return {
+                "error": True,
+                "message": f"Unexpected error executing MCP tool '{self.tool_name}': {str(exc)}",
+            }
 
 
 def create_mcp_capabilities(

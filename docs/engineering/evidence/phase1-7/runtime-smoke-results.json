@@ -1,0 +1,30 @@
+{
+  "generation": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "platform/ollama-adapter/verify.py",
+      "--endpoint",
+      "http://127.0.0.1:11435",
+      "--model",
+      "qwen2.5:7b",
+      "--timeout",
+      "240"
+    ],
+    "exit_code": 0
+  },
+  "embedding": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "platform/ollama-embedding-adapter/verify.py",
+      "--endpoint",
+      "http://127.0.0.1:11435",
+      "--model",
+      "nomic-embed-text"
+    ],
+    "exit_code": 0
+  },
+  "version": {
+    "version": "0.40.16-security.1"
+  },
+  "image_id": "sha256:65fb566c5a423cb2034cde1e2b774270481f6f52f97b3e4c4b531f978afb91d7"
+}

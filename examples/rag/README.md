@@ -4,7 +4,7 @@
 > **Application Domain**: Knowledge Intelligence (`knowledge-intelligence`)  
 > **Intelligence Pattern**: Retrieval-Augmented Generation (`retrieval-augmented-generation`)  
 > **Architecture Pattern**: Hexagonal Architecture (`hexagonal`)  
-> **Target Ecosystem**: Python 3.9+  
+> **Target Ecosystem**: Python 3.11+
 > **Status**: Implemented  
 
 ---
@@ -27,7 +27,7 @@ This reference pattern implements a complete, provider-neutral, evaluation-drive
 
 ```mermaid
 flowchart TD
-    A[Markdown Corpus (.md)] --> B[Document Ingestion & Normalizer]
+    A["Markdown Corpus (.md)"] --> B[Document Ingestion & Normalizer]
     B --> C[HeadingAwareChunker]
     C --> D[Chunks with Stable IDs: doc#c0]
     D --> E[EmbeddingPort: OllamaEmbeddingAdapter / Test Stub]
@@ -130,7 +130,7 @@ The repository includes a domain-neutral, synthetic knowledge corpus located in 
 ## 6. Execution & Verification
 
 ### 6.1 Hermetic Unit Tests (Offline CI)
-Execute the 31 unit tests covering ingestion, chunking, indexing, retrieval, context budgeting, citation verification, and service orchestration:
+Execute the unit tests covering ingestion, chunking, indexing, retrieval, context budgeting, citation verification, and service orchestration:
 
 ```bash
 python3 -m unittest discover -s examples/rag/tests -t examples/rag
@@ -146,7 +146,7 @@ python3 examples/rag/demo.py --mode fake
 # Custom query
 python3 examples/rag/demo.py --mode fake --query "What is the password requirement?"
 
-# Live local mode (requires Ollama with nomic-embed-text and llama3.2)
+# Live local mode (requires Ollama with nomic-embed-text and qwen2.5:7b)
 python3 examples/rag/demo.py --mode live
 ```
 
@@ -157,20 +157,23 @@ Execute the versioned 32-scenario evaluation dataset (`eval_dataset.jsonl`) meas
 python3 examples/rag/eval_runner.py --mode fake
 ```
 
-#### Measured Reference Evaluation Baseline (Offline Deterministic Mode):
+#### Interpreting evaluation evidence
 
-| Metric | Reference Threshold | Measured Result | Status |
-| :--- | :--- | :--- | :--- |
-| **Total Scenarios** | $\ge 30$ | **32** | PASS |
-| **Hit Rate** | N/A | **100.0%** | PASS |
-| **Recall@K (top-k=2)** | N/A | **99.0%** | PASS |
-| **Mean Reciprocal Rank (MRR)** | N/A | **0.938** | PASS |
-| **Context Relevance** | $\ge 0.80$ | **0.859 (85.9%)** | PASS |
-| **Schema Adherence** | $\ge 0.98$ | **1.000 (100.0%)** | PASS |
-| **Groundedness / Faithfulness** | $\ge 0.85$ | **1.000 (100.0%)** | PASS |
-| **Citation Accuracy** | N/A | **100.0%** | PASS |
-| **Abstention Accuracy** | N/A | **100.0%** | PASS |
-| **Adversarial Robustness** | Handled | **100.0%** | PASS |
+`--mode fake` checks deterministic harness behavior; it does not verify model quality.
+The current live profile, commands, results and limitations are recorded in the
+[Phases 1–7 evidence report](../../docs/engineering/phase1-7-remediation.md).
+
+Scorer `2.0-cited-reference-facts` checks expected reference facts in both the answer
+and its cited, supplied chunks. This is a conservative support/completeness proxy,
+not independent semantic entailment certification. Citation accuracy measures
+identifier membership only. Adversarial handling measures schema validity,
+expected abstention and citation membership on the adversarial scenarios; it does
+not establish general injection resistance.
+
+Direct requests to disclose system/developer/hidden runtime instructions are
+refused by a narrow host policy before retrieval. This pattern guard can have
+false positives and misses paraphrases; it is not a general injection detector.
+Questions about security policy remain eligible for evidence-based answers.
 
 ---
 
@@ -180,8 +183,8 @@ To prevent premature complexity and speculative architectural sprawl, the follow
 
 | Capability | Decision | Architectural Justification |
 | :--- | :--- | :--- |
-| **Reranking** | DEFERRED | Baseline semantic retrieval achieves 100% Hit Rate and 0.938 MRR on the reference corpus. Reranking adds latency and must be justified by measured retrieval failure. |
-| **Hybrid Search (BM25 + Dense)** | DEFERRED | Dense vector search satisfies all current disambiguation scenarios. Hybrid search is deferred per ADR-0005 until lexical failure modes are demonstrated on specialized corpora. |
+| **Reranking** | DEFERRED | Current model-specific retrieval evidence belongs in the remediation record. Reranking requires a demonstrated ranking failure and an explicit architecture decision. |
+| **Hybrid Search (BM25 + Dense)** | DEFERRED | ADR-0005 requires measured lexical retrieval failures before introducing this enhancement. A deterministic harness result does not prove dense retrieval quality. |
 | **GraphRAG / Knowledge Graphs** | DEFERRED | Entity graph extraction introduces substantial computational overhead and is out of core Phase 5 scope. |
 | **Persistent Vector Database (pgvector / Qdrant)** | DEFERRED | The in-memory vector index satisfies hermetic CI and developer workstation testing. The storage protocol (`VectorIndexPort`) allows persistent backends to be introduced without modifying application code. |
 | **Query Rewriting / Expansion** | DEFERRED | Direct semantic embedding satisfies current query patterns. Multi-query expansion is deferred until measured failure occurs. |
@@ -191,5 +194,5 @@ To prevent premature complexity and speculative architectural sprawl, the follow
 ## 8. Known Limitations
 
 * **Single-Process In-Memory Index**: The default index does not persist embeddings to disk across process restarts; re-indexing is executed during application startup.
-* **Corpus Scope**: Sized as a lean, representative benchmark (7 documents, 18 chunks) optimized for automated test suites and educational inspection rather than enterprise multi-terabyte search.
+* **Corpus Scope**: Sized as a lean, representative benchmark (7 documents; chunk count depends on the configured chunker) optimized for automated test suites and educational inspection rather than enterprise multi-terabyte search.
 * **Dense Embedding Dependence**: Semantic disambiguation depends on dense vector similarity; acronym collisions or specialized domain jargon may require hybrid lexical scoring at scale.

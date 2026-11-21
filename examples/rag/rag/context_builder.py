@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Sequence
 
 from .retriever import RetrievalResult
@@ -45,7 +45,7 @@ class ContextBuilder:
         """Format retrieved chunks into a safe, bounded evidence context string."""
         if not retrieval_results:
             return ContextBuildResult(
-                formatted_context="[NO RELEVANT EVIDENCE FOUND]",
+                formatted_context="",
                 included_chunk_ids=[],
                 total_chars=0,
                 chunks_count=0,
@@ -55,7 +55,7 @@ class ContextBuilder:
         included_ids: List[str] = []
         blocks: List[str] = []
         current_len = len(EVIDENCE_HEADER) + len(EVIDENCE_FOOTER) + 4
-        truncated = False
+        truncated = len(retrieval_results) > self.max_chunks
 
         for res in retrieval_results[: self.max_chunks]:
             chunk = res.chunk
@@ -72,16 +72,8 @@ class ContextBuilder:
             current_len += entry_len
 
         if not blocks:
-            # Even first chunk exceeded budget; take truncated first chunk
-            first_res = retrieval_results[0]
-            chunk = first_res.chunk
-            allowed_text_len = max(50, self.max_chars - 200)
-            truncated_text = chunk.text[:allowed_text_len] + "... [TRUNCATED DUE TO BUDGET]"
-            entry = f"[Source ID: {chunk.chunk_id}] (Section: {chunk.section_title or 'General'})\n{truncated_text}"
-            blocks.append(entry)
-            included_ids.append(chunk.chunk_id)
-            current_len = len(entry)
-            truncated = True
+            # Never supply a partial source or exceed a hard framing budget.
+            return ContextBuildResult("", [], 0, 0, truncated=True)
 
         formatted = f"{EVIDENCE_HEADER}\n\n" + "\n\n".join(blocks) + f"\n\n{EVIDENCE_FOOTER}"
 

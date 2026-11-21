@@ -1,0 +1,42 @@
+
+======================================================================
+AI Application Architecture — Phase 6 Agentic Execution Demo
+======================================================================
+Scenario:    READ — Inspect customer profile for Alice Smith (cust-001)
+Mode:        LIVE
+Approval mode: Human CLI
+Actor:       agent-alice (Role: junior_agent)
+Goal:        Retrieve the customer and account records for cust-001, then report the name, status, risk, balance and recent activity from those observations. This is a read-only report: conclude after retrieving both records, without asking whether to proceed with other actions.
+======================================================================
+
+
+----------------------------------------------------------------------
+EXECUTION TRAJECTORY AUDIT LOG
+----------------------------------------------------------------------
+Step 1:
+  Decision Type: ACTION
+  Action Name:   get_customer
+  Arguments:     {'customer_id': 'cust-001'}
+  Authorization: [ALLOWED] Role 'junior_agent' is authorized for read-only access.
+  Receipt ID:    act-1795229012181904500 (Status: SUCCEEDED)
+  Step Latency:  75639.7ms
+
+Step 2:
+  Decision Type: ACTION
+  Action Name:   get_account_status
+  Arguments:     {'customer_id': 'cust-001'}
+  Authorization: [ALLOWED] Role 'junior_agent' is authorized for read-only access.
+  Receipt ID:    act-1795229042747048400 (Status: SUCCEEDED)
+  Step Latency:  30564.0ms
+
+Step 3:
+  Decision Type: FINAL
+  Step Latency:  41274.4ms
+
+----------------------------------------------------------------------
+FINAL OUTCOME:   [COMPLETED]
+FINAL ANSWER:    Customer cust-001 is named Alice Smith, with a low risk level and active status. The account balance is $150.00, with recent activity including a standard subscription charge and a late fee. No official notes are currently present.
+TOTAL STEPS:     3
+TOTAL RECEIPTS:  2
+TOTAL LATENCY:   147480.3ms
+======================================================================

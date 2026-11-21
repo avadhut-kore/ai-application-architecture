@@ -33,6 +33,50 @@ from agent.test_doubles import ScriptedGenerationStub
 
 
 class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
+    async def test_nonfinite_deadlines_cannot_disable_agent_or_tool_budgets(self):
+        for value in (float("inf"), float("nan")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                AgentExecutionEngine(
+                    ScriptedGenerationStub([]),
+                    self.registry,
+                    self.policy,
+                    self.approval,
+                    max_duration_seconds=value,
+                )
+            with self.assertRaises(ValueError):
+                ToolExecutor(timeout_seconds=value)
+
+    async def test_last_step_reserves_model_synthesis(self):
+        stub = ScriptedGenerationStub(
+            [
+                '{"type":"action","action_name":"get_customer","arguments":{"customer_id":"cust-001"}}',
+                '{"type":"final","final_answer":"Verified customer"}',
+            ]
+        )
+        engine = AgentExecutionEngine(stub, self.registry, self.policy, self.approval, max_steps=2)
+        result = await engine.run("Inspect customer", self.junior_agent)
+        self.assertEqual(result.status, "COMPLETED")
+        choices = stub.recorded_requests[-1].metadata["response_schema"]["oneOf"]
+        self.assertNotIn("action", [choice["properties"]["type"]["const"] for choice in choices])
+
+    async def test_structured_final_answer_and_scalar_rejection(self):
+        engine = AgentExecutionEngine(
+            ScriptedGenerationStub([]),
+            CapabilityRegistry(),
+            CustomerSupportAuthorizationPolicy(InMemoryCustomerStore()),
+            DeterministicApprovalHandler(),
+        )
+        self.assertIsNotNone(engine._parse_decision('{"type":"final","final_answer":true}')[1])
+        self.assertIsNotNone(
+            engine._parse_decision('{"type":"clarification","clarification_question":7}')[1]
+        )
+        engine.final_answer_schema = {"type": "object"}
+        decision, error = engine._parse_decision(
+            '{"type":"final","final_answer":{"answer":"value"}}'
+        )
+        self.assertIsNone(error)
+        self.assertEqual(json.loads(decision.final_answer), {"answer": "value"})
+
     def setUp(self) -> None:
         self.store = InMemoryCustomerStore()
         self.registry = CapabilityRegistry()
@@ -51,17 +95,21 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
     async def test_read_only_success(self) -> None:
         canned_responses = [
-            json.dumps({
-                "type": "action",
-                "action_name": "get_customer",
-                "arguments": {"customer_id": "cust-001"},
-                "explanation": "Looking up Alice Smith",
-            }),
-            json.dumps({
-                "type": "final",
-                "final_answer": "Customer Alice Smith is active with low risk tier.",
-                "explanation": "Verified records",
-            }),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-001"},
+                    "explanation": "Looking up Alice Smith",
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "final",
+                    "final_answer": "Customer Alice Smith is active with low risk tier.",
+                    "explanation": "Verified records",
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned_responses)
         engine = AgentExecutionEngine(
@@ -83,20 +131,26 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
     async def test_multi_step_read_success(self) -> None:
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "get_customer",
-                "arguments": {"customer_id": "cust-001"},
-            }),
-            json.dumps({
-                "type": "action",
-                "action_name": "get_account_status",
-                "arguments": {"customer_id": "cust-001"},
-            }),
-            json.dumps({
-                "type": "final",
-                "final_answer": "Customer cust-001 has account with balance $150.00.",
-            }),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-001"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_account_status",
+                    "arguments": {"customer_id": "cust-001"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "final",
+                    "final_answer": "Customer cust-001 has account with balance $150.00.",
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -107,7 +161,9 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
             executor=self.executor,
         )
 
-        result = await engine.run("Retrieve full account profile for cust-001", actor=self.junior_agent)
+        result = await engine.run(
+            "Retrieve full account profile for cust-001", actor=self.junior_agent
+        )
         self.assertEqual(result.status, "COMPLETED")
         self.assertEqual(result.step_count, 3)
         self.assertEqual(len(result.execution_receipts), 2)
@@ -115,11 +171,13 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
     async def test_clarification_path(self) -> None:
         canned = [
-            json.dumps({
-                "type": "clarification",
-                "clarification_question": "Please provide the customer ID or account number.",
-                "explanation": "Goal did not specify customer identifier.",
-            })
+            json.dumps(
+                {
+                    "type": "clarification",
+                    "clarification_question": "Please provide the customer ID or account number.",
+                    "explanation": "Goal did not specify customer identifier.",
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -139,20 +197,24 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
     async def test_mutation_approved_path(self) -> None:
         approval_handler = DeterministicApprovalHandler(default_approved=True)
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "apply_fee_credit",
-                "arguments": {
-                    "customer_id": "cust-001",
-                    "amount_cents": 1500,
-                    "reason": "Waive monthly maintenance fee",
-                    "action_id": "act-fee-001",
-                },
-            }),
-            json.dumps({
-                "type": "final",
-                "final_answer": "A fee credit of $15.00 has been successfully applied to cust-001.",
-            }),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "apply_fee_credit",
+                    "arguments": {
+                        "customer_id": "cust-001",
+                        "amount_cents": 1500,
+                        "reason": "Waive monthly maintenance fee",
+                        "action_id": "act-fee-001",
+                    },
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "final",
+                    "final_answer": "A fee credit of $15.00 has been successfully applied to cust-001.",
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -176,16 +238,18 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         # Explicit rejection in approval handler
         approval_handler = DeterministicApprovalHandler(default_approved=False)
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "apply_fee_credit",
-                "arguments": {
-                    "customer_id": "cust-001",
-                    "amount_cents": 1500,
-                    "reason": "Waive fee",
-                    "action_id": "act-fee-002",
-                },
-            })
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "apply_fee_credit",
+                    "arguments": {
+                        "customer_id": "cust-001",
+                        "amount_cents": 1500,
+                        "reason": "Waive fee",
+                        "action_id": "act-fee-002",
+                    },
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -209,16 +273,18 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
     async def test_authorization_denied_limit_exceeded(self) -> None:
         # Junior agent has limit of $20 (2000 cents). Proposing 3500 cents should be blocked by policy.
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "apply_fee_credit",
-                "arguments": {
-                    "customer_id": "cust-001",
-                    "amount_cents": 3500,
-                    "reason": "Customer loyalty",
-                    "action_id": "act-fee-003",
-                },
-            })
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "apply_fee_credit",
+                    "arguments": {
+                        "customer_id": "cust-001",
+                        "amount_cents": 3500,
+                        "reason": "Customer loyalty",
+                        "action_id": "act-fee-003",
+                    },
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -239,15 +305,17 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
     async def test_authorization_denied_frozen_account(self) -> None:
         # cust-003 is frozen; mutations must be denied
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "update_customer_note",
-                "arguments": {
-                    "customer_id": "cust-003",
-                    "note": "Spoke with customer",
-                    "action_id": "act-note-001",
-                },
-            })
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "update_customer_note",
+                    "arguments": {
+                        "customer_id": "cust-003",
+                        "note": "Spoke with customer",
+                        "action_id": "act-note-001",
+                    },
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -268,20 +336,26 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         # Step 2: Corrects parameters -> succeeds
         # Step 3: Final answer
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "get_customer",
-                "arguments": {"invalid_param": "123"},
-            }),
-            json.dumps({
-                "type": "action",
-                "action_name": "get_customer",
-                "arguments": {"customer_id": "cust-001"},
-            }),
-            json.dumps({
-                "type": "final",
-                "final_answer": "Alice Smith is active.",
-            }),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"invalid_param": "123"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-001"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "final",
+                    "final_answer": "Alice Smith is active.",
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -303,11 +377,13 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
     async def test_cycle_detection(self) -> None:
         # Same action and identical args consecutively -> cycle detection aborts
-        identical_action = json.dumps({
-            "type": "action",
-            "action_name": "get_customer",
-            "arguments": {"customer_id": "cust-001"},
-        })
+        identical_action = json.dumps(
+            {
+                "type": "action",
+                "action_name": "get_customer",
+                "arguments": {"customer_id": "cust-001"},
+            }
+        )
         stub = ScriptedGenerationStub([identical_action, identical_action])
         engine = AgentExecutionEngine(
             llm_client=stub,
@@ -326,9 +402,27 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         # 3 different read actions without ever emitting final answer
         # Note: use non-frozen customers cust-001, cust-002, cust-004 to avoid policy hold
         canned = [
-            json.dumps({"type": "action", "action_name": "get_customer", "arguments": {"customer_id": "cust-001"}}),
-            json.dumps({"type": "action", "action_name": "get_customer", "arguments": {"customer_id": "cust-002"}}),
-            json.dumps({"type": "action", "action_name": "get_customer", "arguments": {"customer_id": "cust-004"}}),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-001"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-002"},
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "get_customer",
+                    "arguments": {"customer_id": "cust-004"},
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -364,19 +458,23 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         """Verify update_customer_note requires approval and executes when approved."""
         approval_handler = DeterministicApprovalHandler(default_approved=True)
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "update_customer_note",
-                "arguments": {
-                    "customer_id": "cust-001",
-                    "note": "Verified customer identity via passport",
-                    "action_id": "act-note-001",
-                },
-            }),
-            json.dumps({
-                "type": "final",
-                "final_answer": "Note added to customer record.",
-            }),
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "update_customer_note",
+                    "arguments": {
+                        "customer_id": "cust-001",
+                        "note": "Verified customer identity via passport",
+                        "action_id": "act-note-001",
+                    },
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "final",
+                    "final_answer": "Note added to customer record.",
+                }
+            ),
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -392,7 +490,9 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(result.execution_receipts), 1)
         self.assertEqual(result.execution_receipts[0].status, "succeeded")
         self.assertEqual(len(approval_handler.recorded_requests), 1)
-        self.assertEqual(approval_handler.recorded_requests[0]["capability_name"], "update_customer_note")
+        self.assertEqual(
+            approval_handler.recorded_requests[0]["capability_name"], "update_customer_note"
+        )
 
         acc = self.store.get_account("cust-001")
         self.assertIsNotNone(acc)
@@ -402,15 +502,17 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         """Verify update_customer_note halts with REJECTED and zero mutation when human declines."""
         approval_handler = DeterministicApprovalHandler(default_approved=False)
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "update_customer_note",
-                "arguments": {
-                    "customer_id": "cust-001",
-                    "note": "Unverified note",
-                    "action_id": "act-note-002",
-                },
-            })
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "update_customer_note",
+                    "arguments": {
+                        "customer_id": "cust-001",
+                        "note": "Unverified note",
+                        "action_id": "act-note-002",
+                    },
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -432,7 +534,13 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
     async def test_misconfigured_state_mutating_capability_forces_approval(self) -> None:
         """Finding 14: A capability declaring STATE_MUTATING with requires_approval=False must force approval."""
-        from contracts.agent import AuthorizationDecision, AuthorizationPort, CapabilityMetadata, CapabilityPort, SideEffectLevel
+        from contracts.agent import (
+            AuthorizationDecision,
+            AuthorizationPort,
+            CapabilityMetadata,
+            CapabilityPort,
+            SideEffectLevel,
+        )
 
         class DummyMutatingTool(CapabilityPort):
             def __init__(self) -> None:
@@ -463,12 +571,14 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         # Approver will reject
         approval_handler = DeterministicApprovalHandler(default_approved=False)
         canned = [
-            json.dumps({
-                "type": "action",
-                "action_name": "unsafe_mutation",
-                "arguments": {"target": "data"},
-                "explanation": "Attempt unapproved mutation",
-            })
+            json.dumps(
+                {
+                    "type": "action",
+                    "action_name": "unsafe_mutation",
+                    "arguments": {"target": "data"},
+                    "explanation": "Attempt unapproved mutation",
+                }
+            )
         ]
         stub = ScriptedGenerationStub(canned)
         engine = AgentExecutionEngine(
@@ -481,11 +591,15 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
 
         result = await engine.run("Run unsafe mutation", actor=self.senior_agent)
         self.assertEqual(result.status, "REJECTED")
-        self.assertFalse(tool.executed, "Misconfigured state-mutating tool must NOT execute without approval!")
+        self.assertFalse(
+            tool.executed, "Misconfigured state-mutating tool must NOT execute without approval!"
+        )
         self.assertEqual(len(result.execution_receipts), 0)
         # Verify approval handler WAS invoked despite requires_approval=False in metadata
         self.assertEqual(len(approval_handler.recorded_requests), 1)
-        self.assertEqual(approval_handler.recorded_requests[0]["capability_name"], "unsafe_mutation")
+        self.assertEqual(
+            approval_handler.recorded_requests[0]["capability_name"], "unsafe_mutation"
+        )
 
 
 if __name__ == "__main__":

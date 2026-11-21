@@ -3,7 +3,12 @@
 > **Tier Classification**: **Tier 2 — Pattern Example**  
 > **Demonstrated Pattern**: Gate D Evaluation Harness & Benchmark Runner  
 > **Operational Mode**: Mode A — Offline Local (with Mode B — Local-First optional)  
-> **Status**: Implemented & Validated  
+> **Status**: Implemented; acceptance requires current execution evidence.
+
+Gate D is mandatory for Tier 1 applications. This Tier 2 example voluntarily
+demonstrates its scoring mechanics and thresholds. The historical `gate_d_passed`
+field describes that benchmark result; it does not independently accept an
+application or require all Gate D criteria for Tier 2.
 
 ---
 
@@ -55,8 +60,8 @@ The evaluation suite (`eval_dataset.jsonl`) contains 30 versioned scenarios cate
 ## 4. Local Execution & Verification
 
 ### Prerequisites
-* Python 3.9+ installed.
-* Optional (for live evaluation): Local Ollama daemon with `llama3.2` model.
+* Python 3.11+ installed.
+* Optional (for live evaluation): Local Ollama daemon with `qwen2.5:7b` model.
 
 ### Run Offline Evaluation Harness Check (Mode A — $< 1$s)
 ```bash
@@ -66,9 +71,9 @@ python3 examples/ai-evaluation/runner.py --mode fake
 
 ### Run Live Evaluation (Mode B — Local Ollama)
 ```bash
-python3 examples/ai-evaluation/runner.py --mode live --model llama3.2
+python3 examples/ai-evaluation/runner.py --mode live --model qwen2.5:7b
 ```
-*Note: Executes all 30 scenarios against the local model. Returns exit code 0 on Gate D pass ($\ge 98.0\%$ schema adherence) or exit code 1 if unverified or failed.*
+*Note: Executes all 30 scenarios against the local model. Returns exit code 0 when the reference schema threshold is met ($\ge 98.0\%$ schema adherence) or exit code 1 if unverified or failed.*
 
 ### Run Deterministic Unit Tests
 ```bash
@@ -80,16 +85,16 @@ python3 -m unittest discover -s examples/ai-evaluation/tests -t examples/ai-eval
 ## 5. Architectural Trade-offs & Limitations
 
 * **Trade-off (Ground-Truth Ambiguity vs. Deterministic Grading)**: Natural language is nuanced; some inputs (e.g. sarcastic bug reports) could plausibly be labeled differently by human annotators. The evaluation harness establishes strict expected labels for consistency while tracking category, sentiment, and urgency accuracies independently.
-* **Trade-off (Evaluation Cost/Time vs. Sample Size)**: A 30-scenario test suite executes in $< 0.1$s under `--mode fake` and roughly 15–30s on a local GPU/CPU under `--mode live`. Expanding to thousands of scenarios increases statistical power but slows down local developer inner-loop testing.
+* **Trade-off (Evaluation Cost/Time vs. Sample Size)**: Execution time depends on model, quantization and hardware; the CPU live run can take many minutes. See the evidence report for measured latency. Expanding to thousands of scenarios increases statistical power but slows down local developer inner-loop testing.
 * **Known Limitation**: Live evaluation depends on the specific model weights loaded into Ollama. A smaller quantized model (e.g. 1B or 3B parameters) may exhibit lower classification accuracy on ambiguous or adversarial scenarios than larger foundation models.
 
 ---
 
-## 6. Quality Gate Checklist (Scaled for Tier 2)
+## 6. Quality gate evidence
 
-Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 2 pattern examples are evaluated against Gates B, C, H, and I, and Gate D where AI behavior is present:
-- [ ] **Gate B — Code Quality & Type Safety**: Fully typed dataclasses (`EvalScenario`, `ScenarioResult`, `EvaluationSummary`); external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
-- [ ] **Gate C — Software Testing**: 9 deterministic unit tests (`test_runner.py`) testing dataset parsing, error handling, scoring aggregation, threshold boundary failure/success, and report formatting; statement coverage measurement: *Not Verified*.
-- [x] **Gate D — AI Evaluation**: 30-scenario versioned evaluation dataset (`eval_dataset.jsonl`) with automated metric collection; verified against authoritative $\ge 98.0\%$ schema adherence threshold.
-- [x] **Gate H — Documentation & Architectural Integrity**: Clean interfaces, Mermaid architectural flow diagram, and explicit taxonomy mappings.
-- [x] **Gate I — Demo & Operational Verification**: Single runnable command (`runner.py --mode fake`) executes completely offline in $< 1$ second under Mode A; live runner verified against local Ollama.
+This Tier 2 example is subject to Gates B, C, H and I. Gate D is a voluntary
+reference benchmark, not a Tier 2 acceptance certificate. Strict typing, lint,
+unit coverage, live commands and remaining acceptance limitations are recorded
+in the [Phases 1–7 evidence report](../../docs/engineering/phase1-7-remediation.md).
+CI now enforces the deterministic checks; remote CI execution must be verified
+on the reviewed revision.

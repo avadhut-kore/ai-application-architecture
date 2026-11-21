@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence, Tuple, Type
+from typing import Tuple, Type
 
 
 @dataclass(frozen=True)
@@ -37,4 +37,4 @@ class StepRetryPolicy:
     def compute_delay_seconds(self, attempt: int) -> float:
         """Calculate exponential backoff delay in seconds."""
         exponent = max(0, attempt - 1)
-        return (self.base_delay_ms / 1000.0) * (self.backoff_factor ** exponent)
+        return (self.base_delay_ms / 1000.0) * (self.backoff_factor**exponent)

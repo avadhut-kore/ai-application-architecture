@@ -5,9 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 from contracts.agent import ExecutionReceipt
 from contracts.workflow import (
@@ -26,6 +26,47 @@ class RemediationType(str, Enum):
     SECURITY_ESCALATION = "security_escalation"
 
 
+REMEDIATION_PROPOSAL_SCHEMA: Mapping[str, Any] = {
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "proposal_type": {"const": kind.value},
+                "summary": {"type": "string", "minLength": 1, "maxLength": 600},
+                "suggested_arguments": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required,
+                    "additionalProperties": False,
+                },
+                "requires_approval": {"const": approval},
+            },
+            "required": ["proposal_type", "summary", "suggested_arguments", "requires_approval"],
+            "additionalProperties": False,
+        }
+        for kind, properties, required, approval in (
+            (RemediationType.INFORMATIONAL, {}, [], False),
+            (RemediationType.SECURITY_ESCALATION, {}, [], False),
+            (
+                RemediationType.CUSTOMER_NOTE,
+                {"note": {"type": "string", "minLength": 1}},
+                ["note"],
+                True,
+            ),
+            (
+                RemediationType.FEE_CREDIT,
+                {
+                    "amount_cents": {"type": "integer", "minimum": 1},
+                    "reason": {"type": "string", "minLength": 1},
+                },
+                ["amount_cents", "reason"],
+                True,
+            ),
+        )
+    ]
+}
+
+
 @dataclass(frozen=True)
 class RemediationProposal:
     """Structured proposal emitted by the read-only investigation step (untrusted model output)."""
@@ -34,6 +75,34 @@ class RemediationProposal:
     summary: str
     suggested_arguments: Mapping[str, Any] = field(default_factory=dict)
     requires_approval: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.summary, str) or not self.summary.strip():
+            raise ValueError("Proposal summary must be a nonempty string")
+        if not isinstance(self.requires_approval, bool):
+            raise ValueError("requires_approval must be boolean")
+        args = self.suggested_arguments
+        if self.proposal_type in {
+            RemediationType.INFORMATIONAL,
+            RemediationType.SECURITY_ESCALATION,
+        }:
+            if args or self.requires_approval:
+                raise ValueError(
+                    "Non-mutating proposals cannot carry mutation arguments or approval requests"
+                )
+        if self.proposal_type == RemediationType.FEE_CREDIT:
+            amount = args.get("amount_cents")
+            if type(amount) is not int or amount <= 0:
+                raise ValueError("Fee credit requires a positive integer amount_cents")
+            if not isinstance(args.get("reason"), str) or not args["reason"].strip():
+                raise ValueError("Fee credit requires a reason")
+            if set(args) - {"customer_id", "amount_cents", "reason"}:
+                raise ValueError("Unexpected credit arguments")
+        if self.proposal_type == RemediationType.CUSTOMER_NOTE:
+            if not isinstance(args.get("note"), str) or not args["note"].strip():
+                raise ValueError("Customer note requires nonempty note")
+            if set(args) - {"customer_id", "note"}:
+                raise ValueError("Unexpected note arguments")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -45,11 +114,33 @@ class RemediationProposal:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> RemediationProposal:
+        allowed = {
+            "proposal_type",
+            "summary",
+            "suggested_arguments",
+            "requires_approval",
+            "requires_human_approval",
+        }
+        if set(data) - allowed:
+            raise ValueError("Unexpected remediation proposal fields")
+        if not isinstance(data.get("suggested_arguments", {}), dict):
+            raise ValueError("suggested_arguments must be an object")
+        if not isinstance(data.get("proposal_type"), str):
+            raise ValueError("proposal_type must be a string")
+        approval = data.get("requires_approval", data.get("requires_human_approval", False))
+        if (
+            "requires_approval" in data
+            and "requires_human_approval" in data
+            and data["requires_approval"] != data["requires_human_approval"]
+        ):
+            raise ValueError("Conflicting approval fields")
+        if type(approval) is not bool:
+            raise ValueError("requires_approval must be boolean")
         return cls(
-            proposal_type=RemediationType(str(data["proposal_type"])),
-            summary=str(data.get("summary", "")),
+            proposal_type=RemediationType(data["proposal_type"]),
+            summary=data.get("summary", ""),
             suggested_arguments=dict(data.get("suggested_arguments", {})),
-            requires_approval=bool(data.get("requires_approval", False)),
+            requires_approval=approval,
         )
 
 
@@ -163,6 +254,7 @@ class WorkflowState:
             f"{self.status.value}|"
             f"{self.current_step}|"
             f"{self.initiator_actor.actor_id}:{self.initiator_actor.role}|"
+            f"{json.dumps(list(self.initiator_actor.permissions), sort_keys=True)}|"
             f"{self.checkpoint_version}|"
             f"{self.pending_approval_id or ''}|"
             f"{canon_domain}|"

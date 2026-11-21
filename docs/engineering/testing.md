@@ -16,7 +16,7 @@ This document establishes the testing architecture, standards, test double polic
 
 The repository enforces a risk-based testing pyramid that maximizes deterministic verification while controlling execution cost and execution time:
 
-```
+```text
         ▲
        / \       End-to-End Tests (Smoke / Cross-Service Journeys)
       /   \      -------------------------------------------------

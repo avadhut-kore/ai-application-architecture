@@ -20,7 +20,6 @@ import os
 import re
 import subprocess
 import sys
-import unittest
 from pathlib import Path, PurePath
 from typing import List, Tuple
 
@@ -58,6 +57,7 @@ REQUIRED_DIRECTORIES = [
     "scripts",
     "adr",
     "templates",
+    "examples",
 ]
 
 # Prohibited speculative framework directories
@@ -80,6 +80,14 @@ PROHIBITED_CONTRACT_IMPORTS = {
     "llamaindex",
     "google.generativeai",
     "cohere",
+    "google",
+    "fastapi",
+    "flask",
+    "django",
+    "starlette",
+    "streamlit",
+    "ollama_adapter",
+    "ollama_embedding_adapter",
 }
 
 
@@ -101,6 +109,7 @@ def check_structure() -> Tuple[bool, List[str]]:
 
     # Ensure no empty directories exist (excluding .git)
     for root, dirs, files in os.walk(REPO_ROOT):
+        dirs[:] = [d for d in dirs if d not in IGNORED_DISCOVERY_DIRS]
         if ".git" in dirs:
             dirs.remove(".git")
         if "__pycache__" in dirs:
@@ -120,7 +129,19 @@ def check_contract_import_boundaries() -> Tuple[bool, List[str]]:
     if not contracts_dir.exists():
         return False, [f"Contracts directory not found: {contracts_dir}"]
 
-    for py_file in contracts_dir.glob("*.py"):
+    core_dirs = [contracts_dir]
+    core_dirs.extend(
+        REPO_ROOT / relative
+        for relative in (
+            "examples/agent-execution/agent",
+            "examples/agentic-workflow/workflow",
+            "examples/rag/rag",
+            "examples/structured-generation/structured_generation",
+        )
+    )
+    for py_file in (
+        file for directory in core_dirs if directory.exists() for file in directory.rglob("*.py")
+    ):
         try:
             tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
         except SyntaxError as ex:
@@ -251,7 +272,9 @@ def run_contract_tests() -> Tuple[bool, List[str]]:
     if all_errors:
         return False, all_errors
 
-    return True, [f"Ran {total_tests} unit tests across {len(suites)} suites: {', '.join(suite_summaries)}."]
+    return True, [
+        f"Ran {total_tests} unit tests across {len(suites)} suites: {', '.join(suite_summaries)}."
+    ]
 
 
 def run_template_and_artifact_validation() -> Tuple[bool, List[str]]:
@@ -342,7 +365,9 @@ def main() -> int:
     print("\n" + "=" * 60)
     if overall_success:
         print("RESULT: REPOSITORY VALIDATION PASSED")
-        print("Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests")
+        print(
+            "Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests"
+        )
         print("=" * 60)
         return 0
     else:

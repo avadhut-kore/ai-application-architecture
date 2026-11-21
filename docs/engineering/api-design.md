@@ -47,7 +47,7 @@ Generative AI applications frequently require streaming token-by-token output to
 ### Standard SSE Stream Format
 Streaming endpoints must format SSE payloads as typed events:
 
-```
+```text
 event: token
 data: {"content": "The", "index": 0}
 

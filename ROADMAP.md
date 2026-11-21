@@ -16,9 +16,17 @@ To maintain architectural integrity, phases are executed sequentially. Advanceme
 
 ---
 
+## Current implementation and acceptance status
+
+Phases 1–7 have implementation artifacts. Remediation and verification are tracked
+in [the evidence record](docs/engineering/phase1-7-remediation.md). Scope approval,
+implementation verification and independent acceptance are distinct. No learning
+guide or artifact manifest independently certifies phase completion. Phases 8–14
+remain planned; no Phase 8 capability is introduced by this remediation.
+
 ## Roadmap Overview
 
-```
+```text
 Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6
 Governance  Engineering Core       Tiered      AI          Knowledge   Agentic
 & Vision    Standards   Contracts  Templates   Foundations Intel & RAG Task Exec
@@ -31,7 +39,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 0: Vision, Scope & Architecture Governance (COMPLETED)
+## Phase 0: Vision, Scope & Architecture Governance
 * **Objective**: Establish the architectural vision, operational scope, core principles, application taxonomy, local-first execution policy, reference tiers, quality gates, and AI coding agent constitution.
 * **Scope**: Foundational markdown governance documentation, standards in `docs/architecture/`, and ADR framework.
 * **Expected Deliverables**: Governance constitution; zero application code or premature infrastructure.
@@ -41,11 +49,11 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 1: Engineering Standards & Governance (COMPLETED)
+## Phase 1: Engineering Standards & Governance
 * **Objective**: Establish the repository's engineering constitution covering coding, testing, AI evaluation, security, reliability, observability, data, APIs, documentation, Git workflows, and Definition of Done.
 * **Scope**:
   * General engineering standards and the Architecture Complexity Rule.
-  * Primary language standards: Python (`mypy --strict`, `ruff`, `pytest`), .NET 8 LTS / modern C# (`dotnet format`, analyzers, nullable references), and TypeScript (`tsc --strict`, `eslint`, `vitest`).
+  * Primary language standards: Python (`mypy --strict`, `ruff`, `pytest`), .NET 10 LTS / modern C# (`dotnet format`, analyzers, nullable references), and TypeScript (`tsc --strict`, `eslint`, `vitest`).
   * Secondary enterprise language standard: Java 21 LTS / Spring Boot (conventions, JPA/transactions, JUnit 5).
   * Testing standards (risk-based portfolio, deterministic vs. probabilistic eval separation, test doubles policy, mature coverage policy).
   * AI evaluation standards (eval sets, metrics, regression prevention, synthetic data governance).
@@ -63,7 +71,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 2: Repository Foundation & Minimum Core Contracts (COMPLETED)
+## Phase 2: Repository Foundation & Minimum Core Contracts
 * **Objective**: Establish monorepo structure, dependency boundaries, and minimal viable architectural contracts.
 * **Scope**:
   * Modular monorepo dependency boundaries and folder layouts (`apps/`, `building-blocks/`, `platform/`).
@@ -81,7 +89,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 3: Tiered Reference Implementation Templates (COMPLETED — READY FOR REVIEW)
+## Phase 3: Tiered Reference Implementation Templates
 * **Objective**: Build reusable, unpopulated scaffolding archetypes for each reference tier and establish an evidence-driven governance system.
 * **Scope**:
   * **Canonical Templates Directory**: Four lean reference archetypes in `templates/`:
@@ -110,7 +118,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 5: Knowledge Intelligence & RAG (IMPLEMENTED — PENDING INDEPENDENT REVIEW)
+## Phase 5: Knowledge Intelligence & RAG
 * **Objective**: Establish foundational knowledge intelligence and retrieval-augmented generation architectures per ADR-0004 and ADR-0005.
 * **Scope**:
   * **Core Baseline Reference Implementation** (Tier 2 Pattern Example & Tier 3 Platform Component):
@@ -132,7 +140,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 
 ---
 
-## Phase 6: Agentic Task Execution (COMPLETED)
+## Phase 6: Agentic Task Execution
 * **Objective**: Implement bounded, tool-using autonomous agents with explicit authorization controls, capability sandboxing, and Human-in-the-Loop safety boundaries.
 * **Scope**:
   * **Core Baseline Reference Implementation** (Tier 2 Pattern Example & Tier 3 Platform Component, documented in ADR-0006):
@@ -146,7 +154,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
     * Standard-library JSON-RPC 2.0 Model Context Protocol adapter (`platform/mcp-adapter`) over stdio with capability allowlisting.
     * Versioned 32-scenario evaluation dataset (`eval_dataset.jsonl`) measuring zero-tolerance safety invariants.
   * **Decision-Gated Enterprise Enhancements** (Progression Triggers documented in ADR-0006):
-    * Multi-agent collaborative swarms and negotiation protocols (deferred to Phase 7+).
+    * Multi-agent collaborative swarms and negotiation protocols (require a separately approved future-phase amendment).
     * Durable workflow engine integration (Temporal/Camunda) with persistent state machines (deferred to Phase 7+).
     * Long-term persistent vector memory stores across sessions (deferred to Phase 7+).
     * Tier 1 Enterprise Agent Application integrating persistent CRM and enterprise identity providers.
@@ -156,13 +164,16 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 ---
 
 ## Phase 7: Agentic Workflow Orchestration
-* **Objective**: Build durable multi-agent workflows, human-in-the-loop gates, and persistent state management.
-* **Scope**:
-  * Multi-agent collaborative workflow application (Tier 1).
-  * Durable state machine orchestration and saga compensation.
-  * Human-in-the-loop asynchronous pause/resume checkpoints.
+* **Objective**: Coordinate a bounded read-only agent inside a durable, application-controlled workflow.
+* **Core Scope** (Tier 2 baseline, ADR-0009 and ADR-0012):
+  * Code-defined state machine, bounded retries and persistent execution history.
+  * SQLite checkpoints, crash-released single-host ownership and public recovery.
+  * Asynchronous approval for notes, financial actions and compensation.
+  * Durable domain action receipts and reconciliation before uncertain retries.
+  * Local saga compensation, deterministic evaluation with negative controls, and a separate live Ollama smoke path.
+* **Deferred Scope**: Tier 1 multi-agent collaboration and distributed orchestration require a future named use case and approved roadmap amendment; they are not silently assigned to Phase 8.
 * **Dependencies**: Phase 6.
-* **Exit Criteria**: Workflow survives process restart without state loss; human approval checkpoint functions asynchronously.
+* **Exit Criteria**: Orderly pause and abrupt process-death recovery preserve durable business outcomes without duplicate mutations; pending human decisions remain pending; applicable gates have recorded evidence.
 
 ---
 

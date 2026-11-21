@@ -32,7 +32,6 @@ from contracts.workflow import (
 
 from workflow.approval import DurableApprovalRecord
 from workflow.audit import WorkflowAuditEvent
-from workflow.errors import CorruptedCheckpointError
 from workflow.ledger import DurableMutationRecord
 from workflow.state import WorkflowActorSnapshot, WorkflowState
 from workflow.store import SQLiteWorkflowStore
@@ -91,7 +90,7 @@ class TestSQLiteWorkflowStore(unittest.TestCase):
         # Directly tamper with SQLite state_json without updating checksum
         with contextlib.closing(sqlite3.connect(self.db_path)) as conn, conn:
             conn.execute(
-                "UPDATE workflow_checkpoints SET state_json = '{\"workflow_id\": \"wf-corrupt\", \"tampered\": true}' "
+                'UPDATE workflow_checkpoints SET state_json = \'{"workflow_id": "wf-corrupt", "tampered": true}\' '
                 "WHERE workflow_id = 'wf-corrupt';"
             )
 
@@ -123,7 +122,9 @@ class TestSQLiteWorkflowStore(unittest.TestCase):
         self.assertFalse(fail_old)
 
         # 3. Competing CAS when status is already RUNNING -> False
-        fail_status = self.store.compare_and_swap_resume("wf-cas", expected_version=4, new_version=5)
+        fail_status = self.store.compare_and_swap_resume(
+            "wf-cas", expected_version=4, new_version=5
+        )
         self.assertFalse(fail_status)
 
     def test_approval_record_persistence(self) -> None:
@@ -228,7 +229,9 @@ class TestSQLiteWorkflowStore(unittest.TestCase):
                 tmp_dir = tempfile.TemporaryDirectory()
                 try:
                     db_file = os.path.join(tmp_dir.name, "lifecycle.db")
-                    before_conns = sum(1 for obj in gc.get_objects() if isinstance(obj, sqlite3.Connection))
+                    before_conns = sum(
+                        1 for obj in gc.get_objects() if isinstance(obj, sqlite3.Connection)
+                    )
 
                     store = SQLiteWorkflowStore(db_file)
                     state = WorkflowState(
@@ -292,7 +295,9 @@ class TestSQLiteWorkflowStore(unittest.TestCase):
                     )
                     self.assertEqual(len(store.load_audit_events("wf-lifecycle")), 1)
 
-                    after_conns = sum(1 for obj in gc.get_objects() if isinstance(obj, sqlite3.Connection))
+                    after_conns = sum(
+                        1 for obj in gc.get_objects() if isinstance(obj, sqlite3.Connection)
+                    )
                     self.assertEqual(after_conns, before_conns)
                 finally:
                     # Must succeed immediately with cyclic GC disabled

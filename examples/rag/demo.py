@@ -16,10 +16,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 BUILDING_BLOCKS_PYTHON = REPO_ROOT / "building-blocks" / "python"
@@ -37,11 +35,10 @@ from ollama_adapter.adapter import OllamaAdapter
 from ollama_embedding_adapter.adapter import OllamaEmbeddingAdapter
 from rag.citation_validator import CitationValidator
 from rag.context_builder import ContextBuilder
-from rag.document import Chunk, Document
 from rag.chunker import HeadingAwareChunker
 from rag.ingestion import load_corpus_directory
 from rag.retriever import Retriever
-from rag.service import RAGResponse, RAGService
+from rag.service import RAGService
 from rag.test_doubles import DeterministicEmbeddingStub, DeterministicRAGGenerationStub
 from rag.vector_index import InMemoryVectorIndex
 
@@ -65,7 +62,9 @@ async def build_rag_system(
     if mode == "live":
         print(f"Connecting to live Ollama endpoint at: {endpoint}")
         embed_adapter = OllamaEmbeddingAdapter(endpoint=endpoint, default_model=embed_model)
-        gen_adapter = OllamaAdapter(endpoint=endpoint, default_model=gen_model)
+        gen_adapter = OllamaAdapter(
+            endpoint=endpoint, default_model=gen_model, timeout_seconds=240.0, max_retries=0
+        )
 
         is_healthy = await embed_adapter.check_health()
         if not is_healthy:
@@ -108,7 +107,6 @@ async def build_rag_system(
         }
         llm_port = DeterministicRAGGenerationStub(canned_answers=canned)
 
-
     # Ingest and index corpus
     docs = load_corpus_directory(corpus_dir)
     chunker = HeadingAwareChunker(max_chunk_chars=1000)
@@ -116,13 +114,21 @@ async def build_rag_system(
     for d in docs:
         all_chunks.extend(chunker.chunk_document(d))
 
-    req = EmbeddingRequest(inputs=[c.text for c in all_chunks], model=embed_model)
+    req = EmbeddingRequest(
+        inputs=[c.text for c in all_chunks], model=embed_model, metadata={"input_type": "document"}
+    )
     emb_resp = await embedding_port.embed(req)
 
     index = InMemoryVectorIndex(dimensions=emb_resp.dimensions)
     index.add_batch(all_chunks, emb_resp.embeddings)
 
-    retriever = Retriever(embedding_port=embedding_port, vector_index=index, embedding_model=embed_model, default_top_k=top_k)
+    retriever = Retriever(
+        embedding_port=embedding_port,
+        vector_index=index,
+        embedding_model=embed_model,
+        default_top_k=top_k,
+        prefer_primary_document=True,
+    )
     validator = CitationValidator(document_catalog={d.document_id: d for d in docs})
 
     return RAGService(
@@ -168,7 +174,9 @@ async def execute_query_demo(service: RAGService, query: str, top_k: int = 2) ->
         print("  (No verified citations)")
 
     if response.citation_validation.rejected_citation_ids:
-        print(f"\n[REJECTED/SPOOFED CITATIONS PREVENTED]: {response.citation_validation.rejected_citation_ids}")
+        print(
+            f"\n[REJECTED/SPOOFED CITATIONS PREVENTED]: {response.citation_validation.rejected_citation_ids}"
+        )
 
     print("\n[EXECUTION METRICS & GROUNDING STATUS]")
     print(f"  Insufficient Evidence Flag: {response.insufficient_evidence}")
@@ -191,7 +199,9 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.query:
         await execute_query_demo(service, args.query, top_k=args.top_k)
     else:
-        print(f"\nRunning Automated RAG Demonstration across {len(SAMPLE_QUERIES)} sample queries (mode={args.mode})...")
+        print(
+            f"\nRunning Automated RAG Demonstration across {len(SAMPLE_QUERIES)} sample queries (mode={args.mode})..."
+        )
         for q in SAMPLE_QUERIES:
             await execute_query_demo(service, q, top_k=args.top_k)
 
@@ -200,17 +210,34 @@ async def main_async(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run Knowledge Intelligence & RAG Demonstration.")
-    parser.add_argument("--mode", choices=["fake", "live"], default="fake", help="Execution mode (default: fake)")
-    parser.add_argument("--query", help="Specific query to answer (defaults to sample query battery)")
-    parser.add_argument("--corpus", default=str(RAG_DIR / "corpus"), help="Path to corpus directory")
+    parser.add_argument(
+        "--mode", choices=["fake", "live"], default="live", help="Execution mode (default: live)"
+    )
+    parser.add_argument(
+        "--query", help="Specific query to answer (defaults to sample query battery)"
+    )
+    parser.add_argument(
+        "--corpus", default=str(RAG_DIR / "corpus"), help="Path to corpus directory"
+    )
     parser.add_argument("--endpoint", default="http://localhost:11434", help="Ollama API base URL")
     parser.add_argument("--embed-model", default="nomic-embed-text", help="Embedding model name")
-    parser.add_argument("--gen-model", default="llama3.2", help="Generation model name")
-    parser.add_argument("--top-k", type=int, default=2, help="Retrieval depth (default: 2)")
+    parser.add_argument("--gen-model", default="qwen2.5:7b", help="Generation model name")
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Maximum retrieval depth (default: 3; primary-document tail policy)",
+    )
     args = parser.parse_args()
 
     return asyncio.run(main_async(args))
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main())

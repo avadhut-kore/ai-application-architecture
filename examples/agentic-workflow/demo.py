@@ -30,14 +30,19 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 BUILDING_BLOCKS_DIR = REPO_ROOT / "building-blocks" / "python"
 AGENT_EXEC_DIR = REPO_ROOT / "examples" / "agent-execution"
 WORKFLOW_DIR = Path(__file__).resolve().parent
 
-for p in (BUILDING_BLOCKS_DIR, AGENT_EXEC_DIR, WORKFLOW_DIR):
+for p in (
+    BUILDING_BLOCKS_DIR,
+    AGENT_EXEC_DIR,
+    WORKFLOW_DIR,
+    REPO_ROOT / "platform" / "ollama-adapter",
+):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
@@ -49,69 +54,26 @@ from agent.capabilities import (
     UpdateCustomerNoteCapability,
 )
 from agent.domain import InMemoryCustomerStore
+from agent.persistence import SQLiteCustomerStore
+from agent.engine import AgentExecutionEngine
+from agent.approval import CliApprovalHandler
 from agent.executor import ToolExecutor
 from agent.policy import CustomerSupportAuthorizationPolicy
 from agent.registry import CapabilityRegistry
-from contracts.agent import AgentActor
-from contracts.workflow import ApprovalStatus, MutationStatus, WorkflowStatus
+from contracts.workflow import WorkflowStatus
+from ollama_adapter.adapter import OllamaAdapter
 from workflow.engine import WorkflowEngine
 from workflow.remediation_workflow import build_customer_remediation_workflow
-from workflow.state import WorkflowActorSnapshot, WorkflowState
+from workflow.state import WorkflowActorSnapshot, WorkflowState, REMEDIATION_PROPOSAL_SCHEMA
 from workflow.store import SQLiteWorkflowStore
 
 DEFAULT_DB_PATH = str(WORKFLOW_DIR / "workflow_demo.db")
 
 
-class DemoAgentEngine:
-    """Agent reasoning stub for CLI demo producing realistic structured proposals."""
-
-    def __init__(self, inquiry: str) -> None:
-        self.inquiry = inquiry
-
-    async def run(self, task: str, actor: AgentActor) -> Any:
-        inquiry_lower = self.inquiry.lower()
-
-        if "fraud" in inquiry_lower or "frozen" in inquiry_lower or "security" in inquiry_lower:
-            answer = (
-                "Customer inquiry concerns potential fraud or security hold.\n"
-                '{"proposal_type": "security_escalation", "summary": "Escalate to fraud investigations team", '
-                '"suggested_arguments": {"reason": "Customer mentions potential unauthorized account activity"}, '
-                '"requires_human_approval": false}'
-            )
-        elif "note" in inquiry_lower or "address" in inquiry_lower or "travel" in inquiry_lower:
-            answer = (
-                "Administrative record update requested.\n"
-                '{"proposal_type": "customer_note", "summary": "Record operational account note", '
-                f'"suggested_arguments": {{"note": "Customer inquiry noted: {self.inquiry}"}}, '
-                '"requires_human_approval": false}'
-            )
-        elif "credit" in inquiry_lower or "fee" in inquiry_lower or "dispute" in inquiry_lower or "refund" in inquiry_lower:
-            answer = (
-                "Verified billing discrepancy. Outage fee adjustment recommended.\n"
-                '{"proposal_type": "fee_credit", "summary": "Refund $25.00 dispute concession", '
-                '"suggested_arguments": {"amount_cents": 2500, "reason": "Disputed fee concession"}, '
-                '"requires_human_approval": true}'
-            )
-        else:
-            answer = (
-                "Standard account inquiry. No adjustment necessary.\n"
-                '{"proposal_type": "informational", "summary": "General inquiry answered", '
-                '"suggested_arguments": {}, "requires_human_approval": false}'
-            )
-
-        class Result:
-            def __init__(self, text: str) -> None:
-                self.final_answer = text
-                self.status = "COMPLETED"
-                self.execution_receipts = []
-                self.run_id = f"demo-run-{time.time_ns()}"
-                self.step_count = 2
-
-        return Result(answer)
-
-
-def get_components(db_path: str, inquiry: str = "") -> tuple[WorkflowEngine, InMemoryCustomerStore]:
-    customer_store = InMemoryCustomerStore()
+def get_components(
+    db_path: str, inquiry: str = "", agent_engine: Any = None
+) -> tuple[WorkflowEngine, InMemoryCustomerStore]:
+    customer_store = SQLiteCustomerStore(db_path)
     auth_policy = CustomerSupportAuthorizationPolicy(store=customer_store)
     sqlite_store = SQLiteWorkflowStore(db_path)
 
@@ -123,7 +85,25 @@ def get_components(db_path: str, inquiry: str = "") -> tuple[WorkflowEngine, InM
     credit_cap = ApplyFeeCreditCapability(customer_store)
     note_cap = UpdateCustomerNoteCapability(customer_store)
     executor = ToolExecutor()
-    agent_engine = DemoAgentEngine(inquiry)
+    registry = CapabilityRegistry(read_only_caps)
+    if agent_engine is None:
+        model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+        agent_engine = AgentExecutionEngine(
+            llm_client=OllamaAdapter(
+                endpoint=os.environ.get("OLLAMA_ENDPOINT", "http://localhost:11434"),
+                timeout_seconds=240.0,
+                max_retries=0,
+            ),
+            registry=registry,
+            policy=auth_policy,
+            approval_handler=CliApprovalHandler(),
+            executor=executor,
+            model=model,
+            final_answer_schema=REMEDIATION_PROPOSAL_SCHEMA,
+            max_duration_seconds=300.0,
+            max_output_tokens=512,
+            max_steps=4,
+        )
 
     workflow_def = build_customer_remediation_workflow(
         customer_store=customer_store,
@@ -190,13 +170,13 @@ async def cmd_start(args: argparse.Namespace) -> int:
         print(f"  Target Capability:   {state.domain_context.get('target_capability')}")
         print(f"  Proposed Arguments:  {args_dict}")
         print("\nProcess is now cleanly terminating. State is safely persisted in SQLite.")
-        print(f"To inspect or resume in another terminal:")
+        print("To inspect or resume in another terminal:")
         print(f"  python3 demo.py status --workflow-id {wf_id}")
         print(f"  python3 demo.py approve --workflow-id {wf_id} --approver manager_jane")
     else:
         print(f"Workflow reached terminal status: {state.status.value.upper()}")
 
-    return 0
+    return 1 if state.status == WorkflowStatus.FAILED else 0
 
 
 async def cmd_status(args: argparse.Namespace) -> int:
@@ -242,6 +222,10 @@ async def cmd_status(args: argparse.Namespace) -> int:
                 print(f"  Receipt Summary:   {mutation.execution_receipt.result_summary}")
             print("-" * 70)
 
+    customer_store = SQLiteCustomerStore(db_path)
+    account = customer_store.get_account(str(state.domain_context.get("customer_id", "")))
+    if account:
+        print(f"Persisted Account Balance: {account.balance_cents} cents")
     print("STEP EXECUTION HISTORY:")
     for h in state.history:
         print(f"  - Step: {h.step_name:<25} Status: {h.status.value:<10} Outcome: {h.outcome_type}")
@@ -288,21 +272,47 @@ async def cmd_decision(args: argparse.Namespace, decision: str) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Phase 7 Agentic Workflow Orchestration CLI Demo")
-    parser.add_argument("--db", "--db-path", dest="db", type=str, default=DEFAULT_DB_PATH, help="Path to SQLite database file")
+    parser.add_argument(
+        "--db",
+        "--db-path",
+        dest="db",
+        type=str,
+        default=DEFAULT_DB_PATH,
+        help="Path to SQLite database file",
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # start subcommand
     p_start = subparsers.add_parser("start", help="Start new remediation workflow instance")
     p_start.add_argument("--workflow-id", type=str, default=None, help="Custom workflow identifier")
-    p_start.add_argument("--customer", type=str, default="cust-001", help="Customer ID (cust-001, cust-002, etc.)")
-    p_start.add_argument("--inquiry", type=str, default="Dispute accidental $25 overdraft fee during platform outage", help="Customer inquiry description")
+    p_start.add_argument(
+        "--customer", type=str, default="cust-001", help="Customer ID (cust-001, cust-002, etc.)"
+    )
+    p_start.add_argument(
+        "--inquiry",
+        type=str,
+        default="Dispute accidental $25 overdraft fee during platform outage",
+        help="Customer inquiry description",
+    )
     p_start.add_argument("--actor", type=str, default="operator_bob", help="Initiating actor ID")
-    p_start.add_argument("--role", type=str, default="senior_agent", help="Initiating actor role (junior_agent, senior_agent, admin)")
+    p_start.add_argument(
+        "--role",
+        type=str,
+        default="senior_agent",
+        help="Initiating actor role (junior_agent, senior_agent, admin)",
+    )
 
     # status subcommand
-    p_status = subparsers.add_parser("status", help="Inspect status and durable records of a workflow")
+    p_status = subparsers.add_parser(
+        "status", help="Inspect status and durable records of a workflow"
+    )
     p_status.add_argument("--workflow-id", type=str, required=True, help="Workflow ID to inspect")
+
+    p_recover = subparsers.add_parser(
+        "recover", help="Recover a workflow whose owner process exited"
+    )
+    p_recover.add_argument("--workflow-id", required=True)
 
     # approve subcommand
     p_app = subparsers.add_parser("approve", help="Approve pending action and resume workflow")
@@ -322,6 +332,11 @@ def main() -> None:
         sys.exit(asyncio.run(cmd_start(args)))
     elif args.command == "status":
         sys.exit(asyncio.run(cmd_status(args)))
+    elif args.command == "recover":
+        engine, _ = get_components(args.db)
+        state = asyncio.run(engine.recover_workflow(args.workflow_id))
+        print(format_state_banner(state))
+        sys.exit(1 if state.status == WorkflowStatus.FAILED else 0)
     elif args.command == "approve":
         sys.exit(asyncio.run(cmd_decision(args, "approved")))
     elif args.command == "reject":
@@ -329,4 +344,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from ai_telemetry import configure_local_tracing
+
+    configure_local_tracing()
+    # Windows redirected output otherwise inherits a legacy code page.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     main()

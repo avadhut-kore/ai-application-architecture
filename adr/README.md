@@ -26,7 +26,7 @@ An ADR is **NOT** needed for routine bug fixes, internal refactoring within esta
 
 Every ADR transitions through a documented lifecycle:
 
-```
+```text
 ┌──────────┐      ┌──────────┐      ┌────────────┐
 │ PROPOSED │ ───► │ ACCEPTED │ ───► │ SUPERSEDED │
 └────┬─────┘      └──────────┘      └────────────┘

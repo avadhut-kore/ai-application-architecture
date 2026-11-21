@@ -41,6 +41,17 @@ CI builds and container image compilation must always execute in strict locked m
 
 ## 3. License Compatibility & Approved Open-Source Licenses
 
+Model weights are separate from the repository's software dependencies. Record
+their publisher, immutable digest and license in verification evidence. The
+reference profile selects Apache-2.0-licensed Qwen2.5-7B-Instruct and
+nomic-embed-text; tags alone are mutable and require revalidation after updates.
+Qwen2.5-3B uses a research-only license and is not an approved enterprise default.
+Earlier local evaluation results from that model are diagnostic evidence, not
+commercial-profile acceptance. Publisher license sources:
+[Qwen 7B](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/LICENSE),
+[Qwen 3B](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct/raw/main/LICENSE),
+[Nomic](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5).
+
 Only packages with permissive, business-friendly open-source licenses are permitted in this repository:
 
 ### Approved Licenses
@@ -72,3 +83,10 @@ Only packages with permissive, business-friendly open-source licenses are permit
    * Pull requests introducing dependencies with unmitigated High or Critical CVEs are automatically rejected.
 3. **Automated Dependabot Updates**:
    * Repository configuration (`.github/dependabot.yml`) must monitor weekly dependency releases and security advisories, creating isolated, targeted PRs for patch updates.
+
+## Current Python workspace
+
+The Phase 1–7 Python patterns and adapters share the root `pyproject.toml` and
+`uv.lock` under ADR-0012. Use `uv sync --frozen`. Static contracts remain free of
+external runtime imports; telemetry is a separate runtime package. Future Tier 1
+applications must retain independently reproducible dependency definitions.

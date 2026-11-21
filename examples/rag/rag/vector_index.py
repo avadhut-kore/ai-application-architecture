@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
+from typing import Any, List, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
 
 from .document import Chunk
 
@@ -51,6 +51,8 @@ def cosine_similarity(v1: Sequence[float], v2: Sequence[float]) -> float:
     """Calculate cosine similarity between two float vectors with zero-norm safety."""
     if len(v1) != len(v2):
         raise ValueError(f"Vector dimension mismatch: {len(v1)} != {len(v2)}")
+    if not v1 or any(not math.isfinite(value) for value in (*v1, *v2)):
+        raise ValueError("Vectors must be nonempty and finite")
 
     dot_product = 0.0
     norm1_sq = 0.0
@@ -85,6 +87,8 @@ class InMemoryVectorIndex(VectorIndexPort):
 
     def add(self, chunk: Chunk, vector: Sequence[float]) -> None:
         vec_list = [float(x) for x in vector]
+        if not vec_list or any(not math.isfinite(value) for value in vec_list):
+            raise ValueError("Embedding vector must be nonempty and finite")
         if self.dimensions is None:
             self.dimensions = len(vec_list)
         elif len(vec_list) != self.dimensions:
@@ -101,7 +105,9 @@ class InMemoryVectorIndex(VectorIndexPort):
 
     def add_batch(self, chunks: Sequence[Chunk], vectors: Sequence[Sequence[float]]) -> None:
         if len(chunks) != len(vectors):
-            raise ValueError(f"Chunk count ({len(chunks)}) does not match vector count ({len(vectors)})")
+            raise ValueError(
+                f"Chunk count ({len(chunks)}) does not match vector count ({len(vectors)})"
+            )
         for chunk, vec in zip(chunks, vectors):
             self.add(chunk, vec)
 

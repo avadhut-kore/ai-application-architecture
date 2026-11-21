@@ -23,7 +23,7 @@ The **Model Context Protocol (MCP)** platform component provides a pure Python s
 
 ## 2. Architecture & Wire Protocol
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ Agent Execution Engine (examples/agent-execution)      │
 │ - Selects capability by canonical name                 │
@@ -124,7 +124,7 @@ client.close()
 
 Because Python's standard `subprocess.Popen` stdio pipes perform blocking synchronous reads (`stdout.readline()`), invoking `call_tool()` directly on the main event loop thread would block the entire asyncio event loop, defeating outer `asyncio.wait_for(...)` timeout cancellation.
 
-To guarantee a bounded timeout boundary without external runtime dependencies:
+To guarantee a bounded timeout boundary using standard-library transport and the locked telemetry dependencies:
 1. **Async Worker Thread Isolation**: `McpCapabilityAdapter.execute()` dispatches the synchronous `client.call_tool(...)` invocation onto a worker thread via `asyncio.to_thread()`.
 2. **Event Loop Non-Blocking**: The agent's asyncio event loop remains fully responsive while subprocess I/O is pending. Other tasks, timers, and step abort signals execute concurrently.
 3. **Subprocess Termination on Cancellation**: If the calling context or executor times out (raising `asyncio.CancelledError` or `asyncio.TimeoutError`), the adapter catches the cancellation and invokes `client.close()`.
@@ -152,3 +152,10 @@ Validate artifact structure:
 ```bash
 python3 scripts/artifact_validator.py platform/mcp-adapter
 ```
+
+## Runtime telemetry and current evidence
+
+Runtime operations emit metadata-only OpenTelemetry spans through `ai_telemetry`.
+Use the locked root environment. Exporter assertions, strict typing, statement and
+branch coverage, security scans and limitations are recorded in the
+[remediation record](../../docs/engineering/phase1-7-remediation.md).

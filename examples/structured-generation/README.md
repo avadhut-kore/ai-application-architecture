@@ -60,8 +60,8 @@ graph TD
 ## 4. Local Execution & Verification
 
 ### Prerequisites
-* Python 3.9+ installed.
-* Optional (for live execution): Local Ollama daemon running with `llama3.2` installed (`ollama pull llama3.2`).
+* Python 3.11+ installed.
+* Optional (for live execution): Local Ollama daemon running with `qwen2.5:7b` installed (`ollama pull qwen2.5:7b`).
 
 ### Run Demonstration (Offline Mode A — $< 1$s)
 ```bash
@@ -83,17 +83,17 @@ python3 -m unittest discover -s examples/structured-generation/tests -t examples
 
 ## 5. Architectural Trade-offs & Limitations
 
-* **Trade-off (Reliability vs. Latency)**: Adding schema validation and corrective retries guarantees type safety downstream, but a corrective retry incurs a second inference latency round-trip ($2\times$ model generation time).
+* **Trade-off (Reliability vs. Latency)**: Schema validation rejects invalid downstream values, but a corrective retry incurs a second inference latency round-trip ($2\times$ model generation time).
 * **Trade-off (Prompt-based Schema vs Provider-native Constrained Decoding)**: Relying on prompt instructions and application-layer parsing ensures 100% provider neutrality across any LLM, but may yield slightly lower single-pass validity rates than engine-level grammar-constrained decoding (e.g., GBNF grammars or JSON mode).
 * **Known Limitation**: Single corrective retry limit prevents infinite retry storms and cost runaway, but will return a `ValidationResult.failure` if the model repeatedly hallucinates invalid enums. Downstream callers must handle failure cases gracefully.
 
 ---
 
-## 6. Quality Gate Checklist (Scaled for Tier 2)
+## 6. Quality gate evidence
 
-Per authoritative [QUALITY-GATES.md](../../QUALITY-GATES.md), Tier 2 pattern examples are evaluated against Gates B, C, H, and I:
-- [ ] **Gate B — Code Quality & Type Safety**: Source code is strictly typed with dataclasses, enums, and comprehensive type annotations; external linters (`mypy`, `ruff`) not run in CI (*Partially Verified*).
-- [ ] **Gate C — Software Testing**: 10 hermetic unit tests (`test_service.py`) testing clean extraction, malformed JSON, invalid enum values, confidence range violations, markdown code fence extraction, boolean confidence rejection, unexpected-field rejection, and corrective retry recovery using test doubles; statement coverage measurement: *Not Verified*.
-- [x] **Gate H — Documentation & Architectural Integrity**: Clean interfaces, strongly typed outputs (`CustomerFeedbackExtraction`), renderable Mermaid interaction diagram, and validated cross-references.
-- [x] **Gate I — Demo & Operational Verification**: Runnable CLI (`demo.py --mode fake`) executes hermetically in $< 1$ second under Mode A; live mode (`demo.py --mode live`) verifies live execution against local Ollama.
-- [x] *Gate D — AI Evaluation (Scaled)*: Validated through dedicated AI evaluation harness in `examples/ai-evaluation/`.
+This Tier 2 example is subject to Gates B, C, H and I. Gate D is a voluntary
+reference benchmark, not a Tier 2 acceptance certificate. Strict typing, lint,
+unit coverage, live commands and remaining acceptance limitations are recorded
+in the [Phases 1–7 evidence report](../../docs/engineering/phase1-7-remediation.md).
+CI now enforces the deterministic checks; remote CI execution must be verified
+on the reviewed revision.

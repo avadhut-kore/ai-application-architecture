@@ -41,7 +41,7 @@ Do not create empty placeholder files, speculative interface hierarchies (`IAgen
 Maintain one authoritative source per topic. Do not duplicate principles, taxonomy descriptions, or standards across multiple markdown files. Use cross-references. Agents must follow the authoritative-source hierarchy and must not resolve conflicting normative documents by choosing whichever requirement is easier. If a conflict is detected: report it, identify authoritative ownership, and remediate deliberately.
 
 ### 8. Avoid Fake Data & Fake AI Behavior
-Never commit fake sleep loops (e.g., `time.sleep(2)`) or hardcoded static strings in production execution paths to mimic AI inference. Real local models (Ollama) or live adapters must execute. Test doubles belong strictly in automated unit tests (`tests/unit/`).
+Never commit fake sleep loops (e.g., `time.sleep(2)`) or hardcoded static strings in production execution paths to mimic AI inference. Runtime demos must default to real local models or live adapters and must never silently fall back to scripted answers. Test doubles belong in automated test support or explicitly requested deterministic verification harnesses, which must label their mode and report real AI quality as not verified. Architecture decisions and exceptions are recorded in [ADR-0012](adr/0012-phase1-7-verification-and-local-recovery.md).
 
 ### 9. Validate Your Work
 Run static analysis, type checking (`mypy --strict`, `dotnet build`), unit test suites, evaluation harnesses, and link checkers after making changes.
@@ -63,9 +63,13 @@ Never make vague assertions (e.g., "all tests pass" or "observability verified")
 
 ## 3. Mandatory Agent Workflow Protocol
 
-When assigned an engineering task, follow this exact linear sequence:
+When assigned an engineering task, follow this sequence. An explicit approval in
+the current chat satisfies plan review for that agreed scope; do not repeatedly
+request the same approval. Record material scope decisions in the authoritative
+roadmap or ADR. Routine fixes, regression tests and reversible verification within
+the approved scope may proceed autonomously.
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ 1. ARCHITECTURAL & ENGINEERING RESEARCH                │
 │    Inspect AGENTS.md, ROADMAP.md, and docs/            │

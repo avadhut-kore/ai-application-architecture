@@ -13,7 +13,7 @@
 
 In early Phase 0 roadmapping, Phase 7 was sketched as a speculative "Tier 1 Multi-Agent Collaborative Workflow Application" featuring distributed state machine orchestration and saga compensation.
 
-During Phase 7 architectural analysis, repository governance ([`AGENTS.md`](../AGENTS.md)) and architecture principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Principle 4: Architecture Complexity Rule*, *Principle 6: Local-First Principle*, and *Principle 13: Capability Safety & Human Agency Preservation*) mandated that workflow orchestration must coordinate bounded execution with sovereign application control:
+During Phase 7 architectural analysis, repository governance ([`AGENTS.md`](../AGENTS.md)) and architecture principles ([`docs/architecture/principles.md`](../docs/architecture/principles.md) — *Architecture Complexity Rule (engineering/general.md)*, *Local-First Policy*, and *Principle 7: State-Mutating Tools Require Authorization*) mandated that workflow orchestration must coordinate bounded execution with sovereign application control:
 1. **North Star Boundary**: Workflow orchestration coordinates agentic execution; it does not replace the Phase 6 agent runtime. The application owns process progression, while the agent owns bounded local reasoning.
 2. **Phase Boundary Discipline**: Unconstrained multi-agent swarms negotiating arbitrarily violate Principle 4 when introduced before single-agent workflow orchestration is validated. Single bounded agent coordination must precede multi-agent collaboration.
 3. **Artifact Tier Alignment**: Following the governance precedents established in [`ADR-0005`](0005-roadmap-reconciliation-knowledge-intelligence-and-rag.md) and [`ADR-0006`](0006-bounded-agentic-task-execution-and-roadmap-reconciliation.md), foundational orchestration semantics must be proven as a **Tier 2 Pattern Example** (`examples/agentic-workflow`) and **Core Contracts** (`building-blocks/python/contracts/workflow.py`).
@@ -71,7 +71,7 @@ The following capabilities are deliberately excluded from Phase 7:
 
 ### Positive
 * Zero third-party package dependencies for core workflow execution and SQLite persistence.
-* Provable mathematical protection against model-injected workflow transitions.
+* Tested protection against model-injected workflow transitions.
 * Complete restart/resume fidelity across independent OS processes.
 * Clear architectural separation between workflow control and agent reasoning.
 
@@ -84,6 +84,6 @@ The following capabilities are deliberately excluded from Phase 7:
 
 ## 6. Compliance with Repository Principles
 
-* **Principle 4 (Architecture Complexity Rule)**: Bounded single-agent workflow orchestration before complex multi-agent swarms.
-* **Principle 6 (Local-First)**: 100% runnable under Mode A offline without external services.
-* **Principle 13 (Capability Safety & Human Agency Preservation)**: Absolute human authorization for high-consequence state mutations.
+* **Architecture Complexity Rule (engineering/general.md)**: Bounded single-agent workflow orchestration before complex multi-agent swarms.
+* **Local-First Policy**: 100% runnable under Mode A offline without external services.
+* **Principle 7 (State-Mutating Tools Require Authorization)**: Absolute human authorization for high-consequence state mutations.

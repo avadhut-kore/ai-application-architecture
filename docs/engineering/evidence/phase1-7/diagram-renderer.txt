@@ -1,0 +1,24 @@
+Found 22 mermaid charts in Markdown input
+ ✅ ./rendered-2.svg
+ ✅ ./rendered-1.svg
+ ✅ ./rendered-4.svg
+ ✅ ./rendered-3.svg
+ ✅ ./rendered-5.svg
+ ✅ ./rendered-6.svg
+ ✅ ./rendered-7.svg
+ ✅ ./rendered-8.svg
+ ✅ ./rendered-9.svg
+ ✅ ./rendered-10.svg
+ ✅ ./rendered-11.svg
+ ✅ ./rendered-12.svg
+ ✅ ./rendered-13.svg
+ ✅ ./rendered-14.svg
+ ✅ ./rendered-16.svg
+ ✅ ./rendered-15.svg
+ ✅ ./rendered-17.svg
+ ✅ ./rendered-18.svg
+ ✅ ./rendered-19.svg
+ ✅ ./rendered-20.svg
+ ✅ ./rendered-21.svg
+ ✅ ./rendered-22.svg
+ ✅ rendered.md

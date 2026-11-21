@@ -2,7 +2,7 @@
 
 ```text
 Phase:                  01 — Engineering Standards & Governance
-Status:                 Frozen & Accepted
+Status:                 Implemented; current verification and acceptance status: ROADMAP.md
 Learning Guide Status:  Complete
 Primary Audience:       Senior Software Engineers, AI Platform Engineers, Quality Architects
 Implementation:         18 Comprehensive Engineering Standards & Language Guides
@@ -58,7 +58,7 @@ Engineering standards bridge the gap between architecture governance and concret
 graph TD
     Phase0["Phase 0: Architecture Governance<br/>(Principles & Quality Gates A–J)"] --> DoD["Definition of Done<br/>(Gate Verification Checklist)"]
     DoD --> CoreStandards["Universal Standards<br/>(Testing, AI Eval, Security, Config, API, Observability)"]
-    CoreStandards --> Polyglot["Polyglot Language Guides<br/>(Python 3.11+, .NET 8+, Java 21+, TS 5+)"]
+    CoreStandards --> Polyglot["Polyglot Language Guides<br/>(Python 3.11+, .NET 10+, Java 21+, TS 5+)"]
     Polyglot --> Code["Phases 2+: Physical Code, Contracts & Adapters"]
 ```
 
@@ -86,7 +86,7 @@ graph TD
 | **Dependencies** | [`docs/engineering/dependencies.md`](../engineering/dependencies.md) | Zero vendor SDKs in core contracts; standard library preference. |
 | **Git Workflow** | [`docs/engineering/git-workflow.md`](../engineering/git-workflow.md) | Conventional Commits; evidence-based PR bodies; post-freeze learning rule. |
 | **Documentation** | [`docs/engineering/documentation.md`](../engineering/documentation.md) | Executable documentation; zero broken links; Mermaid diagrams. |
-| **Language Standards** | [`docs/engineering/python.md`](../engineering/python.md), [`dotnet.md`](../engineering/dotnet.md), [`java.md`](../engineering/java.md), [`typescript.md`](../engineering/typescript.md) | Python 3.11+, .NET 8+, Java 21+, TypeScript 5+ baseline rules. |
+| **Language Standards** | [`docs/engineering/python.md`](../engineering/python.md), [`dotnet.md`](../engineering/dotnet.md), [`java.md`](../engineering/java.md), [`typescript.md`](../engineering/typescript.md) | Python 3.11+, .NET 10+, Java 21+, TypeScript 5+ baseline rules. |
 
 ---
 
@@ -215,7 +215,7 @@ Phase 1: Engineering Standards
 └── Technical Execution
     ├── Configuration & Secrets (Strict separation)
     ├── Dependency Governance (Standard library first)
-    └── Language Baselines (Python 3.11+, .NET 8+, Java 21+, TS 5+)
+    └── Language Baselines (Python 3.11+, .NET 10+, Java 21+, TS 5+)
 ```
 
 ---

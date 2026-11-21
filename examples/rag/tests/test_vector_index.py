@@ -21,6 +21,11 @@ from rag.vector_index import InMemoryVectorIndex, VectorIndexPort, cosine_simila
 class TestVectorIndex(unittest.TestCase):
     """Test suite verifying vector index operations, cosine math, and metadata filtering."""
 
+    def test_invalid_vectors_are_rejected_instead_of_ranking_as_evidence(self):
+        for vector in ([], [float("nan")], [float("inf")]):
+            with self.subTest(vector=vector), self.assertRaises(ValueError):
+                cosine_similarity(vector, vector)
+
     def test_cosine_similarity_math(self) -> None:
         # Identical vectors -> 1.0
         self.assertAlmostEqual(cosine_similarity([1.0, 0.0], [1.0, 0.0]), 1.0)

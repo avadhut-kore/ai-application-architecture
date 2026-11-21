@@ -27,7 +27,7 @@ The repository utilizes **short-lived feature branches** merged directly into th
 
 All commit messages must follow the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) standard:
 
-```
+```text
 <type>(<scope>): <concise description in imperative mood>
 
 [optional body explaining motivation, trade-offs, and architecture rationale]
@@ -48,7 +48,7 @@ All commit messages must follow the [Conventional Commits v1.0.0](https://www.co
 * `chore`: Repository maintenance tasks.
 
 ### Commit Message Examples
-```
+```text
 feat(eval): add golden evaluation harness for invoice extraction
 
 Integrates local Ollama-based evaluation runner testing faithfulness,

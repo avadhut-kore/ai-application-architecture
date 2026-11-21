@@ -1,0 +1,14 @@
+{
+  "command": [
+    "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+    "-u",
+    "examples/agent-execution/demo.py",
+    "--mode",
+    "live",
+    "--scenario",
+    "read",
+    "--model",
+    "qwen2.5:7b"
+  ],
+  "exit_code": 0
+}
