@@ -1,0 +1,13 @@
+{
+  "verification": "SHA-256 equality of final host Python source against Linux corrected snapshot manifest",
+  "matched_python_files": 148,
+  "mismatches": [],
+  "rag_live_command": [
+    ".venv/Scripts/python.exe",
+    "-X",
+    "utf8",
+    "-u",
+    ".venv/followup_rag_live.py"
+  ],
+  "rag_live_exit_code": 0
+}

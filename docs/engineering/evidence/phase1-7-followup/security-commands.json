@@ -1,0 +1,41 @@
+{
+  "bandit": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "bandit",
+      "-r",
+      "building-blocks/python/contracts",
+      "building-blocks/python/ai_telemetry",
+      "platform",
+      "examples",
+      "-x",
+      "tests,test_doubles.py",
+      "-ll"
+    ],
+    "exit_code": 0
+  },
+  "export": {
+    "command": [
+      ".venv/Scripts/uv.exe",
+      "export",
+      "--frozen",
+      "--no-dev",
+      "--format",
+      "requirements-txt",
+      "--output-file",
+      "D:\\company\\products\\ai-application-architecture\\.quality-followup-security\\runtime-requirements.txt"
+    ],
+    "exit_code": 0
+  },
+  "pip-audit": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pip_audit",
+      "-r",
+      "D:\\company\\products\\ai-application-architecture\\.quality-followup-security\\runtime-requirements.txt"
+    ],
+    "exit_code": 0
+  }
+}

@@ -41,8 +41,13 @@ class ContextBuilder:
         self.max_chunks = max_chunks
         self.max_chars = max_chars
 
-    def build_context(self, retrieval_results: Sequence[RetrievalResult]) -> ContextBuildResult:
+    def build_context(
+        self, retrieval_results: Sequence[RetrievalResult], max_chars: int | None = None
+    ) -> ContextBuildResult:
         """Format retrieved chunks into a safe, bounded evidence context string."""
+        budget = self.max_chars if max_chars is None else min(self.max_chars, max_chars)
+        if budget < 0:
+            raise ValueError("max_chars must not be negative")
         if not retrieval_results:
             return ContextBuildResult(
                 formatted_context="",
@@ -63,7 +68,7 @@ class ContextBuilder:
             entry = f"{header}\n{chunk.text.strip()}"
             entry_len = len(entry) + 2  # plus separator \n\n
 
-            if (current_len + entry_len) > self.max_chars:
+            if (current_len + entry_len) > budget:
                 truncated = True
                 break
 

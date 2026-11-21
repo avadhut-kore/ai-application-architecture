@@ -1,0 +1,18 @@
+Verified final source patches: ['.gitignore', 'adr/README.md', 'examples/agent-execution/tests/test_engine.py', 'examples/agent-execution/threat-model.md', 'examples/agentic-workflow/threat-model.md', 'platform/mcp-adapter/mcp_adapter/client.py']
+format: exit 0
+ruff: exit 0
+typing-building-blocks-python: exit 0
+typing-examples-agent-execution: exit 0
+typing-examples-agentic-workflow: exit 0
+typing-examples-rag: exit 0
+typing-examples-structured-generation: exit 0
+typing-examples-ai-evaluation: exit 0
+typing-platform-mcp-adapter: exit 0
+typing-platform-ollama-adapter: exit 0
+typing-platform-ollama-embedding-adapter: exit 0
+typing-scripts: exit 0
+..................................
+----------------------------------------------------------------------
+Ran 34 tests in 6.851s
+
+OK

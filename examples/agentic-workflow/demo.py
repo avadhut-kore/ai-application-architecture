@@ -60,12 +60,19 @@ from agent.approval import CliApprovalHandler
 from agent.executor import ToolExecutor
 from agent.policy import CustomerSupportAuthorizationPolicy
 from agent.registry import CapabilityRegistry
+from contracts.agent import AgentActor
 from contracts.workflow import WorkflowStatus
 from ollama_adapter.adapter import OllamaAdapter
 from workflow.engine import WorkflowEngine
 from workflow.remediation_workflow import build_customer_remediation_workflow
 from workflow.state import WorkflowActorSnapshot, WorkflowState, REMEDIATION_PROPOSAL_SCHEMA
 from workflow.store import SQLiteWorkflowStore
+
+# Reference host directory: caller-supplied CLI roles never grant permissions.
+DEMO_ACTORS = {
+    "operator_bob": AgentActor("operator_bob", "senior_agent"),
+    "operator": AgentActor("operator", "senior_agent"),
+}
 
 DEFAULT_DB_PATH = str(WORKFLOW_DIR / "workflow_demo.db")
 
@@ -114,6 +121,7 @@ def get_components(
         tool_executor=executor,
         workflow_store=sqlite_store,
         auth_policy=auth_policy,
+        actor_resolver=DEMO_ACTORS.get,
     )
 
     engine = WorkflowEngine(definition=workflow_def, store=sqlite_store)

@@ -37,8 +37,10 @@ class MutationExecutionStep:
         store: Any,
         policy: Any,
         requires_approval: bool = True,
+        actor_resolver: Callable[[str], AgentActor | None] | None = None,
         reconciler: Optional[Callable[[str, str, Mapping[str, Any]], Any]] = None,
     ) -> None:
+        self.actor_resolver = actor_resolver
         self.capability = capability
         self.tool_executor = tool_executor
         self.store = store
@@ -77,11 +79,13 @@ class MutationExecutionStep:
             canonical_args=canonical_args,
         )
 
-        actor = AgentActor(
-            actor_id=state.initiator_actor.actor_id,
-            role=state.initiator_actor.role,
-            permissions=list(state.initiator_actor.permissions),
-        )
+        actor = self.actor_resolver(state.initiator_actor.actor_id) if self.actor_resolver else None
+        if actor is None or actor.actor_id != state.initiator_actor.actor_id:
+            return StepOutcome(
+                StepExecutionStatus.FAILED,
+                "authorization_denied",
+                error_message="Current actor could not be resolved by trusted host",
+            )
 
         # 1. Idempotency & In-Flight Recovery Check: Inspect Durable Mutation Ledger
         existing_mutation = self.store.load_mutation(action_id)

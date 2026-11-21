@@ -1,0 +1,23 @@
+{
+  "linux": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--memory",
+      "3g",
+      "--mount",
+      "type=bind,source=D:\\company\\products\\ai-application-architecture,target=/repo",
+      "--mount",
+      "type=volume,source=ai-architecture-validation,target=/validation",
+      "--env",
+      "VALIDATION_SOURCE=/validation/source-followup-765b37c281",
+      "-w",
+      "/repo",
+      "python@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+      "sh",
+      ".venv/linux-followup-native.sh"
+    ],
+    "exit_code": 1
+  }
+}

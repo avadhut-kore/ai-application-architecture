@@ -1,0 +1,55 @@
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+
+[notice] A new release of pip is available: 24.0 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+Verified Git-visible native source snapshot: 417 files
+Python 3.11.18
+Checked 42 packages in 93ms
+============================================================
+ai-application-architecture — Unified Repository Validator
+============================================================
+Repository Root: /validation/source-followup-765b37c281
+
+1. Checking physical repository structure & governance rules...
+   PASS — Repository structure
+
+2. Checking contract dependency boundaries (no vendor SDKs)...
+   PASS — Contract boundaries
+
+3. Validating documentation links & markdown formatting...
+   PASS — Documentation validation
+
+4. Validating reference artifact templates & manifests...
+   PASS — Templates & artifact manifests
+
+5. Executing automated unit test suite...
+   PASS — Automated unit tests
+      - Ran 358 unit tests across 9 suites: building-blocks/python (56), examples/agent-execution (81), examples/agentic-workflow (81), examples/ai-evaluation (11), examples/rag (53), examples/structured-generation (10), platform/mcp-adapter (34), platform/ollama-adapter (18), platform/ollama-embedding-adapter (14).
+
+============================================================
+RESULT: REPOSITORY VALIDATION PASSED
+Verified: repository structure, import boundaries, doc links, templates & manifests, unit tests
+============================================================
+format: exit 1
+ruff: exit 0
+typing-building-blocks-python: exit 0
+typing-examples-agent-execution: exit 0
+typing-examples-agentic-workflow: exit 0
+typing-examples-rag: exit 0
+typing-examples-structured-generation: exit 0
+typing-examples-ai-evaluation: exit 0
+typing-platform-mcp-adapter: exit 1
+typing-platform-ollama-adapter: exit 0
+typing-platform-ollama-embedding-adapter: exit 0
+typing-scripts: exit 0
+tests-building-blocks-python: exit 0
+tests-examples-agent-execution: exit 0
+tests-examples-agentic-workflow: exit 0
+tests-examples-ai-evaluation: exit 0
+tests-examples-rag: exit 0
+tests-examples-structured-generation: exit 0
+tests-platform-mcp-adapter: exit 0
+tests-platform-ollama-adapter: exit 0
+tests-platform-ollama-embedding-adapter: exit 0
+coverage-combine: exit 0
+coverage-export: exit 0

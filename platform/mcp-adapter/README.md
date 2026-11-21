@@ -83,6 +83,7 @@ platform/mcp-adapter/
 ### Exposing an Allowlisted MCP Capability to an Application
 
 ```python
+from contracts.agent import SideEffectLevel
 from mcp_adapter.adapter import McpCapabilityAdapter
 from mcp_adapter.client import McpClient
 
@@ -97,6 +98,7 @@ client.initialize()
 adapter = McpCapabilityAdapter(
     client=client,
     tool_name="get_system_status",
+    side_effect_level=SideEffectLevel.READ_ONLY,
     allowlist=["get_system_status"],  # Ping will be blocked
 )
 
@@ -116,9 +118,22 @@ client.close()
 | **Server Crash / Disconnect** | `McpClientError` raised on broken pipe. | Tool executor catches failure; wraps as an error observation for the agent loop. |
 | **Tool Name Spoofing** | Server returns `METHOD_NOT_FOUND` (-32601). | Agent receives error observation; safe termination or retry. |
 | **Malformed Tool Output** | Sanitizer falls back to raw string or error dictionary. | Prevents deserialization exploits or application crashes. |
-| **Prompt Injection in Tool Output** | Output formatted strictly as data; model system prompt directs model to disregard embedded commands. | Prevents indirect prompt injection attacks from external data. |
+| **Prompt Injection in Tool Output** | Output formatted strictly as data; model system prompt directs model to disregard embedded commands. | Reduces instruction confusion; delimiters are not a complete prompt-injection defense. |
 | **Un-allowlisted Tool Invocation** | `McpCapabilityAdapter` validation fails fast at initialization. | Unauthorized capabilities can never be registered in the application registry. |
 | **Stalled Server / Blocking stdio** | Subprocess I/O offloaded to worker thread via `asyncio.to_thread()`; cancelled task closes client and terminates child process. | Prevents event-loop starvation; tool executor timeout bounds execution reliably. |
+
+Host configuration must supply both an allowlist and a `SideEffectLevel` for every
+allowed tool. Server annotations cannot grant read-only classification. Mutating
+adapters require approval; explicitly disabling approval is rejected. The factory
+`create_mcp_capabilities(client, allowlist, side_effect_levels)` applies the same rules.
+The agent host remains responsible for authorization and approval.
+
+Initialization negotiates supported version `2024-11-05` and sends
+`notifications/initialized` before discovery. JSON-RPC envelopes reject boolean IDs,
+conflicting result/error fields and unsupported wire versions. Stdio frames are
+limited to 1,048,576 characters with a bounded 256-message reader queue. Requests are
+serialized; a finite timeout covers initialization, discovery and calls. Malformed
+channels close rather than reusing late responses.
 
 ### Subprocess I/O & Timeout Boundary Mechanics
 

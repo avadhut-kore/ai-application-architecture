@@ -1,0 +1,13 @@
+{
+  "model": "qwen2.5:7b",
+  "schema_valid": true,
+  "insufficient_evidence": false,
+  "answer": "Security audit logs, authentication event trails, and access records must be retained for exactly 7 years in tamper-evident storage.",
+  "citations": [
+    "sec-01#c1"
+  ],
+  "citation_valid": true,
+  "elapsed_seconds": 93.0,
+  "request_limit": 8000,
+  "output_tokens": 512
+}

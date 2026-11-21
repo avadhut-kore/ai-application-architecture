@@ -13,12 +13,13 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from contracts.workflow import (
     CheckpointStorePort,
+    ApprovalStatus,
     WorkflowStatus,
 )
 
 from .approval import DurableApprovalRecord
 from .audit import WorkflowAuditEvent
-from .errors import CorruptedCheckpointError
+from .errors import CorruptedCheckpointError, ConcurrentResumeConflictError
 from .ledger import DurableMutationRecord
 from .state import WorkflowState
 from .ownership import file_ownership, memory_ownership
@@ -67,6 +68,30 @@ class InMemoryWorkflowStore(CheckpointStorePort):
                 f"Integrity checksum verification failed for workflow '{workflow_id}'."
             )
         return state
+
+    def commit_approval_transition(
+        self, previous: WorkflowState, updated: WorkflowState, approval: DurableApprovalRecord
+    ) -> None:
+        if (
+            previous.workflow_id != updated.workflow_id
+            or approval.workflow_id != previous.workflow_id
+        ):
+            raise ValueError("Approval transition identity mismatch")
+        current = self.load_state(previous.workflow_id)
+        if (
+            current is None
+            or current.checkpoint_version != previous.checkpoint_version
+            or current.status != previous.status
+        ):
+            raise ConcurrentResumeConflictError("Approval checkpoint changed before commit.")
+        if (
+            approval.approval_id not in self.approvals
+            or self.approvals[approval.approval_id].status != ApprovalStatus.PENDING
+        ):
+            raise ValueError("Pending approval not found.")
+        prepared = updated.with_updated_checksum()
+        self.approvals[approval.approval_id] = approval
+        self.checkpoints[updated.workflow_id] = prepared
 
     def compare_and_swap_resume(
         self,
@@ -298,6 +323,46 @@ class SQLiteWorkflowStore(CheckpointStorePort):
                     f"Integrity checksum mismatch for workflow '{workflow_id}'. File may be corrupted."
                 )
             return state
+
+    def commit_approval_transition(
+        self, previous: WorkflowState, updated: WorkflowState, approval: DurableApprovalRecord
+    ) -> None:
+        if (
+            previous.workflow_id != updated.workflow_id
+            or approval.workflow_id != previous.workflow_id
+        ):
+            raise ValueError("Approval transition identity mismatch")
+        prepared = updated.with_updated_checksum()
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            changed = conn.execute(
+                "UPDATE workflow_checkpoints SET status=?, current_step=?, checkpoint_version=?, state_json=?, checksum=?, updated_at=? WHERE workflow_id=? AND checkpoint_version=? AND status=?",
+                (
+                    prepared.status.value,
+                    prepared.current_step,
+                    prepared.checkpoint_version,
+                    json.dumps(prepared.to_dict()),
+                    prepared.checksum,
+                    prepared.updated_at,
+                    previous.workflow_id,
+                    previous.checkpoint_version,
+                    previous.status.value,
+                ),
+            )
+            if changed.rowcount != 1:
+                raise ConcurrentResumeConflictError("Approval checkpoint changed before commit.")
+            changed = conn.execute(
+                "UPDATE workflow_approvals SET status=?, record_json=?, updated_at=? WHERE approval_id=? AND workflow_id=? AND status='pending'",
+                (
+                    approval.status.value,
+                    json.dumps(approval.to_dict()),
+                    time.time(),
+                    approval.approval_id,
+                    previous.workflow_id,
+                ),
+            )
+            if changed.rowcount != 1:
+                raise ConcurrentResumeConflictError("Pending approval changed before commit.")
 
     def compare_and_swap_resume(
         self,

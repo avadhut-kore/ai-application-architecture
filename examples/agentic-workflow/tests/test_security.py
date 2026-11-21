@@ -87,6 +87,7 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.db_path = os.path.join(self.temp_dir.name, "security_test.db")
         self.customer_store = InMemoryCustomerStore()
+        self.current_role = "senior_agent"
         self.auth_policy = CustomerSupportAuthorizationPolicy(store=self.customer_store)
 
     def tearDown(self) -> None:
@@ -111,6 +112,7 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=sqlite_store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, self.current_role),
             auth_policy=self.auth_policy,
             definition_version=version,
         )
@@ -135,21 +137,9 @@ class TestWorkflowSecurity(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(state.status, WorkflowStatus.AWAITING_APPROVAL)
 
-        # Privilege drift / demotion: Modifying persisted initiator actor to junior_agent ($35 > $20 limit)
-        # In actual deployment, the policy re-checks actor role at mutation time.
-        tampered_state = WorkflowState(
-            workflow_id=state.workflow_id,
-            definition=state.definition,
-            status=state.status,
-            current_step=state.current_step,
-            initiator_actor=WorkflowActorSnapshot(actor_id="operator_bob", role="junior_agent"),
-            history=state.history,
-            domain_context=state.domain_context,
-            checkpoint_version=state.checkpoint_version,
-            created_at=state.created_at,
-            updated_at=time.time(),
-        )
-        engine.store.save_state(tampered_state)
+        # Revoke in the trusted directory while retaining the persisted senior snapshot.
+        self.current_role = "junior_agent"
+        self.assertEqual(engine.store.load_state(wf_id).initiator_actor.role, "senior_agent")
 
         # Attempt resume with approval
         final_state = await engine.resume_workflow(

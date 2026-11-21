@@ -92,3 +92,5 @@ Every ADR must include:
 | **[ADR-0009](0009-agentic-workflow-orchestration-and-roadmap-reconciliation.md)** | [Agentic Workflow Orchestration & Roadmap Reconciliation](0009-agentic-workflow-orchestration-and-roadmap-reconciliation.md) | Accepted | 2026-09-15 |
 | **[ADR-0010](0010-durable-state-machine-persistence-and-asynchronous-resumability.md)** | [Durable State Machine Persistence and Asynchronous Resumability](0010-durable-state-machine-persistence-and-asynchronous-resumability.md) | Accepted | 2026-09-15 |
 | **[ADR-0011](0011-workflow-versus-agent-control-and-hitl-harmonization.md)** | [Workflow versus Agent Control and Human-in-the-Loop Harmonization](0011-workflow-versus-agent-control-and-hitl-harmonization.md) | Accepted | 2026-09-15 |
+| **[ADR-0012](0012-phase1-7-verification-and-local-recovery.md)** | Phase 1–7 verification and local recovery | Accepted | 2026-11-20 |
+| **[ADR-0013](0013-selective-phase7-boundary-hardening.md)** | Selective Phase 7 boundary hardening | Accepted | 2026-11-21 |

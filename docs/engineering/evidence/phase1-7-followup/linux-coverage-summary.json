@@ -1,0 +1,161 @@
+{
+  "building-blocks/python/ai_telemetry/__init__.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/agent.py": {
+    "statement_percent": 98.71794871794872
+  },
+  "building-blocks/python/contracts/errors.py": {
+    "statement_percent": 98.27586206896552
+  },
+  "building-blocks/python/contracts/evaluation.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/models.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/ports.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/telemetry.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/validation.py": {
+    "statement_percent": 100.0
+  },
+  "building-blocks/python/contracts/workflow.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agent-execution/agent/approval.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agent-execution/agent/capabilities.py": {
+    "statement_percent": 97.70114942528735
+  },
+  "examples/agent-execution/agent/domain.py": {
+    "statement_percent": 98.0
+  },
+  "examples/agent-execution/agent/engine.py": {
+    "statement_percent": 96.3265306122449
+  },
+  "examples/agent-execution/agent/executor.py": {
+    "statement_percent": 93.90243902439025
+  },
+  "examples/agent-execution/agent/observation.py": {
+    "statement_percent": 98.38709677419355
+  },
+  "examples/agent-execution/agent/persistence.py": {
+    "statement_percent": 93.58974358974359
+  },
+  "examples/agent-execution/agent/policy.py": {
+    "statement_percent": 96.7741935483871
+  },
+  "examples/agent-execution/agent/registry.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agent-execution/agent/schema.py": {
+    "statement_percent": 97.54098360655738
+  },
+  "examples/agent-execution/agent/trace.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/approval.py": {
+    "statement_percent": 97.26027397260275
+  },
+  "examples/agentic-workflow/workflow/audit.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/definition.py": {
+    "statement_percent": 88.75
+  },
+  "examples/agentic-workflow/workflow/engine.py": {
+    "statement_percent": 93.95604395604396
+  },
+  "examples/agentic-workflow/workflow/errors.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/ledger.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/ownership.py": {
+    "statement_percent": 90.69767441860465
+  },
+  "examples/agentic-workflow/workflow/remediation_workflow.py": {
+    "statement_percent": 88.88888888888889
+  },
+  "examples/agentic-workflow/workflow/retry.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/saga.py": {
+    "statement_percent": 93.65079365079364
+  },
+  "examples/agentic-workflow/workflow/state.py": {
+    "statement_percent": 92.36641221374046
+  },
+  "examples/agentic-workflow/workflow/steps/agentic.py": {
+    "statement_percent": 90.19607843137256
+  },
+  "examples/agentic-workflow/workflow/steps/deterministic.py": {
+    "statement_percent": 89.28571428571429
+  },
+  "examples/agentic-workflow/workflow/steps/human.py": {
+    "statement_percent": 100.0
+  },
+  "examples/agentic-workflow/workflow/steps/mutation.py": {
+    "statement_percent": 94.39252336448598
+  },
+  "examples/agentic-workflow/workflow/store.py": {
+    "statement_percent": 88.05309734513274
+  },
+  "examples/ai-evaluation/runner.py": {
+    "statement_percent": 89.85507246376811
+  },
+  "examples/rag/rag/chunker.py": {
+    "statement_percent": 87.65432098765432
+  },
+  "examples/rag/rag/citation_validator.py": {
+    "statement_percent": 92.3076923076923
+  },
+  "examples/rag/rag/context_builder.py": {
+    "statement_percent": 95.65217391304348
+  },
+  "examples/rag/rag/document.py": {
+    "statement_percent": 100.0
+  },
+  "examples/rag/rag/ingestion.py": {
+    "statement_percent": 100.0
+  },
+  "examples/rag/rag/retriever.py": {
+    "statement_percent": 100.0
+  },
+  "examples/rag/rag/service.py": {
+    "statement_percent": 96.06299212598425
+  },
+  "examples/rag/rag/vector_index.py": {
+    "statement_percent": 92.5
+  },
+  "examples/structured-generation/structured_generation/models.py": {
+    "statement_percent": 93.10344827586206
+  },
+  "examples/structured-generation/structured_generation/service.py": {
+    "statement_percent": 96.80851063829788
+  },
+  "platform/mcp-adapter/mcp_adapter/adapter.py": {
+    "statement_percent": 92.94117647058823
+  },
+  "platform/mcp-adapter/mcp_adapter/client.py": {
+    "statement_percent": 92.07920792079207
+  },
+  "platform/mcp-adapter/mcp_adapter/protocol.py": {
+    "statement_percent": 98.88888888888889
+  },
+  "platform/mcp-adapter/mcp_adapter/server.py": {
+    "statement_percent": 97.6470588235294
+  },
+  "platform/ollama-adapter/ollama_adapter/adapter.py": {
+    "statement_percent": 91.21621621621621
+  },
+  "platform/ollama-embedding-adapter/ollama_embedding_adapter/adapter.py": {
+    "statement_percent": 93.10344827586206
+  }
+}

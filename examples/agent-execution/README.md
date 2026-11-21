@@ -160,6 +160,24 @@ examples/agent-execution/
 
 ---
 
+The registry validates a frozen schema snapshot recursively before authorization.
+The supported subset is defined in [`agent/schema.py`](agent/schema.py): objects,
+arrays, scalar types, enums, required/unknown fields, length/item limits and numeric
+bounds. Unsupported keywords fail registration instead of being silently ignored;
+booleans are not numbers, and nonfinite, circular or excessively nested values fail.
+This is a deliberately limited validator, not full JSON Schema support.
+
+Execution boundaries accept at most 16,384 serialized argument characters and retain
+at most 16,384 result characters. Oversized mutation results receive an ambiguous
+receipt because an effect may already have occurred. Observations use a 4,096-character
+JSON preview inside a 4,608-character frame with both untrusted-data delimiters intact.
+Goals and raw model decisions are limited to 16,384 characters. Existing cumulative
+UTF-8 token reservations, output-token caps and whole-run deadlines still apply.
+Provider failures retain earlier receipts. Executor replay binds action IDs to the
+trusted execution scope, capability instance, name and argument snapshot; direct callers
+must supply their own trusted scope when sharing an executor across identities.
+Process-local replay protection does not replace durable domain receipts.
+
 ## 5. Reference Capabilities & Schema
 
 | Capability Name | Side-Effect Level | Requires Approval? | Description |

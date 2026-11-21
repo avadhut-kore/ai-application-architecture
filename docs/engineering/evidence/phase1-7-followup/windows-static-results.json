@@ -1,0 +1,14 @@
+{
+  "format": true,
+  "ruff": true,
+  "typing-building-blocks-python": true,
+  "typing-examples-agent-execution": true,
+  "typing-examples-agentic-workflow": true,
+  "typing-examples-rag": true,
+  "typing-examples-structured-generation": true,
+  "typing-examples-ai-evaluation": true,
+  "typing-platform-mcp-adapter": true,
+  "typing-platform-ollama-adapter": true,
+  "typing-platform-ollama-embedding-adapter": true,
+  "typing-scripts": true
+}

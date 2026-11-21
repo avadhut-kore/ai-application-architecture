@@ -210,25 +210,8 @@ class WorkflowEngine:
             raise ValueError("Only a pending approval can receive a decision")
         if pending.expires_at is not None and time.time() >= pending.expires_at:
             raise ValueError("Approval has expired")
-        next_version = state.checkpoint_version + 1
-        lock_acquired = self.store.compare_and_swap_resume(
-            workflow_id=workflow_id,
-            expected_version=state.checkpoint_version,
-            new_version=next_version,
-        )
-        if not lock_acquired:
-            raise ConcurrentResumeConflictError(
-                f"Concurrent resume conflict for workflow '{workflow_id}'. "
-                "Another process has already acquired execution rights."
-            )
-
-        # Reload updated state with new version and RUNNING status
-        resumed_state = self.store.load_state(workflow_id)
-        assert resumed_state is not None
-
-        # 3. Process Approval Decision
-        approval_id = resumed_state.domain_context.get("pending_approval_id")
-        approval_record = self.store.load_approval(approval_id) if approval_id else None
+        resumed_state = replace(state, status=WorkflowStatus.RUNNING)
+        approval_record = pending
 
         decision_clean = decision.strip().lower()
         now = time.time()
@@ -253,7 +236,6 @@ class WorkflowEngine:
                     decided_at=now,
                     expires_at=approval_record.expires_at,
                 )
-                self.store.save_approval(updated_approval)
 
             self._record_audit(
                 workflow_id=workflow_id,
@@ -273,7 +255,7 @@ class WorkflowEngine:
             resumed_state = self._apply_transition(
                 resumed_state, next_step, terminal_status, step_outcome
             )
-            self.store.save_state(resumed_state)
+            self.store.commit_approval_transition(state, resumed_state, updated_approval)
 
             return await self._run_loop(resumed_state)
 
@@ -298,7 +280,6 @@ class WorkflowEngine:
                     decided_at=now,
                     expires_at=approval_record.expires_at,
                 )
-                self.store.save_approval(rejected_approval)
 
             self._record_audit(
                 workflow_id=workflow_id,
@@ -317,7 +298,7 @@ class WorkflowEngine:
             resumed_state = self._apply_transition(
                 resumed_state, next_step, terminal_status, step_outcome
             )
-            self.store.save_state(resumed_state)
+            self.store.commit_approval_transition(state, resumed_state, rejected_approval)
 
             return await self._run_loop(resumed_state)
 

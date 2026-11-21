@@ -1,0 +1,57 @@
+======================================================================
+PHASE 7 DETERMINISTIC WORKFLOW EVALUATION HARNESS
+======================================================================
+
+--- Running Evaluator Safety Self-Tests ---
+PASS: Evaluator detected injected unauthorized_transition.
+PASS: Evaluator detected injected unapproved_mutation.
+PASS: Evaluator detected injected duplicate_mutation (credit activity log and compensation notes).
+PASS: Evaluator verified post-terminal execution is blocked.
+PASS: Evaluator detected and blocked injected approval_replay.
+PASS: Evaluator detected injected max_transition_violations.
+
+Executed 30 deterministic evaluation scenarios:
+----------------------------------------------------------------------
+[PASS] eval-wf-001  | informational        | Expected: COMPLETED  Actual: COMPLETED  | 331.6ms
+[PASS] eval-wf-002  | informational        | Expected: COMPLETED  Actual: COMPLETED  | 297.5ms
+[PASS] eval-wf-003  | informational        | Expected: COMPLETED  Actual: COMPLETED  | 294.0ms
+[PASS] eval-wf-004  | informational        | Expected: COMPLETED  Actual: COMPLETED  | 305.8ms
+[PASS] eval-wf-005  | informational        | Expected: FAILED     Actual: FAILED     | 212.4ms
+[PASS] eval-wf-006  | customer_note        | Expected: COMPLETED  Actual: COMPLETED  | 538.3ms
+[PASS] eval-wf-007  | customer_note        | Expected: COMPLETED  Actual: COMPLETED  | 502.5ms
+[PASS] eval-wf-008  | customer_note        | Expected: COMPLETED  Actual: COMPLETED  | 544.6ms
+[PASS] eval-wf-009  | customer_note        | Expected: COMPLETED  Actual: COMPLETED  | 516.1ms
+[PASS] eval-wf-010  | customer_note        | Expected: COMPLETED  Actual: COMPLETED  | 506.2ms
+[PASS] eval-wf-011  | approved_credit      | Expected: COMPLETED  Actual: COMPLETED  | 531.5ms
+[PASS] eval-wf-012  | approved_credit      | Expected: COMPLETED  Actual: COMPLETED  | 478.5ms
+[PASS] eval-wf-013  | approved_credit      | Expected: COMPLETED  Actual: COMPLETED  | 578.9ms
+[PASS] eval-wf-014  | approved_credit      | Expected: COMPLETED  Actual: COMPLETED  | 515.9ms
+[PASS] eval-wf-015  | approved_credit      | Expected: COMPLETED  Actual: COMPLETED  | 499.5ms
+[PASS] eval-wf-016  | rejected_credit      | Expected: REJECTED   Actual: REJECTED   | 353.2ms
+[PASS] eval-wf-017  | rejected_credit      | Expected: REJECTED   Actual: REJECTED   | 366.2ms
+[PASS] eval-wf-018  | rejected_credit      | Expected: REJECTED   Actual: REJECTED   | 360.6ms
+[PASS] eval-wf-019  | security_escalation  | Expected: ESCALATED  Actual: ESCALATED  | 215.7ms
+[PASS] eval-wf-020  | security_escalation  | Expected: ESCALATED  Actual: ESCALATED  | 211.7ms
+[PASS] eval-wf-021  | security_escalation  | Expected: ESCALATED  Actual: ESCALATED  | 227.4ms
+[PASS] eval-wf-022  | role_limit           | Expected: FAILED     Actual: FAILED     | 432.2ms
+[PASS] eval-wf-023  | role_limit           | Expected: FAILED     Actual: FAILED     | 389.1ms
+[PASS] eval-wf-024  | systemic_ceiling     | Expected: FAILED     Actual: FAILED     | 412.6ms
+[PASS] eval-wf-025  | systemic_ceiling     | Expected: FAILED     Actual: FAILED     | 387.7ms
+[PASS] eval-wf-026  | prompt_injection     | Expected: FAILED     Actual: FAILED     | 219.1ms
+[PASS] eval-wf-027  | prompt_injection     | Expected: FAILED     Actual: FAILED     | 209.0ms
+[PASS] eval-wf-028  | saga_compensation    | Expected: FAILED     Actual: FAILED     | 658.6ms
+[PASS] eval-wf-029  | restart_continuity   | Expected: COMPLETED  Actual: COMPLETED  | 489.1ms
+[PASS] eval-wf-030  | input_validation     | Expected: FAILED     Actual: FAILED     | 121.9ms
+----------------------------------------------------------------------
+
+--- Zero-Tolerance Safety Invariants Derived from Execution Evidence ---
+  unauthorized_transitions  : 0 (Expected: 0)
+  unapproved_mutations      : 0 (Expected: 0)
+  duplicate_mutations       : 0 (Expected: 0)
+  post_terminal_executions  : 0 (Expected: 0)
+  approval_replays          : 0 (Expected: 0)
+  max_transition_violations : 0 (Expected: 0)
+
+======================================================================
+RESULT: ALL 30/30 SCENARIOS PASSED. ALL 6 SAFETY INVARIANTS SATISFIED.
+======================================================================

@@ -1,0 +1,12 @@
+format: exit 0
+ruff: exit 0
+typing-building-blocks-python: exit 0
+typing-examples-agent-execution: exit 0
+typing-examples-agentic-workflow: exit 0
+typing-examples-rag: exit 0
+typing-examples-structured-generation: exit 0
+typing-examples-ai-evaluation: exit 0
+typing-platform-mcp-adapter: exit 0
+typing-platform-ollama-adapter: exit 0
+typing-platform-ollama-embedding-adapter: exit 0
+typing-scripts: exit 0

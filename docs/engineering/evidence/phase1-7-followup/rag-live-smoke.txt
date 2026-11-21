@@ -1,0 +1,15 @@
+import asyncio,json,sys,time
+from pathlib import Path
+root=Path.cwd()
+sys.path[:0]=[str(root/'examples/rag')]
+from demo import build_rag_system
+async def main():
+ started=time.monotonic()
+ service=await build_rag_system('live',root/'examples/rag/corpus','http://localhost:11434','nomic-embed-text','qwen2.5:7b',3)
+ response=await service.answer('What is the mandatory retention period for security audit logs?')
+ evidence={'model':service.model,'schema_valid':response.schema_valid,'insufficient_evidence':response.insufficient_evidence,'answer':response.answer,'citations':[c.chunk_id for c in response.citations],'citation_valid':response.citation_validation.is_valid,'elapsed_seconds':round(time.monotonic()-started,2),'request_limit':service.max_request_chars,'output_tokens':service.max_output_tokens}
+ print(json.dumps(evidence,indent=2),flush=True)
+ assert response.schema_valid and not response.insufficient_evidence and response.citation_validation.is_valid
+ assert '7 years' in response.answer and response.citations
+ Path('.quality-followup-security/rag-live.json').write_text(json.dumps(evidence,indent=2),encoding='utf-8')
+asyncio.run(main())

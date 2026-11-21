@@ -44,6 +44,7 @@ from agent.engine import AgentExecutionEngine
 from agent.executor import ToolExecutor
 from agent.policy import CustomerSupportAuthorizationPolicy
 from agent.registry import CapabilityRegistry
+from contracts.agent import AgentActor
 from contracts.workflow import WorkflowStatus
 from ollama_adapter.adapter import OllamaAdapter
 from workflow.engine import WorkflowEngine
@@ -145,6 +146,9 @@ async def run_live_smoke(
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=sqlite_store,
+            actor_resolver=lambda identity: (
+                AgentActor(identity, "senior_agent") if identity == "live_operator_1" else None
+            ),
             auth_policy=auth_policy,
         )
 

@@ -77,6 +77,64 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(error)
         self.assertEqual(json.loads(decision.final_answer), {"answer": "value"})
 
+    async def test_provider_failure_preserves_prior_mutation_receipt(self):
+        from unittest.mock import AsyncMock
+        from types import SimpleNamespace
+
+        action = '{"type":"action","action_name":"update_customer_note","arguments":{"customer_id":"cust-001","note":"verified","action_id":"prior-effect"}}'
+        llm = SimpleNamespace(
+            generate=AsyncMock(
+                side_effect=[SimpleNamespace(text=action), RuntimeError("provider failed")]
+            )
+        )
+        result = await AgentExecutionEngine(llm, self.registry, self.policy, self.approval).run(
+            "Update note", self.senior_agent
+        )
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(len(result.execution_receipts), 1)
+        self.assertEqual(result.execution_receipts[0].status, "succeeded")
+        self.assertEqual(len(result.trace.steps), 1)
+        self.assertEqual(result.trace.final_status, "FAILED")
+
+    async def test_oversized_goal_and_model_response_fail_before_execution(self):
+        from unittest.mock import AsyncMock
+        from types import SimpleNamespace
+
+        llm = SimpleNamespace(generate=AsyncMock(return_value=SimpleNamespace(text="x" * 20000)))
+        engine = AgentExecutionEngine(llm, self.registry, self.policy, self.approval)
+        result = await engine.run("x" * 20000, self.senior_agent)
+        self.assertEqual(result.status, "FAILED")
+        llm.generate.assert_not_awaited()
+        result = await engine.run("Inspect customer", self.senior_agent)
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(result.execution_receipts, [])
+
+    async def test_whole_run_deadline_retains_ambiguous_mutation_receipt(self):
+        from unittest.mock import Mock
+        from contracts.agent import AuthorizationDecision, SideEffectLevel
+        from tests.test_executor import DummyTool
+
+        tool = DummyTool(side_effect_level=SideEffectLevel.STATE_MUTATING, delay=1)
+        registry = CapabilityRegistry([tool])
+        stub = ScriptedGenerationStub(
+            ['{"type":"action","action_name":"dummy_tool","arguments":{"action_id":"deadline"}}']
+        )
+        policy = Mock(
+            authorize=Mock(return_value=AuthorizationDecision(True, "Test permits execution"))
+        )
+        result = await AgentExecutionEngine(
+            stub,
+            registry,
+            policy,
+            self.approval,
+            executor=ToolExecutor(timeout_seconds=2),
+            max_duration_seconds=0.01,
+        ).run("Mutate", self.senior_agent)
+        self.assertTrue(result.metadata["deadline_exceeded"])
+        self.assertEqual(result.trace.final_status, "FAILED")
+        self.assertEqual(len(result.execution_receipts), 1)
+        self.assertEqual(result.execution_receipts[0].status, "ambiguous")
+
     def setUp(self) -> None:
         self.store = InMemoryCustomerStore()
         self.registry = CapabilityRegistry()
@@ -575,7 +633,7 @@ class TestAgentExecutionEngine(unittest.IsolatedAsyncioTestCase):
                 {
                     "type": "action",
                     "action_name": "unsafe_mutation",
-                    "arguments": {"target": "data"},
+                    "arguments": {"target": "data", "action_id": "unsafe-action"},
                     "explanation": "Attempt unapproved mutation",
                 }
             )

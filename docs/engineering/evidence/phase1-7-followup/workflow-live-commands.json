@@ -1,0 +1,19 @@
+{
+  "command": [
+    ".venv/Scripts/python.exe",
+    "-X",
+    "utf8",
+    "-u",
+    "examples/agentic-workflow/live_smoke.py"
+  ],
+  "initial_exit_code": 1,
+  "retry_exit_code": 0,
+  "initial_read_only_seconds": 283.481,
+  "initial_credit_seconds": 300.2311,
+  "retry_read_only_seconds": 61.9417,
+  "retry_credit_seconds": 132.5401,
+  "models": [
+    "qwen2.5:7b",
+    "nomic-embed-text:latest"
+  ]
+}

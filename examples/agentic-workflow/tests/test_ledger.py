@@ -26,6 +26,7 @@ from contracts.workflow import (
     WorkflowDefinitionRef,
     WorkflowStatus,
 )
+from contracts.agent import AgentActor
 from workflow.approval import DurableApprovalRecord, canonicalize_arguments
 from workflow.ledger import DurableMutationRecord, generate_stable_action_id
 from workflow.state import WorkflowActorSnapshot, WorkflowState
@@ -184,6 +185,7 @@ class TestAmbiguousMutationRecovery(unittest.IsolatedAsyncioTestCase):
             capability=self.credit_cap,
             tool_executor=self.tool_executor,
             store=self.workflow_store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             policy=self.auth_policy,
             reconciler=reconcile_credit,
         )
@@ -284,6 +286,7 @@ class TestAmbiguousMutationRecovery(unittest.IsolatedAsyncioTestCase):
             capability=self.credit_cap,
             tool_executor=self.tool_executor,
             store=self.workflow_store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             policy=self.auth_policy,
             reconciler=reconcile_credit,
         )
@@ -353,6 +356,7 @@ class TestAmbiguousMutationRecovery(unittest.IsolatedAsyncioTestCase):
             capability=self.credit_cap,
             tool_executor=self.tool_executor,
             store=self.workflow_store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             policy=self.auth_policy,
             reconciler=reconcile_inconclusive,
         )

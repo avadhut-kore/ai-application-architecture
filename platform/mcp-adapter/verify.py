@@ -18,6 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from mcp_adapter.adapter import McpCapabilityAdapter
+from contracts.agent import SideEffectLevel
 from mcp_adapter.client import McpClient
 from mcp_adapter.protocol import JsonRpcRequest
 from mcp_adapter.server import McpServer
@@ -63,6 +64,7 @@ async def run_verification(subprocess_mode: bool = False, allow_unverified: bool
             adapter = McpCapabilityAdapter(
                 client=client,
                 tool_name="get_system_status",
+                side_effect_level=SideEffectLevel.READ_ONLY,
                 allowlist=["get_system_status"],
             )
             print("4. Capability Allowlisting Guard: PASS (enforces least privilege)")

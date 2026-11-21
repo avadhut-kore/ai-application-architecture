@@ -146,6 +146,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=self.store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 
@@ -212,6 +213,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             note_capability=failing_note,
             tool_executor=executor,
             workflow_store=self.store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 
@@ -280,6 +282,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=self.store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 
@@ -386,6 +389,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=self.store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 
@@ -478,6 +482,7 @@ class TestLocalSagaCompensation(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=self.store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 

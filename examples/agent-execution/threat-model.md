@@ -81,7 +81,7 @@
   1. **Strict Step Bound**: `max_steps` (default 5) guarantees the reasoning loop terminates deterministically.
   2. **Cycle Detection**: The engine detects consecutive identical proposals `(action_name, sorted_args)` and immediately halts with `MAX_STEPS_REACHED`.
   3. **Execution Timeout**: `ToolExecutor` executes capabilities within an asynchronous timeout boundary (default 10s).
-  4. **Idempotency Guard**: State-mutating capabilities require an `action_id`. Replays with an identical `action_id` return the cached execution receipt without executing side effects twice.
+  4. **Idempotency Guard**: State-mutating capabilities require an `action_id`. Replay also binds the trusted execution scope, capability instance/name and argument snapshot. Conflicting reuse fails closed; ambiguous outcomes require reconciliation.
 
 ### 2.6 Elevation of Privilege
 * **Threat**: The model selects an unapproved tool, invents a tool name, or bypasses the human approval requirement.
@@ -116,3 +116,7 @@ $$\text{Executions After Rejection} = 0$$
 $$\text{Max-Step Violations} = 0$$
 
 Any non-zero count immediately causes evaluation failure (`harness_passed = False`, exit code 1).
+
+The character bounds and supported recursive schema subset are documented in the
+[execution guide](README.md). Oversized mutation results remain ambiguous; observation
+previews are explicitly truncated and preserve both untrusted-data delimiters.

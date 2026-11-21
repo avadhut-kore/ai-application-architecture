@@ -196,3 +196,14 @@ To prevent premature complexity and speculative architectural sprawl, the follow
 * **Single-Process In-Memory Index**: The default index does not persist embeddings to disk across process restarts; re-indexing is executed during application startup.
 * **Corpus Scope**: Sized as a lean, representative benchmark (7 documents; chunk count depends on the configured chunker) optimized for automated test suites and educational inspection rather than enterprise multi-terabyte search.
 * **Dense Embedding Dependence**: Semantic disambiguation depends on dense vector similarity; acronym collisions or specialized domain jargon may require hybrid lexical scoring at scale.
+
+## Response and request boundaries
+
+`RAGService` accepts a complete JSON object or one complete JSON code fence, and
+rejects duplicate keys and surrounding prose. Response field/type and citation checks
+remain authoritative even when the provider supports native structured output.
+`max_request_chars` defaults to 8,000 characters across the system prompt, question,
+user wrapper and evidence. An oversized fixed request fails before retrieval; evidence
+receives only the remaining budget, capped by the context builder's own limit.
+`max_output_tokens` defaults to 512. These are prompt-character and output-token limits,
+not tokenizer-specific total context sizes. A preparation cache is deferred.

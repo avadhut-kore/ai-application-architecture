@@ -1,5 +1,9 @@
 # Phases 1–7 remediation plan and evidence
 
+The subsequent selective hardening review is recorded in the
+[21 November follow-up report](phase1-7-followup.md); evidence below remains the
+historical remediation baseline.
+
 ## Approved scope
 
 The repository owner approved this plan in the Codex chat on 20 November 2026.

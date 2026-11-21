@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import replace
-from typing import Any, Mapping
+from typing import Any, Mapping, Callable
 
 from contracts.agent import AgentActor, ExecutionReceipt
 from contracts.workflow import ApprovalStatus, MutationStatus, StepExecutionStatus, WorkflowStatus
@@ -34,6 +34,7 @@ def build_customer_remediation_workflow(
     auth_policy: Any,
     definition_version: str = "1.1.0",
     max_transitions: int = 15,
+    actor_resolver: Callable[[str], AgentActor | None] | None = None,
 ) -> WorkflowDefinition:
     """Construct the canonical Customer Account Remediation workflow graph."""
 
@@ -67,6 +68,7 @@ def build_customer_remediation_workflow(
         tool_executor=tool_executor,
         store=workflow_store,
         policy=auth_policy,
+        actor_resolver=actor_resolver,
         reconciler=reconcile_credit_mutation,
     )
     mutation_note_step = MutationExecutionStep(
@@ -74,6 +76,7 @@ def build_customer_remediation_workflow(
         tool_executor=tool_executor,
         store=workflow_store,
         policy=auth_policy,
+        actor_resolver=actor_resolver,
         requires_approval=False,
         reconciler=reconcile_note_mutation,
     )
@@ -94,11 +97,14 @@ def build_customer_remediation_workflow(
             canonical_args=canonical_comp_args,
         )
 
-        actor = AgentActor(
-            actor_id=state.initiator_actor.actor_id,
-            role=state.initiator_actor.role,
-            permissions=list(state.initiator_actor.permissions),
-        )
+        actor = actor_resolver(state.initiator_actor.actor_id) if actor_resolver else None
+        if actor is None or actor.actor_id != state.initiator_actor.actor_id:
+            return StepOutcome(
+                StepExecutionStatus.FAILED,
+                "compensation_failed",
+                error_message="Current actor could not be resolved by trusted host",
+                context_updates={"manual_intervention_required": True},
+            )
 
         # 1. Check ledger for prior execution & ambiguous in-flight recovery
         existing = workflow_store.load_mutation(action_id)

@@ -1,0 +1,146 @@
+[
+  {
+    "path": "building-blocks/python/tests/test_telemetry.py",
+    "sha256": "9325343bb2d4aeece9795d971bea1b6d44c05e62b03577c0be6078aeaf51b429"
+  },
+  {
+    "path": "examples/agent-execution/agent/engine.py",
+    "sha256": "aa2a152202be0cfbba4c352c746cf4638ab928346d7a981e4daaa854d1875bf2"
+  },
+  {
+    "path": "examples/agent-execution/agent/executor.py",
+    "sha256": "cc259a50183251fcf8acc57b4ac3813aab549e9e7950f9927879cecfa63ebecb"
+  },
+  {
+    "path": "examples/agent-execution/agent/observation.py",
+    "sha256": "9065c81597fceb6ab0a213fed56433a5007561ff4dcb0e06c9ada501db13f125"
+  },
+  {
+    "path": "examples/agent-execution/agent/registry.py",
+    "sha256": "e5fd27c3ad423db5aa50609734cd17f47c019662fc4d512ce5e11a3df87c52cb"
+  },
+  {
+    "path": "examples/agent-execution/agent/schema.py",
+    "sha256": "1c39d0739833f350561cd3a1e45eaccb0b04021c022a6967f6afd735bed8d374"
+  },
+  {
+    "path": "examples/agent-execution/tests/test_engine.py",
+    "sha256": "a21b4a39c8bef5e6ad707a2078ca5d6712865bcda697b3edccf28b32e72c5377"
+  },
+  {
+    "path": "examples/agent-execution/tests/test_execution_boundaries.py",
+    "sha256": "1a327a1cf80cd1be7baedc95e94634dd7642c60114bb3fb7f10bb1445721e6ce"
+  },
+  {
+    "path": "examples/agent-execution/tests/test_executor.py",
+    "sha256": "302e51eade65d2d5d8933cccb19dec2b50affbe028794fd6b00598ee4c2fb092"
+  },
+  {
+    "path": "examples/agent-execution/tests/test_observation.py",
+    "sha256": "be7bb36c58c5ed1185bbd893bad43d6f91ea3585cfbf831aaf663ac4d1f5b9d1"
+  },
+  {
+    "path": "examples/agent-execution/tests/test_schema.py",
+    "sha256": "7ea5cc1e70398f6ab7b4925a1114c896e0e01d7d9673c13aabf299a382fbe7b7"
+  },
+  {
+    "path": "examples/agentic-workflow/demo.py",
+    "sha256": "1ba9ac68b58746f51147e9ca6eaf20c70b6628cc4ff37e8c52c5b582c5f21ad8"
+  },
+  {
+    "path": "examples/agentic-workflow/eval_runner.py",
+    "sha256": "885c0f81c829ffe23e890dbeff02214cc8b112bc9e9ce30d0cf292226abcb973"
+  },
+  {
+    "path": "examples/agentic-workflow/live_smoke.py",
+    "sha256": "d5d5525ac0605b8e7d64abe358edb168d24a2307ee97e9f2a026e730796c0129"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/cli_fixture.py",
+    "sha256": "fec2ead9308acd652511798b831bb924b7cdbecdd6a7e92af44c63180ba48306"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_approval_atomicity.py",
+    "sha256": "4ee7831d830c0e93f333b799c6de319ab935c28d0d77588fe1f9a9e764d7ff9b"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_concurrency.py",
+    "sha256": "88d9250090cf19db24022daee2ff43a53e3ccc69294708b52395803df6d7c07e"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_hitl_restart.py",
+    "sha256": "a5530afb66bef08eef8a3df75c3baafb894e563abbff4d650ca311e5d951f1a0"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_ledger.py",
+    "sha256": "a3763357ef6cfa3ceaf094ec2dd5efe96039bde0887d0b000f6b5b418eb3ab55"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_saga.py",
+    "sha256": "cd4ed4ee93a1d6d50647d0239b71f7a211edd2534bd440a5be2e0cc154336895"
+  },
+  {
+    "path": "examples/agentic-workflow/tests/test_security.py",
+    "sha256": "58dc8bad08582003f10a144c76c53e2247f5bd8e763d49b4318f4c915516b7d8"
+  },
+  {
+    "path": "examples/agentic-workflow/workflow/engine.py",
+    "sha256": "387ddc18113005e3050cfca85522bd985262fde768197cfd013108a3383251af"
+  },
+  {
+    "path": "examples/agentic-workflow/workflow/remediation_workflow.py",
+    "sha256": "91cdd97afc321efa79395918ebfbcfd8ce8952fed22df9d9b84264bc792428b5"
+  },
+  {
+    "path": "examples/agentic-workflow/workflow/steps/mutation.py",
+    "sha256": "3ac4d314d799ca8a4275e126eb94e7f4aa35b5c0ac4d02ba5bf7c8e8df832c3f"
+  },
+  {
+    "path": "examples/agentic-workflow/workflow/store.py",
+    "sha256": "ff4c39ba0dadc5eabe4b8c91af27a0677e6d379a2af3547b9033ac7b10d49c93"
+  },
+  {
+    "path": "examples/rag/rag/context_builder.py",
+    "sha256": "9875a4b465455295d7575645ea37fb4b4eabdfce52efb86c2fb44deaed325c0a"
+  },
+  {
+    "path": "examples/rag/rag/service.py",
+    "sha256": "36a45baf47ba1f00d164c10c0e01b2e6fd817118d411d76462a1461a608c955b"
+  },
+  {
+    "path": "examples/rag/tests/test_boundary_regressions.py",
+    "sha256": "680339a6148d61ce55f48cc65e423c4d2c7d846795087ad5da7610196c9dfe78"
+  },
+  {
+    "path": "platform/mcp-adapter/mcp_adapter/adapter.py",
+    "sha256": "45214a77e483ba4ef404c0ce9520a95c5603066b85335ec4b15a375cdf26ca1b"
+  },
+  {
+    "path": "platform/mcp-adapter/mcp_adapter/client.py",
+    "sha256": "40dc64a04371ac0de341cba4cd8ad1e74dbac9f74edb90feb0dac54f3f558215"
+  },
+  {
+    "path": "platform/mcp-adapter/mcp_adapter/protocol.py",
+    "sha256": "711d0b9adba8c3e31d09465964a3f32945408a070fae14e001f98679b959e4f7"
+  },
+  {
+    "path": "platform/mcp-adapter/mcp_adapter/server.py",
+    "sha256": "da2f8c3899b5aa7c307ec18b8894b5909a5847656b8a1323ac0baf22f9068eb4"
+  },
+  {
+    "path": "platform/mcp-adapter/tests/test_mcp_adapter.py",
+    "sha256": "3be6a7ebdb7f0a76e67f7e42b0437009491ccfa06babaff9b522ef3ca2f69958"
+  },
+  {
+    "path": "platform/mcp-adapter/tests/test_protocol_boundaries.py",
+    "sha256": "bf7fa0d81c6c2a11981164c7fe2c48add083d9a467f3cad6774522c4ef0723e9"
+  },
+  {
+    "path": "platform/mcp-adapter/tests/test_stdio_protocol.py",
+    "sha256": "a398989625ce24af612dcf1496702c5dcb2fb3d62396e451d74e8cc89454d813"
+  },
+  {
+    "path": "platform/mcp-adapter/verify.py",
+    "sha256": "d2ef54934e911e71f734e805706cdc3fac87a88ff3a42f1265a9b549c8737415"
+  }
+]

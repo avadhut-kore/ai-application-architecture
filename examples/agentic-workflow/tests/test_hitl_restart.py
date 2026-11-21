@@ -109,6 +109,7 @@ class TestHitlProcessRestart(unittest.IsolatedAsyncioTestCase):
             note_capability=note_cap,
             tool_executor=executor,
             workflow_store=sqlite_store,
+            actor_resolver=lambda actor_id: AgentActor(actor_id, "senior_agent"),
             auth_policy=self.auth_policy,
         )
 

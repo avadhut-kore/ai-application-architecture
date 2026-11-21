@@ -70,12 +70,15 @@ class TestTelemetry(unittest.IsolatedAsyncioTestCase):
         from mcp_adapter.server import McpServer
         from mcp_adapter.client import McpClient
         from mcp_adapter.adapter import McpCapabilityAdapter
+        from contracts.agent import SideEffectLevel
         from contracts.errors import AiError
 
         server = McpServer()
         server.register_tool("failure", "fails", {}, lambda _: 1 / 0)
         client = McpClient(server_instance=server)
-        result = await McpCapabilityAdapter(client, "failure", allowlist=["failure"]).execute({})
+        result = await McpCapabilityAdapter(
+            client, "failure", allowlist=["failure"], side_effect_level=SideEffectLevel.READ_ONLY
+        ).execute({})
         self.assertTrue(result["error"])
         self.assertEqual(self.exporter.get_finished_spans()[0].status.status_code.name, "ERROR")
         self.exporter.clear()

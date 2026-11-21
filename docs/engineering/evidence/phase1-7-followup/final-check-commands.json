@@ -1,0 +1,56 @@
+{
+  "ruff-format": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exit_code": 0
+  },
+  "ruff-check": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "."
+    ],
+    "exit_code": 0
+  },
+  "documentation": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-X",
+      "utf8",
+      "scripts/validate-docs.py"
+    ],
+    "exit_code": 0
+  },
+  "whitespace": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  "bandit": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "-m",
+      "bandit",
+      "-r",
+      "building-blocks/python/contracts",
+      "building-blocks/python/ai_telemetry",
+      "platform",
+      "examples",
+      "-x",
+      "tests,test_doubles.py",
+      "-ll"
+    ],
+    "exit_code": 0
+  }
+}

@@ -1,0 +1,30 @@
+======================================================================
+PHASE 7 LIVE LOCAL OLLAMA SMOKE VERIFICATION
+======================================================================
+Target Endpoint:  http://localhost:11434
+Target Model:     qwen2.5:7b
+Allow Unverified: False
+
+Ollama Daemon: Reachable (HTTP 200 OK)
+Installed Models: ['qwen2.5:7b', 'nomic-embed-text:latest']
+Using Model:   qwen2.5:7b
+
+----------------------------------------------------------------------
+Scenario 1: Live Read-Only Account Status Investigation
+----------------------------------------------------------------------
+Workflow ID:      wf-live-001
+Terminal Status:  COMPLETED
+Current Step:     terminal_completed
+Duration:         283481.0ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation', 'finalization']
+PASS: Investigation remained strictly read-only (0 financial mutations).
+
+----------------------------------------------------------------------
+Scenario 2: Live Overdraft Dispute & Concession Reasoning
+----------------------------------------------------------------------
+Workflow ID:      wf-live-002
+Current Status:   FAILED
+Current Step:     terminal_failed
+Duration:         300231.1ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation']
+STATUS: FAILED — credit scenario did not request approval

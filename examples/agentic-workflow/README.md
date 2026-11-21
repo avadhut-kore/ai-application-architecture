@@ -132,7 +132,7 @@ When an investigation proposes a fee credit or customer note:
 1. **Suspension**: The workflow enters `HUMAN_APPROVAL`. A `DurableApprovalRecord` is generated and saved to SQLite with status `PENDING`.
 2. **Persistence**: The workflow state transitions to `AWAITING_APPROVAL`. Checkpoint version increments, SHA-256 integrity checksum is committed to disk, and the execution process cleanly exits.
 3. **External Operator Action**: An independent process loads the pending approval, reviews the proposal, and registers an approval decision (`APPROVED` or `REJECTED`).
-4. **Resumption & CAS**: Resumption uses optimistic Compare-and-Swap (CAS) on `checkpoint_version` and status to prevent concurrent resume conflicts.
+4. **Atomic decision and resumption**: One transaction conditionally updates the pending approval and resulting checkpoint, checking checkpoint version/status and pending decision status. A failure rolls back both updates; competing resumes cannot both commit. The legacy claim operation remains available for recovery of older checkpoints.
 5. **Pre-Execution Approval Binding Verification**: Before executing the physical tool, `WorkflowApprovalVerifier` confirms:
    - Approval status is `APPROVED` and not `CONSUMED`.
    - Workflow definition ID and version match.
@@ -246,3 +246,18 @@ and authorization callback; durable compensation is handled by the workflow grap
 
 Current evidence and limitations are recorded in the
 [remediation record](../../docs/engineering/phase1-7-remediation.md).
+
+## Current authority at execution
+
+Before forward or compensating mutations, the host-provided
+`actor_resolver(actor_id)` resolves the current actor. The saved initiator snapshot is
+audit evidence and never a fallback for missing current authority. Missing or mismatched
+identities fail closed; current roles/permissions are reauthorized and the original
+approval binding must still match. The CLI's explicit `DEMO_ACTORS` directory is a local
+reference fixture, not an identity provider; deployment composition must inject trusted
+identity lookup. The CLI requires a nonempty manager/admin approver identity but does
+not authenticate that operator through an external identity provider.
+
+[ADR-0013](../../adr/0013-selective-phase7-boundary-hardening.md) records this selective
+hardening. Definition version 1.1.0 and existing SQLite domain tables remain compatible;
+no alternate business database or note-before-credit transition is introduced.

@@ -172,6 +172,7 @@ class TestToolExecutor(unittest.IsolatedAsyncioTestCase):
             sys.path.insert(0, str(MCP_DIR))
         from mcp_adapter.client import McpClient
         from mcp_adapter.adapter import McpCapabilityAdapter
+        from contracts.agent import SideEffectLevel
 
         stalled_cmd = [
             sys.executable,
@@ -182,6 +183,7 @@ class TestToolExecutor(unittest.IsolatedAsyncioTestCase):
         adapter = McpCapabilityAdapter(
             client=client,
             tool_name="stalled_tool",
+            side_effect_level=SideEffectLevel.READ_ONLY,
             description="Stalled tool",
             input_schema={},
             allowlist=["stalled_tool"],

@@ -206,6 +206,9 @@ class DeterministicWorkflowEvaluator:
                 note_capability=note_cap,
                 tool_executor=executor,
                 workflow_store=sqlite_store,
+                actor_resolver=lambda identity: (
+                    AgentActor(identity, actor_role) if identity == actor_id else None
+                ),
                 auth_policy=auth_policy,
             )
 

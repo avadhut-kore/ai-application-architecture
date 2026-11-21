@@ -1,0 +1,56 @@
+{
+  "building-blocks/python": {
+    "statement_percent": 99.55257270693512,
+    "branch_percent": 94.18604651162791,
+    "required_lines": 85,
+    "required_branches": 80
+  },
+  "examples/agent-execution": {
+    "statement_percent": 96.99331848552339,
+    "branch_percent": 89.57055214723927,
+    "required_lines": 70,
+    "required_branches": 65
+  },
+  "examples/agentic-workflow": {
+    "statement_percent": 92.36514522821577,
+    "branch_percent": 78.48101265822785,
+    "required_lines": 70,
+    "required_branches": 65
+  },
+  "examples/ai-evaluation": {
+    "statement_percent": 95.16908212560386,
+    "branch_percent": 85.71428571428571,
+    "required_lines": 70,
+    "required_branches": 65
+  },
+  "examples/rag": {
+    "statement_percent": 94.9343339587242,
+    "branch_percent": 84.23913043478261,
+    "required_lines": 70,
+    "required_branches": 65
+  },
+  "examples/structured-generation": {
+    "statement_percent": 95.9349593495935,
+    "branch_percent": 84.375,
+    "required_lines": 70,
+    "required_branches": 65
+  },
+  "platform/mcp-adapter": {
+    "statement_percent": 94.37229437229438,
+    "branch_percent": 89.75903614457832,
+    "required_lines": 85,
+    "required_branches": 80
+  },
+  "platform/ollama-adapter": {
+    "statement_percent": 91.21621621621621,
+    "branch_percent": 83.33333333333333,
+    "required_lines": 85,
+    "required_branches": 80
+  },
+  "platform/ollama-embedding-adapter": {
+    "statement_percent": 93.79310344827586,
+    "branch_percent": 85.0,
+    "required_lines": 85,
+    "required_branches": 80
+  }
+}

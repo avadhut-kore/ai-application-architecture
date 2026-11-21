@@ -1,0 +1,38 @@
+{
+  "workflow": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "examples/agentic-workflow/eval_runner.py"
+    ],
+    "exit_code": 0
+  },
+  "agent": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "examples/agent-execution/eval_runner.py",
+      "--mode",
+      "fake"
+    ],
+    "exit_code": 0
+  },
+  "rag": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "examples/rag/eval_runner.py",
+      "--mode",
+      "fake",
+      "--output-dir",
+      ".quality/rag-followup-fake"
+    ],
+    "exit_code": 0
+  },
+  "foundation": {
+    "command": [
+      "D:\\company\\products\\ai-application-architecture\\.venv\\Scripts\\python.exe",
+      "examples/ai-evaluation/runner.py",
+      "--mode",
+      "fake"
+    ],
+    "exit_code": 0
+  }
+}

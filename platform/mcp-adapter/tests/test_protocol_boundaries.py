@@ -13,6 +13,7 @@ sys.path[:0] = [str(ROOT / "building-blocks/python"), str(ROOT / "platform/mcp-a
 from mcp_adapter.client import McpClient, McpClientError
 from mcp_adapter.server import McpServer
 from mcp_adapter.adapter import McpCapabilityAdapter
+from contracts.agent import SideEffectLevel
 from mcp_adapter.protocol import JsonRpcRequest, JsonRpcResponse, JsonRpcError
 
 
@@ -53,6 +54,7 @@ class TestProtocolBoundaries(unittest.TestCase):
         self.assertIsNotNone(
             server.handle_request(JsonRpcRequest("tools/call", 1, {"name": 1})).error
         )
+        McpClient(server_instance=server).initialize()
         server.register_tool("failure", "fails", {"type": "object"}, lambda _: 1 / 0)
         response = server.handle_request(JsonRpcRequest("tools/call", 1, {"name": "failure"}))
         self.assertTrue(response.result["isError"])
@@ -101,7 +103,9 @@ class TestMcpResultBoundaries(unittest.IsolatedAsyncioTestCase):
         server.register_tool("failure", "text", {}, lambda _: 1 / 0)
         client = McpClient(server_instance=server)
         for name in ("plain", "invalid", "failure"):
-            adapter = McpCapabilityAdapter(client, name, allowlist=[name])
+            adapter = McpCapabilityAdapter(
+                client, name, allowlist=[name], side_effect_level=SideEffectLevel.READ_ONLY
+            )
             result = await adapter.execute({})
             self.assertIn("error" if name == "failure" else "output", result)
         with self.assertRaises(ValueError):

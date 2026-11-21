@@ -1,0 +1,6 @@
+.......................................................Executing <Task pending name='Task-178' coro=<TestToolExecutor.test_mcp_adapter_timeout_handling() running at D:\company\products\ai-application-architecture\examples\agent-execution\tests\test_executor.py:195> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\futures.py:393, Task.task_wakeup()] created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:459> cb=[_run_until_complete_cb() at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:181] created at C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:109> took 0.132 seconds
+..........................
+----------------------------------------------------------------------
+Ran 81 tests in 6.467s
+
+OK

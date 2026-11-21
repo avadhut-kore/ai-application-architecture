@@ -15,13 +15,12 @@ def components(db_path: str, inquiry: str = ""):
     engine, store = original_components(db_path, inquiry, agent_engine=StubAgentEngine())
     boundary = os.environ.get("WORKFLOW_TEST_CRASH")
     if boundary == "claim":
-        original = engine.store.compare_and_swap_resume
 
         def claim(*args, **kwargs):
-            original(*args, **kwargs)
+            # Process death before the atomic transaction leaves the request pending.
             os._exit(71)
 
-        engine.store.compare_and_swap_resume = claim
+        engine.store.commit_approval_transition = claim
     elif boundary == "effect":
         capability = engine.definition.steps["mutation_execution"].handler.__self__.capability
         original_execute = capability.execute

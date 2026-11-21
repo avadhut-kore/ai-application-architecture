@@ -78,6 +78,7 @@ data/
 .coverage*
 .quality/
 .quality-linux/
+.quality-*/
 coverage*.json
 
 # Transient Evaluation Reports (Reference evidence maintained in canonical_eval_report.json)

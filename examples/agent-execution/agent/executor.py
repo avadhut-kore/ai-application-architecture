@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from copy import deepcopy
 import json
 import math
 import time
@@ -11,6 +12,7 @@ from typing import Any, Mapping
 from contracts.agent import CapabilityPort, ExecutionReceipt, SideEffectLevel
 from contracts.telemetry import AiOperationContext
 from ai_telemetry import traced
+from .observation import bounded_json, exception_message
 
 
 class ToolExecutor:
@@ -32,13 +34,26 @@ class ToolExecutor:
         arguments: Mapping[str, Any],
         action_id: str | None = None,
         context: AiOperationContext | None = None,
+        execution_scope: str = "executor-local",
     ) -> tuple[ExecutionReceipt, Any]:
+        preview, truncated = bounded_json(dict(arguments), 16384)
+        if truncated:
+            raise ValueError("Tool arguments exceed execution boundary budget")
+        arguments = json.loads(preview)
+        if not execution_scope.strip():
+            raise ValueError("Execution scope must not be empty")
         key = action_id or str(arguments.get("action_id", f"act-{time.time_ns()}"))
         mutating = capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING
         if mutating and not (action_id or arguments.get("action_id")):
             raise ValueError("Mutating operations require an action_id")
+        if mutating and (not isinstance(key, str) or not key.strip()):
+            raise ValueError("Mutating action_id must be a nonempty string")
+        if action_id and arguments.get("action_id", action_id) != action_id:
+            raise ValueError("Explicit action_id conflicts with argument action_id")
         identity = json.dumps(
-            [capability.metadata.name, dict(arguments)], sort_keys=True, allow_nan=False
+            [execution_scope, id(capability), capability.metadata.name, dict(arguments)],
+            sort_keys=True,
+            allow_nan=False,
         )
         if mutating:
             if key in self._identities and self._identities[key] != identity:
@@ -49,7 +64,7 @@ class ToolExecutor:
             async with self._locks.setdefault(key, asyncio.Lock()):
                 if key in self._idempotency_cache:
                     receipt, result = self._idempotency_cache[key]
-                    return receipt, {"idempotent_replay": True, "cached_result": result}
+                    return receipt, {"idempotent_replay": True, "cached_result": deepcopy(result)}
                 return await self._execute(capability, arguments, key, context, mutating)
         return await self._execute(capability, arguments, key, context, mutating)
 
@@ -68,8 +83,16 @@ class ToolExecutor:
             result = await asyncio.wait_for(
                 capability.execute(arguments, context=context), self.timeout_seconds
             )
-            if isinstance(result, dict) and result.get("error"):
-                status, error = "failed", str(result.get("error"))
+            if isinstance(result, dict) and (result.get("error") or result.get("success") is False):
+                status, error = "failed", "Tool reported failure"
+            preview, truncated = bounded_json(result, 16384)
+            if truncated:
+                # A mutation may already have happened. Never retry it as a known failure.
+                status = "ambiguous" if mutating else "failed"
+                error = "Tool result exceeds execution boundary budget"
+                result = {"error": True, "message": error, "preview": preview}
+            else:
+                result = json.loads(preview)
         except asyncio.TimeoutError:
             status = "ambiguous" if mutating else "failed"
             error = "Operation timed out"
@@ -87,8 +110,8 @@ class ToolExecutor:
             raise
         except Exception as exc:
             status = "ambiguous" if mutating else "failed"
-            error = str(exc)
-            result = {"error": True, "message": f"Tool execution failed: {exc}"}
+            error = exception_message(exc)
+            result = {"error": True, "message": f"Tool execution failed: {error}"}
         receipt = ExecutionReceipt(
             key,
             capability.metadata.name,
@@ -98,6 +121,6 @@ class ToolExecutor:
             error_message=error,
         )
         if mutating:
-            self._idempotency_cache[key] = (receipt, result)
+            self._idempotency_cache[key] = (receipt, deepcopy(result))
         self.execution_history.append(receipt)
         return receipt, result

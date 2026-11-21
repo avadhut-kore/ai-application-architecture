@@ -1,0 +1,48 @@
+======================================================================
+PHASE 7 LIVE LOCAL OLLAMA SMOKE VERIFICATION
+======================================================================
+Target Endpoint:  http://localhost:11434
+Target Model:     test
+Allow Unverified: False
+
+Ollama Daemon: Reachable (HTTP 200 OK)
+Installed Models: ['test:latest']
+Using Model:   test:latest
+
+----------------------------------------------------------------------
+Scenario 1: Live Read-Only Account Status Investigation
+----------------------------------------------------------------------
+Workflow ID:      wf-live-001
+Terminal Status:  FAILED
+Current Step:     terminal_failed
+Duration:         162.0ms
+Steps Executed:   ['intake_validation', 'context_gathering', 'agentic_investigation']
+Failure evidence: [('valid_input', None), ('context_loaded', None), ('agent_failed', 'Execution failed: The model repeatedly emitted malformed decision output.')]
+STATUS: FAILED — read-only scenario did not complete
+..............Executing <Task finished name='Task-26' coro=<TestApprovalAtomicity.test_missing_and_revoked_current_actor_never_mutate() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_approval_atomicity.py:78> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 1.096 seconds
+.Executing <Task pending name='Task-31' coro=<TestApprovalAtomicity.test_rollback_preserves_pending_checkpoint_and_decision() running at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_approval_atomicity.py:47> wait_for=<Future pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.11/asyncio/base_events.py:428> cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181] created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.193 seconds
+.Executing <Task finished name='Task-37' coro=<TestApprovalAtomicity.test_stale_approval_and_checkpoint_fail_without_partial_commit() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_approval_atomicity.py:50> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.157 seconds
+.Executing <Task pending name='Task-42' coro=<TestConcurrentResume.test_competing_resumes_result_in_exactly_one_winner_and_one_conflict() running at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_concurrency.py:139> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.11/asyncio/tasks.py:709> cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181] created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.136 seconds
+..........Executing <Task finished name='Task-92' coro=<TestEvaluatorRegressions.test_failed_workflows_never_report_verified_smoke() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_evaluator_regressions.py:47> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.203 seconds
+.Executing <Task finished name='Task-97' coro=<TestEvaluatorRegressions.test_infrastructure_error_cannot_count_as_terminal_rejection() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_evaluator_regressions.py:64> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.398 seconds
+.Executing <Task pending name='Task-102' coro=<TestEvaluatorRegressions.test_multiple_business_credits_cannot_count_as_one_mutation() running at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_evaluator_regressions.py:34> wait_for=<Future pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.11/asyncio/base_events.py:428> cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181] created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.605 seconds
+Executing <Task finished name='Task-102' coro=<TestEvaluatorRegressions.test_multiple_business_credits_cannot_count_as_one_mutation() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_evaluator_regressions.py:17> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.206 seconds
+.Executing <Task finished name='Task-108' coro=<TestEvaluatorRegressions.test_wrong_expected_mutation_count_fails() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_evaluator_regressions.py:39> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.290 seconds
+.Executing <Task pending name='Task-113' coro=<TestHitlProcessRestart.test_hitl_approval_and_execution_across_independent_instances() running at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_hitl_restart.py:153> wait_for=<Future pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.11/asyncio/base_events.py:428> cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181] created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.430 seconds
+Executing <Task finished name='Task-113' coro=<TestHitlProcessRestart.test_hitl_approval_and_execution_across_independent_instances() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_hitl_restart.py:118> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.101 seconds
+.Executing <Task finished name='Task-119' coro=<TestHitlProcessRestart.test_hitl_rejection_across_restart_prevents_all_mutations() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_hitl_restart.py:185> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.534 seconds
+.........Executing <Task finished name='Task-144' coro=<TestMutationBoundaries.test_compensation_prior_failure_ambiguity_and_missing_receipt() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_mutation_boundaries.py:96> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.370 seconds
+.Executing <Task finished name='Task-149' coro=<TestMutationBoundaries.test_missing_approval_and_reconciler_failure_fail_closed() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_mutation_boundaries.py:55> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.457 seconds
+.Executing <Task finished name='Task-154' coro=<TestMutationBoundaries.test_prior_failure_ambiguity_and_identity_conflict_never_execute() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_mutation_boundaries.py:26> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.568 seconds
+.Executing <Task finished name='Task-159' coro=<TestDurableRecovery.test_claim_without_decision_returns_to_approval() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_recovery.py:101> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.591 seconds
+..Executing <Task finished name='Task-168' coro=<TestDurableRecovery.test_invalid_approver_or_decision_does_not_claim() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_recovery.py:112> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.381 seconds
+.Executing <Task finished name='Task-173' coro=<TestDurableRecovery.test_model_cannot_change_the_workflow_customer_scope() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_recovery.py:52> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.267 seconds
+.Executing <Task pending name='Task-178' coro=<TestDurableRecovery.test_note_requires_approval_and_inquiry_is_delivered() running at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_recovery.py:94> wait_for=<Future pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.11/asyncio/base_events.py:428> cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181] created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.425 seconds
+...............Executing <Task finished name='Task-245' coro=<TestWorkflowSecurity.test_model_transition_injection_ignored() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_security.py:190> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.271 seconds
+.Executing <Task finished name='Task-250' coro=<TestWorkflowSecurity.test_toctou_authorization_revocation() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_security.py:122> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.487 seconds
+.Executing <Task finished name='Task-255' coro=<TestWorkflowSecurity.test_workflow_definition_version_drift() done, defined at /validation/source-followup-765b37c281/examples/agentic-workflow/tests/test_security.py:220> result=None created at /usr/local/lib/python3.11/asyncio/runners.py:100> took 0.383 seconds
+................
+----------------------------------------------------------------------
+Ran 81 tests in 35.786s
+
+OK

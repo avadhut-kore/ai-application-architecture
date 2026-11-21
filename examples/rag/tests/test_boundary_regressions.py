@@ -33,6 +33,57 @@ class FixedGeneration:
 
 
 class TestRagBoundaries(unittest.IsolatedAsyncioTestCase):
+    async def test_duplicate_keys_and_partial_json_are_rejected(self):
+        valid = '{"answer":"Claim","citations":["doc#c0"],"insufficient_evidence":false}'
+        for text in [
+            valid.replace('"answer":"Claim"', '"answer":"First","answer":"Claim"'),
+            "prefix " + valid,
+            valid + " suffix",
+            "prefix ```json\n" + valid + "\n```",
+        ]:
+            result = await RAGService(FixedRetrieval(), FixedGeneration(text)).answer("q")
+            self.assertFalse(result.schema_valid, text)
+        result = await RAGService(
+            FixedRetrieval(), FixedGeneration("```json\n" + valid + "\n```")
+        ).answer("q")
+        self.assertTrue(result.schema_valid)
+
+    async def test_complete_prompt_budget_precedes_retrieval_and_generation(self):
+        from unittest.mock import AsyncMock
+
+        retrieval = FixedRetrieval()
+        retrieval.retrieve = AsyncMock(side_effect=AssertionError("must not retrieve"))
+        generation = FixedGeneration("")
+        generation.generate = AsyncMock(side_effect=AssertionError("must not generate"))
+        with self.assertRaises(ValueError):
+            await RAGService(retrieval, generation).answer("q" * 20000)
+        retrieval.retrieve.assert_not_awaited()
+        generation.generate.assert_not_awaited()
+
+    async def test_context_uses_only_remaining_complete_prompt_budget(self):
+        from rag.service import SYSTEM_PROMPT
+
+        captured = []
+
+        class Capture(FixedGeneration):
+            async def generate(self, request, **kwargs):
+                captured.append(request)
+                return await super().generate(request, **kwargs)
+
+        service = RAGService(
+            FixedRetrieval(),
+            Capture('{"answer":"Claim","citations":["doc#c0"],"insufficient_evidence":false}'),
+            max_request_chars=3000,
+        )
+        await service.answer("q")
+        self.assertEqual(len(captured), 1)
+        self.assertLessEqual(len(captured[0].prompt) + len(SYSTEM_PROMPT), 3000)
+        for kwargs in [{"max_request_chars": 0}, {"max_output_tokens": 0}]:
+            with self.assertRaises(ValueError):
+                RAGService(FixedRetrieval(), FixedGeneration(""), **kwargs)
+        with self.assertRaises(ValueError):
+            ContextBuilder().build_context([], max_chars=-1)
+
     async def test_valid_citation_does_not_prove_an_unsupported_fact(self):
         response = await RAGService(
             FixedRetrieval(),

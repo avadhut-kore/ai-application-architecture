@@ -27,6 +27,7 @@ from contracts.telemetry import AiOperationContext
 from ai_telemetry import traced
 
 from .executor import ToolExecutor
+from .observation import bounded_json, format_observation, exception_message
 from .registry import CapabilityRegistry
 from .trace import AgentStepRecord, AgentTrajectoryTrace
 
@@ -292,35 +293,47 @@ class AgentExecutionEngine:
         actor: AgentActor,
         context: Optional[AiOperationContext] = None,
     ) -> AgentExecutionResult:
+        run_id = f"run-{uuid.uuid4().hex[:8]}"
+        trace = AgentTrajectoryTrace(run_id=run_id, goal=goal, actor=actor)
+        execution_receipts: List[ExecutionReceipt] = []
         try:
+            if len(goal) > 16384:
+                raise ValueError("Goal exceeds request character budget")
             async with asyncio.timeout(self.max_duration_seconds):
-                return await self._run(goal, actor, context)
-        except TimeoutError:
-            run_id = f"run-{uuid.uuid4().hex[:8]}"
-            trace = AgentTrajectoryTrace(run_id=run_id, goal=goal, actor=actor)
-            trace.complete("FAILED", "Agent deadline exceeded; reconcile any interrupted mutation.")
+                return await self._run(goal, actor, trace, execution_receipts, context)
+        except asyncio.CancelledError:
+            trace.complete("FAILED", "Agent cancelled; reconcile interrupted mutations")
+            raise
+        except Exception as exc:
+            deadline = isinstance(exc, TimeoutError)
+            trace.complete(
+                "FAILED",
+                "Agent deadline exceeded; reconcile any interrupted mutation."
+                if deadline
+                else f"Agent boundary failed: {exception_message(exc)}",
+            )
             return AgentExecutionResult(
                 run_id,
                 goal,
                 "FAILED",
                 trace.final_answer or "",
-                0,
-                [],
+                len(trace.steps),
+                execution_receipts,
                 trace,
                 trace.total_latency_ms,
-                metadata={"deadline_exceeded": True},
+                metadata={"deadline_exceeded": deadline},
             )
 
     async def _run(
         self,
         goal: str,
         actor: AgentActor,
+        trace: AgentTrajectoryTrace,
+        execution_receipts: List[ExecutionReceipt],
         context: Optional[AiOperationContext] = None,
     ) -> AgentExecutionResult:
         """Execute the agent control loop toward the specified goal."""
-        run_id = f"run-{uuid.uuid4().hex[:8]}"
-        trace = AgentTrajectoryTrace(run_id=run_id, goal=goal, actor=actor)
-        execution_receipts: List[ExecutionReceipt] = []
+        run_id = trace.run_id
 
         seen_proposals: List[
             Tuple[str, str]
@@ -382,8 +395,33 @@ class AgentExecutionEngine:
                 },
             )
 
-            response = await self.llm_client.generate(req, context=context)
+            try:
+                response = await self.llm_client.generate(req, context=context)
+            except Exception as exc:
+                trace.complete("FAILED", f"Model boundary failed: {exception_message(exc)}")
+                return AgentExecutionResult(
+                    run_id,
+                    goal,
+                    "FAILED",
+                    trace.final_answer or "",
+                    len(trace.steps),
+                    execution_receipts,
+                    trace,
+                    trace.total_latency_ms,
+                )
             raw_text = response.text
+            if len(raw_text) > 16384:
+                trace.complete("FAILED", "Model response exceeds decision character budget")
+                return AgentExecutionResult(
+                    run_id,
+                    goal,
+                    "FAILED",
+                    trace.final_answer or "",
+                    len(trace.steps),
+                    execution_receipts,
+                    trace,
+                    trace.total_latency_ms,
+                )
 
             decision, parse_err = self._parse_decision(raw_text)
             step_latency = round((time.time() - step_start) * 1000.0, 2)
@@ -602,20 +640,36 @@ class AgentExecutionEngine:
 
             # Execute Tool through Sandboxed Executor
             action_id = str(args.get("action_id", ""))
-            receipt, raw_output = await self.executor.execute_tool(
-                capability, args, action_id=action_id, context=context
-            )
+            try:
+                receipt, raw_output = await self.executor.execute_tool(
+                    capability,
+                    args,
+                    action_id=action_id,
+                    context=context,
+                    execution_scope=f"{actor.actor_id}:{actor.role}",
+                )
+            except asyncio.CancelledError:
+                # The executor records an interrupted mutation before propagating cancellation.
+                if capability.metadata.side_effect_level == SideEffectLevel.STATE_MUTATING:
+                    cancelled_receipt = next(
+                        (
+                            item
+                            for item in reversed(self.executor.execution_history)
+                            if item.action_id == action_id and item.capability_name == action_name
+                        ),
+                        None,
+                    )
+                    if cancelled_receipt is not None:
+                        execution_receipts.append(cancelled_receipt)
+                raise
             execution_receipts.append(receipt)
 
-            obs_output_str = (
-                json.dumps(raw_output, indent=2) if not isinstance(raw_output, str) else raw_output
-            )
-            obs_formatted = (
-                "=== BEGIN TOOL OBSERVATION (UNTRUSTED DATA) ===\n"
+            obs_output_str, _ = bounded_json(raw_output, 4096)
+            obs_formatted = format_observation(
                 f"Tool: {action_name}\n"
                 f"Execution Receipt: {receipt.action_id} (Status: {receipt.status})\n"
-                f"Result:\n{obs_output_str}\n"
-                "=== END TOOL OBSERVATION ==="
+                f"Result:\n{obs_output_str}",
+                4608,
             )
 
             step_record = AgentStepRecord(

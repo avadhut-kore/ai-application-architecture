@@ -73,15 +73,13 @@ graph TD
 ### 2.4 Time-of-Check to Time-of-Use (TOCTOU) Privilege Drift
 * **Threat**: An actor initiates a workflow while holding a privileged role (e.g. `senior_agent`). The workflow suspends for human approval. During suspension, the actor is demoted or their permissions are revoked. Upon resume, the workflow executes relying on the stale snapshot.
 * **Impact**: Execution of privileged mutations by an unauthorized actor.
-* **Implemented control**: Immediately before mutation, the persisted actor snapshot is re-evaluated against current domain policy, including the account's current security hold. A policy rejection fails closed.
-* **Residual risk**: This local pattern has no trusted enterprise identity refresh. External role demotion or permission revocation is not detected from an unchanged snapshot. CLI identities are synthetic demonstration inputs. A Tier 1 integration must resolve current identity and bind fresh authority before executing; this example does not claim that integration is complete.
+* **Implemented control**: Immediately before forward or compensating mutation, a host-supplied current actor resolver refreshes identity and authority. Missing/mismatched identities fail closed. Current domain policy, including account security holds, and the original approval binding must still permit execution.
+* **Residual risk**: The CLI directory is a local reference fixture, not enterprise authentication. Integrations must supply a trusted directory resolver; it must reflect external revocations. Operator CLI role validation is not proof of authentication. This example does not claim an identity-provider integration.
 
 ### 2.5 Concurrent Resume & Race Conditions
 * **Threat**: Two operators or automated workers concurrently attempt to resume the same suspended workflow (`AWAITING_APPROVAL`). Both load version $N$ and attempt physical execution.
 * **Impact**: Race condition, split-brain progression, duplicate external mutations.
-* **Mitigation**: Optimistic Compare-and-Swap (CAS). Resumption executes an atomic SQL CAS:
-  `UPDATE workflow_checkpoints SET checkpoint_version = ?, status = 'running' WHERE workflow_id = ? AND checkpoint_version = ? AND status = 'awaiting_approval'`.
-  Exactly one process wins. The losing competitor receives `0` updated rows, aborts immediately, and raises `ConcurrentResumeConflictError`. Zero mutations execute from the losing process.
+* **Mitigation**: Crash-released execution ownership plus an atomic approval/checkpoint transaction. The checkpoint update conditionally matches the expected version and awaiting-approval status; the approval update must still match pending status. Either both changes commit or both roll back. Competing resumes raise `ConcurrentResumeConflictError`. The older claim-only operation remains for compatibility and recovery tests, not the normal decision path.
 
 ### 2.6 Ambiguous In-Flight Execution & Crash Recovery
 * **Threat**: A process crashes after physical execution begins (`EXECUTION_STARTED`) but before receiving or recording the durable success receipt.

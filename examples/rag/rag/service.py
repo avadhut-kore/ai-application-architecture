@@ -81,7 +81,13 @@ class RAGService:
         citation_validator: Optional[CitationValidator] = None,
         model: str = "qwen2.5:7b",
         min_relevance_score: Optional[float] = 0.25,
+        max_request_chars: int = 8000,
+        max_output_tokens: int = 512,
     ) -> None:
+        if max_request_chars <= 0 or max_output_tokens <= 0:
+            raise ValueError("Request and output budgets must be positive")
+        self.max_request_chars = max_request_chars
+        self.max_output_tokens = max_output_tokens
         self.retriever = retriever
         self.llm_client = llm_client
         self.context_builder = context_builder or ContextBuilder()
@@ -92,16 +98,27 @@ class RAGService:
     def _extract_json_string(self, text: str) -> str:
         """Extract structured JSON string from raw model text output, tolerating markdown code fences."""
         cleaned = text.strip()
-        match = JSON_BLOCK_PATTERN.search(cleaned)
-        if match:
-            return match.group(1).strip()
+        match = JSON_BLOCK_PATTERN.fullmatch(cleaned)
+        return match.group(1).strip() if match else cleaned
 
-        start_idx = cleaned.find("{")
-        end_idx = cleaned.rfind("}")
-        if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-            return cleaned[start_idx : end_idx + 1].strip()
+    @staticmethod
+    def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"Duplicate response key: {key}")
+            result[key] = value
+        return result
 
-        return cleaned
+    @staticmethod
+    def _user_prompt(query: str, evidence: str) -> str:
+        return f"""RETRIEVED EVIDENCE:
+{evidence}
+
+USER QUESTION:
+{query}
+
+Respond strictly using the required JSON schema with grounded answer and valid citation identifiers."""
 
     @traced("rag.answer", "local")
     async def answer(
@@ -114,6 +131,10 @@ class RAGService:
     ) -> RAGResponse:
         """Execute complete end-to-end grounded query answering flow."""
         start_time = time.monotonic()
+
+        remaining = self.max_request_chars - len(SYSTEM_PROMPT) - len(self._user_prompt(query, ""))
+        if remaining < 0:
+            raise ValueError("Query exceeds the complete RAG request character budget")
 
         effective_min_score = min_score if min_score is not None else self.min_relevance_score
 
@@ -132,7 +153,7 @@ class RAGService:
         )
 
         # 2. Context construction & budget management
-        context_build = self.context_builder.build_context(retrieval_results)
+        context_build = self.context_builder.build_context(retrieval_results, max_chars=remaining)
 
         # 3. If no chunks retrieved or below sufficiency threshold, short-circuit immediately without calling LLM
         if not retrieval_results or not context_build.included_chunk_ids:
@@ -163,20 +184,14 @@ class RAGService:
             )
 
         # 4. Formulate grounded generation prompt
-        user_prompt = f"""RETRIEVED EVIDENCE:
-{context_build.formatted_context}
-
-USER QUESTION:
-{query}
-
-Respond strictly using the required JSON schema with grounded answer and valid citation identifiers."""
+        user_prompt = self._user_prompt(query, context_build.formatted_context)
 
         request = CompletionRequest(
             prompt=user_prompt,
             model=self.model,
             system_prompt=SYSTEM_PROMPT,
             temperature=0.0,  # Zero temperature for deterministic grounding
-            max_tokens=512,
+            max_tokens=self.max_output_tokens,
             metadata={
                 "format": "json",
                 "response_schema": {
@@ -217,7 +232,7 @@ Respond strictly using the required JSON schema with grounded answer and valid c
 
         try:
             json_str = self._extract_json_string(raw_text)
-            payload = json.loads(json_str)
+            payload = json.loads(json_str, object_pairs_hook=self._unique_object)
             if not isinstance(payload, dict):
                 raise ValueError(f"Parsed JSON is not an object, got {type(payload).__name__}")
             if "answer" not in payload:
