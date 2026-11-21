@@ -18,11 +18,25 @@ To maintain architectural integrity, phases are executed sequentially. Advanceme
 
 ## Current implementation and acceptance status
 
-Phases 1–7 have implementation artifacts. Remediation and verification are tracked
-in [the evidence record](docs/engineering/phase1-7-remediation.md). Scope approval,
-implementation verification and independent acceptance are distinct. No learning
-guide or artifact manifest independently certifies phase completion. Phases 8–14
-remain planned; no Phase 8 capability is introduced by this remediation.
+The supplied Antigravity re-review records **acceptance with explicitly listed
+non-blocking limitations** for the documented Phase 1–7 baseline at
+`e5daf8feddca0f06499247d65109d937f8fceb82`. The
+[acceptance record](docs/engineering/phase1-7-acceptance.md) preserves reviewer
+attribution, exact scope, residual report corrections and evidence limitations.
+This is a reviewer-issued decision, not implementing-agent certification or
+acceptance of later changes. Phase 0 has no separate acceptance verdict in that report.
+
+Historical implementation verification remains in the
+[remediation record](docs/engineering/phase1-7-remediation.md) and
+[follow-up record](docs/engineering/phase1-7-followup.md). The
+[learning curriculum](docs/learning/README.md) references the accepted baseline;
+post-freeze guide synchronization review remains an implementation-readiness task.
+
+Phase 8 is **planning only**: the owner selected invoices with line-item tables.
+The [requirements and architecture proposal](docs/architecture/phase-08-document-intelligence-plan.md)
+needs review of its detailed requirements, benchmark and architecture decisions
+before implementation. Phases 9–14 remain planned. No Phase 8 application is
+implemented or accepted by this documentation change.
 
 ## Roadmap Overview
 
@@ -178,6 +192,7 @@ Workflows   Intel       Intel       Real-Time   Synthesis   Intel & Plat Audit  
 ---
 
 ## Phase 8: Document Intelligence
+* **Planning Record**: [Invoice document-intelligence proposal](docs/architecture/phase-08-document-intelligence-plan.md); owner-selected use case, detailed design not yet approved.
 * **Objective**: Implement structured document processing (IDP) over complex enterprise documents.
 * **Scope**:
   * Intelligent document processing reference application (Tier 1).

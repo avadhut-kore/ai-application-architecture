@@ -1,0 +1,29 @@
+{
+  "reviewer_as_supplied": "Antigravity, separate verification agent",
+  "received_via": "Repository owner pasted review reports into the Codex chat",
+  "report_date": "2026-11-21",
+  "recorded_date": "2026-11-21",
+  "active_review_commit": "e5daf8feddca0f06499247d65109d937f8fceb82",
+  "recorded_verdict": "Accepted with explicitly listed non-blocking limitations",
+  "normalization": "Report wording retained. Normalize CRLF or CR to LF, remove trailing ASCII spaces/tabs on each line, then encode UTF-8 for canonical hashes. Apply the same normalization before verifying local checkout hashes. Source-byte hashes refer to the original user attachments before normalization.",
+  "raw_execution_logs_attached_to_review": false,
+  "reviewer_identity_independently_authenticated": false,
+  "reports": [
+    {
+      "reviewed_commit": "48031c980f91e361ac7d3bf1bf0764820f221bc7",
+      "archived_file": "antigravity-initial-48031c9.txt",
+      "source_bytes_sha256": "9dc956c16dfd52fd471a055376ea01f3f49e83ae2fd17a064041bd27fe3d6584",
+      "canonical_utf8_lf_sha256": "4c6686a3e85dd9acae37fbdd30bfab3ec5f3a85350979f1cd2edd66d671764df",
+      "source_bytes": 25664,
+      "canonical_bytes": 25662
+    },
+    {
+      "reviewed_commit": "e5daf8feddca0f06499247d65109d937f8fceb82",
+      "archived_file": "antigravity-rereview-e5daf8f.txt",
+      "source_bytes_sha256": "1f2f19c90038892a2f94aff90e61afc8b4e0650eb3e0c0c19ddb25773f418299",
+      "canonical_utf8_lf_sha256": "e632c9a969eac3b31d1dfc1a13532397fd45e940678597a19fab13cabb62a17d",
+      "source_bytes": 21997,
+      "canonical_bytes": 21995
+    }
+  ]
+}

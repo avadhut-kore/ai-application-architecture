@@ -89,3 +89,10 @@ The implementing agent records commands and outcomes in the
 [remediation record](../docs/engineering/phase1-7-remediation.md). Process-death tests
 must inspect durable balances and action receipts from fresh processes. Independent
 review is a separate acceptance step; this ADR records the owner's scope approval.
+
+## Subsequent Review Record
+
+The original status above describes this implementation-scope decision when written.
+The later reviewer-issued acceptance of baseline `e5daf8f` is separately attributed in
+[the acceptance record](../docs/engineering/phase1-7-acceptance.md). This note preserves
+the original decision and does not claim certification or extend acceptance to later code.

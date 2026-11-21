@@ -38,13 +38,16 @@ When studying each phase, progress through this exact sequence:
 
 ## 2. Curriculum Roadmap & Progression
 
-The curriculum follows the repository roadmap. Existing guides describe the
-implemented baseline and remain subject to remediation and independent review.
-A guide must not label a phase accepted or frozen until an independent reviewer
-records acceptance of the exact revision and evidence.
+The curriculum follows the repository roadmap. The
+[recorded Antigravity review](../engineering/phase1-7-acceptance.md) accepts the
+Phase 1–7 implementation baseline at `e5daf8f` with non-blocking limitations.
+The guide index below refers to that exact baseline; later edits do not automatically
+inherit independent acceptance. Phase 0 is implemented governance and has no separate
+acceptance verdict in the supplied report. Guide synchronization and review must be
+recorded before Phase 8 implementation; this index does not certify every guide line.
 
 ```text
-FOUNDATION (PHASES 0–3) — IMPLEMENTED — ACCEPTANCE PENDING
+FOUNDATION (PHASES 0–3) — IMPLEMENTED; SEE BASELINE ACCEPTANCE RECORD
 ──────────────────────────────────────────────────────────────────────────
 Phase 0: Architecture Governance
   "What are we building, why, and what rules govern it?"
@@ -65,19 +68,19 @@ Phase 3: Tiered Reference Implementation Templates
 
 AI ENGINEERING & CAPABILITIES (PHASES 4–14)
 ──────────────────────────────────────────────────────────────────────────
-Phase 4: AI Foundations [IMPLEMENTED — ACCEPTANCE PENDING]
+Phase 4: AI Foundations [BASELINE REVIEWER-ACCEPTED WITH LIMITATIONS]
   "How does an application safely communicate with an LLM?"
   → [Phase 04 Learning Guide](phase-04-ai-foundations.md)
         ↓
-Phase 5: Knowledge Intelligence & RAG [IMPLEMENTED — ACCEPTANCE PENDING]
+Phase 5: Knowledge Intelligence & RAG [BASELINE REVIEWER-ACCEPTED WITH LIMITATIONS]
   "How will the LLM securely ground reasoning in private enterprise knowledge?"
   → [Phase 05 Learning Guide](phase-05-knowledge-intelligence-rag.md)
         ↓
-Phase 6: Agentic Task Execution [IMPLEMENTED — ACCEPTANCE PENDING]
+Phase 6: Agentic Task Execution [BASELINE REVIEWER-ACCEPTED WITH LIMITATIONS]
   "How will AI safely invoke enterprise tools and execute stateful actions?"
   → [Phase 06 Learning Guide](phase-06-agentic-task-execution.md)
         ↓
-Phase 7: Agentic Workflow Orchestration [IMPLEMENTED — ACCEPTANCE PENDING]
+Phase 7: Agentic Workflow Orchestration [BASELINE REVIEWER-ACCEPTED WITH LIMITATIONS]
   "How will multi-step, human-in-the-loop workflows be coordinated?"
   → [Phase 07 Learning Guide](phase-07-agentic-workflow-orchestration.md)
         ↓
@@ -92,13 +95,13 @@ Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE
 | Phase | Title | Focus Area | Status | Learning Guide |
 | :---: | :--- | :--- | :--- | :---: |
 | **00** | **Architecture Governance** | Vision, Scope, Taxonomy, 10 Quality Gates, Local-First Policy | `IMPLEMENTED` | [Phase 00 Guide](phase-00-governance.md) |
-| **01** | **Engineering Standards** | Definition of Done, Testing Strategy, AI Eval Standards, Security | `IMPLEMENTED` | [Phase 01 Guide](phase-01-engineering-standards.md) |
-| **02** | **Repository Foundation** | Monorepo Structure, Core Contracts (`models.py`, `ports.py`, `errors.py`) | `IMPLEMENTED` | [Phase 02 Guide](phase-02-repository-foundation.md) |
-| **03** | **Reference Templates** | Four Reference Tiers, Manifests, Taxonomy Validation, Governance | `IMPLEMENTED` | [Phase 03 Guide](phase-03-reference-templates.md) |
-| **04** | **AI Foundations** | Provider-Neutral Ports, `OllamaAdapter`, Structured Generation, Gate D Eval | `IMPLEMENTED` | [Phase 04 Guide](phase-04-ai-foundations.md) |
-| **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `IMPLEMENTED` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
-| **06** | **Agentic Task Execution** | Tool Proposals, Capability Registry, Policy Enforcement, Mandatory HITL, MCP | `IMPLEMENTED` | [Phase 06 Guide](phase-06-agentic-task-execution.md) |
-| **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `IMPLEMENTED` | [Phase 07 Guide](phase-07-agentic-workflow-orchestration.md) |
+| **01** | **Engineering Standards** | Definition of Done, Testing Strategy, AI Eval Standards, Security | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 01 Guide](phase-01-engineering-standards.md) |
+| **02** | **Repository Foundation** | Monorepo Structure, Core Contracts (`models.py`, `ports.py`, `errors.py`) | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 02 Guide](phase-02-repository-foundation.md) |
+| **03** | **Reference Templates** | Four Reference Tiers, Manifests, Taxonomy Validation, Governance | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 03 Guide](phase-03-reference-templates.md) |
+| **04** | **AI Foundations** | Provider-Neutral Ports, `OllamaAdapter`, Structured Generation, Gate D Eval | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 04 Guide](phase-04-ai-foundations.md) |
+| **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
+| **06** | **Agentic Task Execution** | Tool Proposals, Capability Registry, Policy Enforcement, Mandatory HITL, MCP | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 06 Guide](phase-06-agentic-task-execution.md) |
+| **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `ACCEPTED WITH LIMITATIONS @ e5daf8f` | [Phase 07 Guide](phase-07-agentic-workflow-orchestration.md) |
 | **08–14** | **Enterprise AI Systems** | Document, Multimodal, Voice, Research, Decision Intelligence, Hardening & Release | `PLANNED` | *Available after respective phase freeze* |
 
 ---
@@ -125,3 +128,11 @@ This curriculum is intended for:
 
 To ensure documentation remains an authoritative educational asset:
 > **Post-Freeze Learning Rule**: Whenever a roadmap phase achieves independent acceptance and is frozen, its dedicated learning guide must be authored directly from the verified repository state before work begins on the subsequent phase.
+
+## 6. Next Phase Planning
+
+The owner selected invoices with line-item tables for the
+[Phase 8 planning draft](../architecture/phase-08-document-intelligence-plan.md).
+This is a proposed application specification, not a runnable lesson or an accepted
+implementation. Phases 8–14 learning guides remain unavailable until their
+corresponding accepted implementation exists.

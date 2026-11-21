@@ -6,7 +6,8 @@ when to move on. You do not need to read every document before your first exerci
 
 The implemented learning path currently reaches the approved Phase 7 baseline.
 Implementation and independent acceptance are different; consult the
-[roadmap](../../ROADMAP.md) and [verification report](../engineering/phase1-7-followup.md)
+[roadmap](../../ROADMAP.md), [recorded independent review](../engineering/phase1-7-acceptance.md)
+and [verification report](../engineering/phase1-7-followup.md)
 for scope, evidence and limitations. Future roadmap phases are not existing tutorials.
 
 ## On This Page
@@ -252,3 +253,7 @@ Learning guides explain these sources; they do not replace them or certify phase
 acceptance. After Phase 7, use the roadmap to understand planned work, and wait for
 an approved implementation and its learning material before treating it as a runnable
 next lesson.
+
+The next proposed application is described in the
+[Phase 8 invoice planning draft](../architecture/phase-08-document-intelligence-plan.md).
+It is not implemented; continue to use the Phase 0–7 exercises for hands-on study.

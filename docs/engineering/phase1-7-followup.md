@@ -1,5 +1,11 @@
 # Phase 1–7 selective hardening: completion evidence
 
+**Historical implementing-agent evidence:** acceptance statements below describe the
+verification stage when written. The subsequently supplied reviewer-issued verdict
+for `e5daf8f`, its attribution and limitations are in the
+[current acceptance record](phase1-7-acceptance.md). Later documentation does not
+retroactively change the results or source revision of these runs.
+
 > **Internal Self-Assessment — Not Independent Certification**
 
 ## 1. Executive summary

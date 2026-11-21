@@ -1,5 +1,10 @@
 # Phase 05: Knowledge Intelligence & RAG — Learning Guide
 
+This guide is associated with the Phase 1–7 implementation baseline `e5daf8f`.
+See the [recorded independent review](../engineering/phase1-7-acceptance.md) for
+reviewer attribution, limitations and the remaining guide-synchronization review.
+This reference does not certify later edits or every explanatory statement.
+
 ```text
 Phase:                  05 — Knowledge Intelligence & RAG
 Status:                 Implemented; current verification and acceptance status: ROADMAP.md

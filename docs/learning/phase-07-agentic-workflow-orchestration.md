@@ -1,5 +1,10 @@
 # Phase 07: Agentic Workflow Orchestration — Learning Guide
 
+This guide is associated with the Phase 1–7 implementation baseline `e5daf8f`.
+See the [recorded independent review](../engineering/phase1-7-acceptance.md) for
+reviewer attribution, limitations and the remaining guide-synchronization review.
+This reference does not certify later edits or every explanatory statement.
+
 ```text
 Phase:                  07 — Agentic Workflow Orchestration
 Status:                 Implemented; current verification and acceptance status: ROADMAP.md
@@ -1127,7 +1132,7 @@ FOUNDATION (PHASES 0–3)               AI CAPABILITIES (PHASES 4–7)          
 │ Phase 2: Core Contracts │           │ Phase 6: Agentic Tasks  │            │ Phase 10: AI Gateways   │
 │ Phase 3: Templates      │           │ Phase 7: Workflows      │            │ Phase 11–14: Production │
 └─────────────────────────┘           └─────────────────────────┘            └─────────────────────────┘
-      [IMPLEMENTED — ACCEPTANCE PENDING]                 [IMPLEMENTED — ACCEPTANCE PENDING]                         [PLANNED]
+      [BASELINE REVIEWED WITH LIMITATIONS]                 [BASELINE REVIEWED WITH LIMITATIONS]                         [PLANNED]
 ```
 
 ### Twelve Core Teaching Principles

@@ -114,9 +114,16 @@ Consult the authoritative standards in `docs/architecture/`:
 ## 6. Current Phase Status
 
 Implementation extends through the **Phase 7 Tier 2 single-agent workflow baseline**.
-Current verification and independent acceptance are tracked in the
-[remediation evidence record](docs/engineering/phase1-7-remediation.md), with scope
-owned by [ROADMAP.md](ROADMAP.md) and explained in [ADR-0012](adr/0012-phase1-7-verification-and-local-recovery.md).
+The [recorded independent review](docs/engineering/phase1-7-acceptance.md) attributes
+acceptance with non-blocking limitations to Antigravity for revision `e5daf8f`.
+Its exact scope, reporting corrections and evidence limitations remain explicit;
+this is not production certification. See the
+[implementation evidence](docs/engineering/phase1-7-followup.md) and authoritative
+[roadmap](ROADMAP.md).
+
+Phase 8 has an owner-selected invoice use case and a
+[requirements/architecture planning draft](docs/architecture/phase-08-document-intelligence-plan.md).
+It has no application implementation or acceptance yet.
 
 ### Reproduce the locked environment
 
