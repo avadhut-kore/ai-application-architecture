@@ -8,6 +8,9 @@ An architectural reference standard, taxonomy, and implementation repository for
 
 ---
 
+New here? Start with the [beginner navigation guide](docs/learning/start-here.md),
+then follow the [phase-by-phase curriculum](docs/learning/README.md).
+
 ## 1. Purpose & Mission
 
 The purpose of **`ai-application-architecture`** is to establish an architectural foundation for designing, building, evaluating, securing, observing, and operating AI applications in enterprise software environments.
@@ -80,6 +83,8 @@ To avoid forcing a single monolithic standard across disparate components, this 
 
 | Document / Directory | Focus Area | Description |
 | :--- | :--- | :--- |
+| **[Beginner navigation](docs/learning/start-here.md)** | Getting Started | Reading order, setup, exercises, repository map and troubleshooting. |
+| **[Learning curriculum](docs/learning/README.md)** | Phase Guides | Detailed implementation-based guides for Phases 0–7. |
 | **[`VISION.md`](VISION.md)** | Strategic Vision | Long-term roadmap, architectural charter, and enterprise differentiation. |
 | **[`SCOPE.md`](SCOPE.md)** | Operational Scope | Clear delineation of what is in-scope vs. out-of-scope for the repository. |
 | **[`ROADMAP.md`](ROADMAP.md)** | Phased Roadmap | 15-phase delivery plan from Governance (Phase 0) to v1.0 Reference Release. |

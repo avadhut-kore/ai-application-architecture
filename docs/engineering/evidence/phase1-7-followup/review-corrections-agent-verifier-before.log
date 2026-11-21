@@ -1,0 +1,41 @@
+======================================================================
+Phase 6 Verification — Agentic Task Execution (Tier 2 Pattern Example)
+======================================================================
+[1/3] Validating artifact.json schema...
+      -> artifact.json valid.
+[2/3] Running hermetic unit tests...
+FAILED: Unit tests failed:
+.........................................E.......E............................
+======================================================================
+ERROR: test_whole_run_deadline_retains_ambiguous_mutation_receipt (test_engine.TestAgentExecutionEngine.test_whole_run_deadline_retains_ambiguous_mutation_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "D:\company\products\ai-application-architecture\examples\agent-execution\tests\test_engine.py", line 115, in test_whole_run_deadline_retains_ambiguous_mutation_receipt
+    from tests.test_executor import DummyTool
+ModuleNotFoundError: No module named 'tests.test_executor'
+
+======================================================================
+ERROR: test_execution_boundaries (unittest.loader._FailedTest.test_execution_boundaries)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_execution_boundaries
+Traceback (most recent call last):
+  File "C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\unittest\loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "C:\Users\avadh\AppData\Local\Python\pythoncore-3.14-64\Lib\unittest\loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "D:\company\products\ai-application-architecture\examples\agent-execution\tests\test_execution_boundaries.py", line 13, in <module>
+    from tests.test_executor import DummyTool
+ModuleNotFoundError: No module named 'tests.test_executor'
+
+
+----------------------------------------------------------------------
+Ran 78 tests in 5.927s
+
+FAILED (errors=2)

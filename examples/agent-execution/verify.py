@@ -35,7 +35,17 @@ def main() -> int:
     # 2. Run unit tests
     print("[2/3] Running hermetic unit tests...")
     code, out = run_cmd(
-        [sys.executable, "-m", "unittest", "discover", "-s", str(AGENT_DIR / "tests")], REPO_ROOT
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            str(AGENT_DIR / "tests"),
+            "-t",
+            str(AGENT_DIR),
+        ],
+        REPO_ROOT,
     )
     if code != 0:
         print(f"FAILED: Unit tests failed:\n{out}")

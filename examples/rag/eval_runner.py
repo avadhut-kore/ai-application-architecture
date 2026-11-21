@@ -21,7 +21,7 @@ import json
 import sys
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -482,7 +482,7 @@ async def run_evaluation(
     summary = RAGEvalSummary(
         total_scenarios=total,
         mode=mode,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         hit_rate=round(hit_rate, 4),
         mean_recall_at_k=round(mean_recall, 4),
         mrr=round(mrr, 4),

@@ -23,7 +23,7 @@ import json
 import sys
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -511,7 +511,7 @@ async def run_evaluation(
     summary = AgentEvalSummary(
         total_scenarios=total,
         mode=mode,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         passed_scenarios=passed_count,
         failed_scenarios=failed_count,
         pass_rate=round(pass_rate, 4),

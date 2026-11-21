@@ -20,8 +20,8 @@ While Phase 6 delivered bounded single-turn agentic task execution within an act
 The reference pattern consists of:
 1. **The Core Workflow Contracts** ([`building-blocks/python/contracts/workflow.py`](../../building-blocks/python/contracts/workflow.py)): Pure, provider-neutral domain models and protocols: `WorkflowStatus`, `StepExecutionStatus`, `ApprovalStatus`, `MutationStatus`, `WorkflowDefinitionRef`, and `CheckpointStorePort`.
 2. **Deterministic State Machine & Directed Graph Engine** ([`examples/agentic-workflow/workflow/definition.py`](../../examples/agentic-workflow/workflow/definition.py), [`engine.py`](../../examples/agentic-workflow/workflow/engine.py)): Code-defined directed graphs enforcing transition guards, maximum transition ceilings (`max_transitions = 15`), and cycle loop protection.
-3. **Durable SQLite Checkpoint Store & Atomic Compare-and-Swap (CAS)** ([`examples/agentic-workflow/workflow/store.py`](../../examples/agentic-workflow/workflow/store.py)): Write-Ahead Logging (WAL) single-node persistence with single-statement optimistic concurrency control preventing split-brain resumptions.
-4. **Authority-Bearing Workflow State Model** ([`examples/agentic-workflow/workflow/state.py`](../../examples/agentic-workflow/workflow/state.py)): Strongly typed state capturing checkpoint versions, step retries, execution history, domain context, and a canonical SHA-256 integrity checksum detecting accidental storage tampering.
+3. **Durable SQLite Checkpoint Store & Atomic Compare-and-Swap (CAS)** ([`examples/agentic-workflow/workflow/store.py`](../../examples/agentic-workflow/workflow/store.py)): Write-Ahead Logging (WAL) single-host persistence with conditional approval/checkpoint updates in one transaction and crash-released execution ownership.
+4. **Durable Workflow State Model** ([`examples/agentic-workflow/workflow/state.py`](../../examples/agentic-workflow/workflow/state.py)): Strongly typed state capturing checkpoint versions, retries, history, domain context and a checksum detecting accidental tampering. Saved actor fields are historical; a host resolver supplies current mutation authority.
 5. **Durable Human-in-the-Loop (HITL) Suspension & Approval Binding Verification** ([`examples/agentic-workflow/workflow/steps/human.py`](../../examples/agentic-workflow/workflow/steps/human.py), [`approval.py`](../../examples/agentic-workflow/workflow/approval.py)): Asynchronous pause-to-disk lifecycle featuring durable approval records with strict structural, definition and lifecycle binding validation, and single-use consumption.
 6. **Durable Mutation Ledger & Stable Action Identity** ([`examples/agentic-workflow/workflow/ledger.py`](../../examples/agentic-workflow/workflow/ledger.py)): Deterministic SHA-256 action identifier derivation (`act-{wf_id}-{step}-{digest}`) and lifecycle tracking (`PLANNED`, `EXECUTION_STARTED`, `EXECUTED`, `FAILED`, `AMBIGUOUS`).
 7. **Crash-Consistent In-Flight Domain Reconciliation** ([`examples/agentic-workflow/workflow/steps/mutation.py`](../../examples/agentic-workflow/workflow/steps/mutation.py), [`remediation_workflow.py`](../../examples/agentic-workflow/workflow/remediation_workflow.py)): A 3-outcome reconciliation protocol (`EXECUTED`, `NOT_EXECUTED`, `INCONCLUSIVE`) preventing double-mutation when processes crash mid-flight.
@@ -107,7 +107,7 @@ A critical architectural distinction established in this repository is the separ
 | **Execution Lifespan** | Ephemeral, in-memory, single OS process. | Durable, multi-process, asynchronous, surviving restarts. |
 | **Persistence Model** | In-memory execution receipts and run summaries. | SQLite WAL checkpoints, mutation ledger, and audit log. |
 | **Human-in-the-Loop** | Synchronous callback during active agent loop. | Asynchronous pause-to-disk; process exits and resumes later. |
-| **Concurrency Control**| In-memory tool idempotency cache. | Optimistic Compare-and-Swap (CAS) on checkpoint version. |
+| **Concurrency Control**| In-memory tool idempotency cache. | Crash-released ownership and atomic approval/checkpoint transition. |
 | **Failure Recovery** | Retry within iteration limit or abort run. | In-flight domain reconciliation and local saga compensation. |
 
 ### Two Non-Negotiable Governance Principles
@@ -166,7 +166,7 @@ flowchart TD
     subgraph PERSISTENCE_LAYER["6. Durable Storage (store.py / WAL SQLite)"]
         HUMAN -->|Suspension| STORE[("SQLiteWorkflowStore")]
         MUTATION -->|Atomic Commit| STORE
-        STORE --> CHECKPOINTS["workflow_checkpoints (CAS Optimistic Lock)"]
+        STORE --> CHECKPOINTS["workflow_checkpoints (Conditional Version Check)"]
         STORE --> APPROVALS["workflow_approvals (Durable Approval Record)"]
         STORE --> LEDGER["workflow_mutation_ledger (Stable action_id)"]
         STORE --> AUDIT["workflow_audit_log (Append-Only Log)"]
@@ -187,7 +187,7 @@ flowchart TD
 
 ## 5. Workflow State vs. AI Conversation Memory
 
-A common failure mode in naive AI implementations is treating LLM chat history as application state. In Phase 7, state is strictly modeled as an authority-bearing, immutable dataclass:
+A common failure mode in naive AI implementations is treating LLM chat history as application state. In Phase 7, workflow progress is modeled as an immutable dataclass. Its saved actor snapshot records the initiator; mutation authorization uses the current actor returned by the host resolver:
 
 ```python
 # Defined in examples/agentic-workflow/workflow/state.py
@@ -248,7 +248,7 @@ stateDiagram-v2
     human_approval --> AWAITING_APPROVAL: Suspend to SQLite
     human_approval --> mutation_execution: Credit approved
     human_approval --> mutate_note: Note approved
-    AWAITING_APPROVAL --> RUNNING: resume_workflow() [CAS Locked]
+    AWAITING_APPROVAL --> RUNNING: resume_workflow() [Approval and Checkpoint Commit]
 
     state Resumed_Execution {
         mutation_execution --> finalization: Credit Succeeded
@@ -322,35 +322,29 @@ This lifecycle is tested automatically across distinct operating system processe
 
 When an asynchronous workflow awaits human approval, multiple processes or operators might attempt to resume it simultaneously. Without concurrency control, both processes could load the checkpoint, evaluate the proposal, and disburse duplicate financial credits.
 
-### The Single-Statement Compare-and-Swap
-Phase 7 implements optimistic locking directly in SQLite via [`SQLiteWorkflowStore.compare_and_swap_resume`](../../examples/agentic-workflow/workflow/store.py):
+### The Atomic Approval and Checkpoint Transition
 
-```sql
-UPDATE workflow_checkpoints
-SET checkpoint_version = :next_version,
-    status = 'RUNNING',
-    state_json = :state_json,
-    checksum = :checksum,
-    updated_at = :now
-WHERE workflow_id = :workflow_id
-  AND checkpoint_version = :expected_version
-  AND status = 'AWAITING_APPROVAL';
-```
+The normal resume path uses
+[`commit_approval_transition`](../../examples/agentic-workflow/workflow/store.py),
+not a claim followed by an independently saved decision. Within one SQLite transaction:
 
-```text
-Process A (Worker 1)                        Process B (Worker 2)
-────────────────────                        ────────────────────
-Reads version = 1                           Reads version = 1
-Executes atomic UPDATE                      Executes atomic UPDATE
-WHERE version = 1                           WHERE version = 1
-Rows affected: 1 (SUCCESS!)                 Rows affected: 0 (STALE WRITER!)
-State advances to RUNNING                   Raises ConcurrentResumeConflictError
-Proceeds with execution                     Halts cleanly without side effects
-```
+1. The checkpoint update must match the expected version and awaiting-approval status.
+2. The approval update must match the workflow and still-pending approval status.
+3. Both updates commit together. A stale checkpoint or changed decision raises
+   `ConcurrentResumeConflictError` and rolls back both updates.
+
+The engine also holds crash-released single-host execution ownership. Competing
+processes cannot both commit a resume and execute the same mutation. Existing tests
+exercise competing resumes, rollback during approval persistence and process death.
+The legacy `compare_and_swap_resume` operation remains available for compatibility
+and recovery of older claim-only states; it is not the normal approval decision path.
 
 ### Architectural Limitation Disclosure
-> [!NOTE]
-> SQLite Compare-and-Swap proves the concurrency pattern under single-node deployments using Write-Ahead Logging (`PRAGMA journal_mode=WAL;`). It does not demonstrate distributed consensus (e.g., Raft, multi-region database leasing). In enterprise production tiers, the `CheckpointStorePort` protocol must be backed by PostgreSQL with row-level locks (`SELECT ... FOR UPDATE`) or distributed state stores.
+
+This is single-host coordination over a local SQLite database, not distributed
+consensus or a transaction spanning arbitrary external APIs. Domain receipts and
+reconciliation remain necessary. Follow the [current workflow README](../../examples/agentic-workflow/README.md)
+and [ADR-0013](../../adr/0013-selective-phase7-boundary-hardening.md) for current boundaries.
 
 ---
 
@@ -383,7 +377,7 @@ class WorkflowApprovalVerifier:
 | **3** | `record.action_id == expected_action_id` | **Action Substitution**: Prevents substituting an approved note for a credit. |
 | **4** | `record.capability_name == capability.name` | **Capability Swapping**: Prevents pointing an approval at an unapproved tool. |
 | **5** | `record.canonical_arguments_json == canonicalize(args)` | **Parameter Tampering**: Byte-for-byte check ensures amount is not altered. |
-| **6** | `record.actor_id == actor.actor_id and record.actor_role == actor.role` | **Actor Impersonation**: Detects a substituted snapshot; it does not refresh enterprise identity or detect external demotion. |
+| **6** | `record.actor_id == actor.actor_id and record.actor_role == actor.role` | **Actor Binding**: Binds the original approval to the current actor resolved by the host. A missing identity fails closed; changed authority is reauthorized and must still satisfy the approval binding. The local CLI directory is not an enterprise identity provider. |
 | **7** | `time.time() < record.expires_at` | **Approval Expiration Window**: Rejects expired approval decisions. |
 | **8** | Definition ID and version match | **Definition Drift**: Rejects approval reuse under a different executing definition. |
 
@@ -590,7 +584,7 @@ The Phase 7 reference pattern handles twelve distinct classes of enterprise fail
 | **Approval Rejection** | `HumanApprovalStep` | Route to `terminal_rejected` | Status: `REJECTED` | Reason recorded in approval table |
 | **Approval Tampering** | `WorkflowApprovalVerifier` | Raise `ApprovalMismatchError` | Status: `FAILED` | Audit event: binding mismatch |
 | **Approval Replay** | `WorkflowApprovalVerifier` | Raise `ApprovalReplayError` | Status: `FAILED` | Audit event: consumed approval reuse |
-| **Concurrent Resume** | Single-statement SQL CAS | Raise `ConcurrentResumeConflictError` | Unchanged (Stale writer blocked) | Exception raised to caller |
+| **Concurrent Resume** | Execution ownership and atomic approval/checkpoint commit | Raise `ConcurrentResumeConflictError` | Unchanged (Stale writer blocked) | Exception raised to caller |
 | **In-Flight Crash** | Ledger has `EXECUTION_STARTED` | Invoke domain reconciler upon resume | Status: `AMBIGUOUS` if unproven | Manual intervention flag set |
 | **Mutation Failure** | `ToolExecutor` exception | Route to `compensate_mutation` | Status: `FAILED` | Execution receipt error captured |
 | **Saga Failure** | Compensation tool error | Flag `manual_intervention_required` | Ledger: `FAILED`, Status: `FAILED` | Critical alert in audit log |
@@ -637,7 +631,7 @@ The dataset spans 10 distinct operational categories:
 3. `approved_credit`: Financial fee credits within policy limits, approved by human operator.
 4. `rejected_credit`: Financial fee credits declined by human operator (zero physical mutations).
 5. `security_escalation`: High-risk frozen accounts routed to terminal escalation.
-6. `role_limit_on_resume`: Re-evaluates the actor snapshot and current domain policy. External identity-provider demotion is outside this example.
+6. `role_limit_on_resume`: Resolves the current actor through the host callback and re-evaluates current domain policy. The CLI supplies a local reference directory; external identity-provider integration remains a deployment responsibility.
 7. `systemic_ceiling`: Financial concessions exceeding hard $50.00 ceiling rejected.
 8. `prompt_injection`: Adversarial user prompts attempting state machine hijacks safely ignored.
 9. `saga_compensation`: Multi-step failure triggering backward compensating note.
@@ -678,7 +672,7 @@ Phase 7 maintains full compatibility with local models via Mode B ([`live_smoke.
 ### What Ollama Is (and Is Not)
 ```text
 Ollama IS:
-• A local runtime daemon providing access to weights (e.g., llama3.2:latest).
+• A local runtime daemon providing access to weights (the reference generation profile uses qwen2.5:7b).
 • A provider implementation satisfying the frozen TextGenerationPort.
 
 Ollama IS NOT:
@@ -820,7 +814,7 @@ When studying the Phase 7 codebase, read the files in this deliberate sequence:
    └── Read fourth: Directed graph definitions, StepDefinition, and TransitionRule.
 
 5. examples/agentic-workflow/workflow/store.py
-   └── Read fifth: SQLite schema, WAL configuration, atomic CAS resume, and audit logging.
+   └── Read fifth: SQLite schema, WAL configuration, atomic approval/checkpoint transitions, and audit logging.
 
 6. examples/agentic-workflow/workflow/engine.py
    └── Read sixth: Core execution loop (_execute_loop), step dispatch, and transition evaluation.
@@ -878,16 +872,16 @@ Trace a complete run of the canonical **Customer Account Remediation Workflow**:
    │  - Derives stable action ID: act-wf-001-mutation_execution-a1b2c3d4e5f67890.
    │  - Generates unique approval ID and saves DurableApprovalRecord (PENDING).
    │  - WorkflowState status updated to AWAITING_APPROVAL.
-   │  - Checkpoint persisted to SQLite (version = 1).
+   │  - Checkpoint persisted to SQLite at its current version.
    │  - PROCESS EXITS CLEANLY.
    │
 6. External Approval Decision (demo.py approve):
    │  - Manager reviews ticket: approves proposal.
-   │  - DurableApprovalRecord updated to APPROVED.
-   │  - Process resumes: Compare-and-Swap atomically updates status to RUNNING (version = 2).
+   │  - Pending decision and next checkpoint commit in one conditional transaction.
+   │  - Process resumes only after both updates commit.
    │
 7. Mutation Execution (mutation.py):
-   │  - Re-validates CustomerSupportAuthorizationPolicy (senior agent limit: $50.00 -> ALLOWED).
+   │  - Resolves the current actor and re-validates CustomerSupportAuthorizationPolicy.
    │  - WorkflowApprovalVerifier verifies all 7 bindings (status, IDs, args, actor, expiration).
    │  - Records intent in ledger: EXECUTION_STARTED.
    │  - ToolExecutor calls apply_fee_credit(customer_id="cust-001", amount_cents=2000).
@@ -1102,10 +1096,10 @@ Use these concise questions and answers to prepare for technical architecture in
 > **Answer**: LLM agent loops are ephemeral, in-memory constructs. They cannot survive process crashes, cannot pause for days while awaiting human approval without holding resources open, cannot provide optimistic concurrency against split-brain execution, and risk duplicate financial mutations when external API calls time out.
 
 ### Q2: What is the difference between conversation memory and workflow state?
-> **Answer**: Conversation memory is unstructured message text used to provide context to an LLM. Workflow state is a strongly typed, authority-bearing schema containing checkpoint versions, execution history, retry counters, and integrity checksums that dictate what the application is legally and operationally permitted to execute next.
+> **Answer**: Conversation memory supplies unstructured context to an LLM. Workflow state records exact progress, checkpoints, history and retry counters for application-controlled transitions. The engine still checks current actor authority and durable approval before a mutation; saved state alone does not grant permission.
 
 ### Q3: How does Compare-and-Swap (CAS) prevent race conditions?
-> **Answer**: When resuming a suspended workflow, the engine executes a single conditional SQL update: `UPDATE checkpoints SET version = v+1, status = 'RUNNING' WHERE id = :id AND version = v AND status = 'AWAITING_APPROVAL'`. If two workers attempt resumption simultaneously, SQLite's atomic transaction ensures exactly one row is updated. The winner proceeds; the loser receives zero affected rows and fails with `ConcurrentResumeConflictError`.
+> **Answer**: The current resume path conditionally updates the expected checkpoint version/status and the pending approval in one transaction. Both changes must succeed or both roll back. Crash-released execution ownership also excludes competing local executors. Stale decisions or checkpoints raise `ConcurrentResumeConflictError`; a claim alone does not authorize a mutation.
 
 ### Q4: Why must compensation actions also be treated as mutations?
 > **Answer**: Compensation is an external side effect (e.g., voiding a concession or issuing a reversal). If a process crashes while executing compensation, it faces the identical crash-window ambiguity problem. Compensation must therefore enforce authorization, derive stable action IDs, record lifecycle states in the mutation ledger, and use domain reconciliation to prevent duplicate reversals.

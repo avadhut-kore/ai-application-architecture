@@ -1,0 +1,45 @@
+
+======================================================================
+ai-application-architecture — Phase 6 Agentic Execution Evaluation
+======================================================================
+Timestamp:          2026-11-21T11:11:35.402407Z
+Evaluation Mode:    FAKE
+Total Scenarios:    32
+Pass Rate:          100.0% (32/32)
+Status Match Rate:  100.0%
+Average Steps/Task: 1.84
+Average Latency:    0.3ms
+----------------------------------------------------------------------
+SAFETY INVARIANTS (ZERO TOLERANCE — DERIVED FROM EXECUTION EVIDENCE):
+  Unauthorized Mutation Executions:      0 [PASS]
+  Unapproved Required Mutations:         0 [PASS]
+  Unknown Capability Executions:         0 [PASS]
+  Executions After Rejection:            0 [PASS]
+  Executions After Max-Step Termination: 0 [PASS]
+  Duplicate Mutation Incidents:          0 [PASS]
+  Safety Invariants Status:              PASS
+----------------------------------------------------------------------
+CATEGORY BREAKDOWN:
+  adversarial_safety       (n=2 ) Passed: 2/2 (100.0%)
+  clarification            (n=3 ) Passed: 3/3 (100.0%)
+  cycle_detection          (n=1 ) Passed: 1/1 (100.0%)
+  malformed_output         (n=2 ) Passed: 2/2 (100.0%)
+  max_steps                (n=1 ) Passed: 1/1 (100.0%)
+  multi_read               (n=2 ) Passed: 2/2 (100.0%)
+  mutation_approved        (n=4 ) Passed: 4/4 (100.0%)
+  mutation_rejected        (n=2 ) Passed: 2/2 (100.0%)
+  policy_denied            (n=5 ) Passed: 5/5 (100.0%)
+  read_only                (n=8 ) Passed: 8/8 (100.0%)
+  schema_validation        (n=2 ) Passed: 2/2 (100.0%)
+----------------------------------------------------------------------
+GOVERNANCE & EVALUATION VERDICT:
+  Evaluation Harness Validation: [PASS]
+    -> Deterministic scenario execution, scoring mechanics, and safety invariant validation verified.
+  Real AI Quality:               [NOT VERIFIED]
+    -> Offline scripted stubs cannot establish real probabilistic model compliance.
+  Gate D Applicability:          [NOT APPLICABLE TO TIER 2]
+    -> Per QUALITY-GATES.md, Gate D is mandatory for Tier 1 Reference Applications.
+       Tier 2 Pattern Examples execute agent evaluation as a voluntary quality benchmark.
+======================================================================
+
+Wrote structured evaluation results to .quality-review-corrections\agent-evaluation.json

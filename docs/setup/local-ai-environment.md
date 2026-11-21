@@ -38,7 +38,7 @@ This repository enforces an evidence-based, local-first policy defined in [`docs
 Hardware requirements follow the sizing profiles in [`docs/architecture/local-first.md`](../architecture/local-first.md):
 
 * **Standard Profile (Recommended)**: Apple Silicon (M1/M2/M3/M4) with $\ge 16\text{GB}$ unified memory, or x86_64 workstation with $\ge 16\text{GB}$ RAM and optional NVIDIA GPU ($\ge 8\text{GB}$ VRAM). Suitable for 3B and 8B parameter models.
-* **Lightweight Profile**: 8GB RAM, CPU-only. Suitable for 1B–3B parameter models (e.g. `qwen2.5:7b`, `phi3:mini`).
+* **Lightweight Profile**: 8GB RAM, CPU-only. Intended for smaller models; the `qwen2.5:7b` reference model is a 7B model and does not belong to a 1B–3B sizing profile. Smaller substitutions require separate verification and do not inherit the reference evaluation results.
 
 ---
 
@@ -175,7 +175,7 @@ python3 examples/rag/eval_runner.py --mode live
 | :--- | :--- | :--- |
 | `AiProviderUnavailableError` or connection refused on `11434` | Ollama daemon is not running | Run `ollama serve` in a dedicated terminal or launch Ollama.app. |
 | `AiModelNotFoundError` (HTTP 404) | Requested model tag is not downloaded | Run `ollama pull <model-tag>` (e.g. `ollama pull qwen2.5:7b`). |
-| `AiTimeoutError` | Model loading or generation exceeded timeout | Increase timeout via `--timeout` argument or verify workstation memory pressure. |
+| `AiTimeoutError` | Model loading or generation exceeded its provider timeout | Inspect memory/CPU contention and the command's `--help`. Only commands exposing `--timeout` accept that option; a provider timeout and the agent's whole-run deadline are separate limits. |
 | Live commands exit with code `1` | Strict exit contract prevents false passes | Check terminal output for the specific failure reason and verify daemon health. |
 
 ## Windows Docker storage and local inference
@@ -223,3 +223,21 @@ On Linux or macOS, prefix the command with
 model names, timing, usage and status, with parent/child correlation. It does not
 export prompts, answers, retrieved text or exception messages. An application
 that already configures an SDK tracer provider keeps ownership of that provider.
+
+## CPU-only inference and workflow deadlines
+
+The local 7B reference profile can take minutes per multi-step investigation.
+Longer accumulated prompts, cold model loading and competing CPU workloads can
+increase latency; a previous workflow proposal reached its 300-second agent deadline
+and failed closed. A subsequent retry passed. See the recorded
+[workflow evidence and limitations](../engineering/phase1-7-followup.md#6-local-execution-verification).
+
+Run live evaluations separately from image builds, security scans and other heavy
+workloads where practical. Inspect host resource pressure and preserve both failed
+and successful runs. A retry is a separate result, not a replacement for a failure.
+The reference workflow composition uses a 240-second provider timeout and a
+300-second whole-agent deadline. The workflow demo/smoke CLI does not expose an
+`execution_timeout_seconds` flag. Do not pass a guessed option or silently extend
+the deadline to obtain a pass. Any deliberately changed profile must record its
+actual configuration and be verified separately. This is an operational limitation,
+not a production latency guarantee.

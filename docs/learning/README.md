@@ -2,9 +2,13 @@
 
 Welcome to the hands-on learning curriculum for **`ai-application-architecture`**.
 
+**New to this repository?** Begin with [Start Here](start-here.md) for prerequisites,
+a repository map, setup commands, guided exercises and checkpoints. Return here for
+the detailed phase guides.
+
 This repository is simultaneously:
 1. An **Enterprise AI Reference Architecture** establishing architectural patterns, taxonomy, and boundary governance.
-2. A **Production-Grade Reference Implementation Monorepo** delivering verifiable code, hermetic test suites, and quantitative AI evaluation harnesses.
+2. A **Tiered Reference Implementation Monorepo** delivering pattern examples, platform components, templates, tests and evaluation harnesses with explicit verification limits.
 3. A **Structured Hands-On Learning Curriculum** designed to guide engineers, solution architects, and technical leaders from foundational governance through advanced enterprise AI patterns.
 
 ---
@@ -78,7 +82,7 @@ Phase 7: Agentic Workflow Orchestration [IMPLEMENTED — ACCEPTANCE PENDING]
   → [Phase 07 Learning Guide](phase-07-agentic-workflow-orchestration.md)
         ↓
 Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE]
-  Multi-Agent, Observability, Gateways, Multimodal, Edge, and Production Apps
+  Document, Multimodal, Voice, Research, Decision Intelligence, Hardening, Release
 ```
 
 ---
@@ -95,7 +99,7 @@ Phases 8–14: Advanced Enterprise Systems [PLANNED — GUIDES NOT YET AVAILABLE
 | **05** | **Knowledge Intelligence & RAG** | Chunking, Embeddings, Vector Index, Evidence Sufficiency, Citations | `IMPLEMENTED` | [Phase 05 Guide](phase-05-knowledge-intelligence-rag.md) |
 | **06** | **Agentic Task Execution** | Tool Proposals, Capability Registry, Policy Enforcement, Mandatory HITL, MCP | `IMPLEMENTED` | [Phase 06 Guide](phase-06-agentic-task-execution.md) |
 | **07** | **Workflow Orchestration** | Deterministic Graph Workflows, Human-in-the-Loop, State Machines | `IMPLEMENTED` | [Phase 07 Guide](phase-07-agentic-workflow-orchestration.md) |
-| **08–14** | **Enterprise AI Systems** | Multi-Agent, Gateways, Telemetry, Multimodal, Edge & Reference Apps | `PLANNED` | *Available after respective phase freeze* |
+| **08–14** | **Enterprise AI Systems** | Document, Multimodal, Voice, Research, Decision Intelligence, Hardening & Release | `PLANNED` | *Available after respective phase freeze* |
 
 ---
 
@@ -112,8 +116,8 @@ This curriculum is intended for:
 * **Systems Engineering**: Basic HTTP REST interaction, JSON schema validation, and unit testing concepts.
 
 ### Environment Setup
-* **For Deterministic Study (Phases 0–3)**: Python 3.11+ and standard Unix command-line tools. Zero external AI runtimes or cloud credentials required.
-* **For Live AI Execution (Phase 4)**: A running local Ollama instance with a pulled model (e.g. `llama3.2:3b`). Follow the comprehensive workstation setup in [`docs/setup/local-ai-environment.md`](../setup/local-ai-environment.md).
+* **For Deterministic Study (Phases 0–7)**: Python 3.11+, Git and the locked Python environment. PowerShell or a Unix shell can run the exercises. No external AI runtime or cloud credentials are required.
+* **For Live AI Execution (Phases 4–7)**: A running local Ollama instance with the reference generation model `qwen2.5:7b`; live RAG also uses `nomic-embed-text`. Follow the comprehensive workstation setup in [`docs/setup/local-ai-environment.md`](../setup/local-ai-environment.md).
 
 ---
 

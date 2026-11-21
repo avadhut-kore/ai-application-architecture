@@ -127,3 +127,55 @@ The approved selective hardening and local verification are complete. Arrange in
 review of this change and the baseline before accepting Phase 1–7. Keep Phase 8 onward
 outside this scope. A passing local smoke does not remove the latency risk or replace
 full probabilistic evaluation before a release that changes model behavior.
+
+## 9. Review-driven maintenance and beginner onboarding
+
+The owner supplied a separate review of commit `48031c9` and approved addressing
+its tooling/maintenance findings together with the beginner documentation. This
+section records subsequent implementing-agent verification, not independent acceptance.
+
+### Changes and decisions
+
+- F-01: `examples/agent-execution/verify.py` now supplies the agent package root
+  through unittest discovery's `-t` option. Before correction, standalone invocation
+  exited 1 with two `tests.test_executor` import errors. After correction, the helper
+  exits 0, executing all 81 agent tests and the 32-scenario deterministic evaluation.
+- F-03: the agent and RAG evaluators use timezone-aware UTC timestamps. Existing
+  ISO 8601 strings ending in `Z` are preserved for report compatibility.
+- F-02 remains an operational limitation. The setup guide documents CPU contention,
+  the distinct provider timeout and agent deadline, and the absence of the suggested
+  `execution_timeout_seconds` CLI flag. No runtime deadline or threshold was increased.
+- F-04: the [beginner guide](../learning/start-here.md), root/curriculum links, current
+  Phase 7 explanations and corrected model sizing guidance are included for publication.
+  The navigation guide provides prerequisites, a repository map, phase checkpoints,
+  deterministic exercises, live-run guidance and troubleshooting.
+
+No architecture change or additional ADR is required for these narrow corrections.
+Future phases, identity-provider integration and performance tuning remain deferred.
+
+### Verification and limits
+
+[Maintenance evidence](evidence/phase1-7-followup/review-corrections.json) records
+commands, exit codes, timestamp assertions, source hashes and the file inventory.
+The corresponding `review-corrections-*.log` files retain actual terminal output.
+
+- **Automated Evidence — Gates B/C:** Windows quality checks pass Ruff, strict mypy,
+  all 358 tests and the enforced coverage thresholds. Linux Python 3.11 checks pass
+  static analysis, the standalone agent verifier, 53 RAG tests and both deterministic
+  evaluators. Full Linux coverage was not repeated for these metadata/tooling changes.
+- **Automated Evidence:** both evaluator CLIs pass with deprecation warnings treated
+  as errors. Their generated JSON timestamps parse as timezone-aware UTC and retain `Z`.
+- **Automated Evidence — Gate H:** documentation/link and whitespace checks pass.
+  The 22-diagram render check and four beginner deterministic exercises were also
+  executed during onboarding work; these are not model-quality evaluations.
+- **Not Verified:** live inference was not repeated for the timestamp/discovery
+  changes. They do not alter prompts, inference, authorization or mutation behavior.
+  Security, architecture and telemetry acceptance are not newly asserted by this fix.
+
+The supplied review needs reconciliation before being treated as the authoritative
+phase acceptance record: Phase 3 scope is templates rather than platform adapters;
+several per-suite counts and gate applicability entries differ from repository evidence;
+and the approval transition is a single local transaction, not distributed two-phase
+commit. Request corrected reporting with execution logs and the final reviewed revision.
+The implementing agent does not change acceptance status or amend the separate
+reviewer's verdict on the reviewer's behalf.
